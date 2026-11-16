@@ -47,7 +47,7 @@ Nguồn dữ liệu → Trích xuất → Làm sạch & biến đổi → Lưu t
 
 | Thư mục | Nội dung | Kế hoạch |
 |---|---|---|
-| `docs/` | Kiến trúc, data dictionary, kế hoạch DevOps, DE, DS | [tổng quan dự án](docs/00_tong_quan_du_an.md) · [devops](docs/devops/00_tong_quan.md) · [de](docs/de/00_tong_quan_de.md) · [ds](docs/ds/00_tong_quan_ds.md) |
+| `docs/` | Kiến trúc, data dictionary, kế hoạch DevOps, DE, DS | [tổng quan dự án](docs/00_tong_quan_du_an.md) · [devops](docs/devops/00_tong_quan.md) · [de](docs/de/00_tong_quan_de.md) · [ds](docs/ds/00_tong_quan_ds.md) · [phân việc](docs/tasks/README.md) |
 | `infra/` | Terraform: `bootstrap/`, `modules/`, `stacks/` (10-core, 20-stream, 30-databricks, 40-orchestration, 90-sandbox), `envs/` | [infra/README.md](infra/README.md) |
 | `.github/` | Workflow CI/CD, CODEOWNERS, PR template | docs/devops/04 |
 | `bundles/` | Databricks Asset Bundles (job, task) | docs/devops/05, mục 4 |

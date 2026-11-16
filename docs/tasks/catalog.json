@@ -1,0 +1,2071 @@
+{
+  "repo": "Vinh5905/ETL_Azure_Databricks",
+  "tasks": [
+    {
+      "id": "AD-OPS-01",
+      "title": "Cài bộ công cụ cho cả 4 máy và ghi bảng công cụ vào spike_results",
+      "role": "P1",
+      "gate": "G0",
+      "label": "infra",
+      "docs": [
+        "docs/devops/01_chuan_bi_va_spike.md §1",
+        "docs/devops/spike_results.md §1"
+      ],
+      "start": [],
+      "finish": [],
+      "issue": 3
+    },
+    {
+      "id": "AD-OPS-02",
+      "title": "Thiết lập quản trị repo: board, label, milestone, CODEOWNERS, branch protection, environment",
+      "role": "P1",
+      "gate": "G0",
+      "label": "infra",
+      "docs": [
+        "docs/devops/04_github_actions_cicd.md §2",
+        "docs/devops/04_github_actions_cicd.md §3.3",
+        "docs/devops/04_github_actions_cicd.md §3.5",
+        "docs/devops/02_bootstrap_tfstate.md §3 bước 7"
+      ],
+      "start": [],
+      "finish": [],
+      "issue": 4
+    },
+    {
+      "id": "AD-OPS-03",
+      "title": "Spike region được phép, quota vCPU và quyền trong tenant trường",
+      "role": "P1",
+      "gate": "G0",
+      "label": "infra",
+      "docs": [
+        "docs/devops/01_chuan_bi_va_spike.md §2",
+        "docs/devops/01_chuan_bi_va_spike.md §3.1–3.3"
+      ],
+      "start": [],
+      "finish": [],
+      "issue": 5
+    },
+    {
+      "id": "AD-OPS-04",
+      "title": "Spike Databricks nền: workspace, Unity Catalog, serverless warehouse, cluster single-node",
+      "role": "P1",
+      "gate": "G0",
+      "label": "infra",
+      "docs": [
+        "docs/devops/01_chuan_bi_va_spike.md §3.4",
+        "docs/devops/05_databricks_platform.md §2"
+      ],
+      "start": [
+        "AD-OPS-03"
+      ],
+      "finish": [],
+      "issue": 6
+    },
+    {
+      "id": "AD-OPS-05",
+      "title": "Spike Databricks nâng cao: Lakeflow single-node, Kafka, policy local[n], for_each_task, Model Serving",
+      "role": "P1",
+      "gate": "G0",
+      "label": "infra",
+      "docs": [
+        "docs/devops/01_chuan_bi_va_spike.md §3.4",
+        "docs/ds/05_mlflow_serving_bao_cao.md §3"
+      ],
+      "start": [
+        "AD-OPS-04"
+      ],
+      "finish": [
+        "AD-OPS-06"
+      ],
+      "issue": 7
+    },
+    {
+      "id": "AD-OPS-06",
+      "title": "Spike Azure SQL free offer, CDC, Event Hubs Kafka, ADF và Azure Functions",
+      "role": "P1",
+      "gate": "G0",
+      "label": "infra",
+      "docs": [
+        "docs/devops/01_chuan_bi_va_spike.md §3.5"
+      ],
+      "start": [
+        "AD-OPS-03"
+      ],
+      "finish": [],
+      "issue": 8
+    },
+    {
+      "id": "AD-OPS-07",
+      "title": "Chốt quyết định G0, dọn tài nguyên spike và mở cổng G0",
+      "role": "P1",
+      "gate": "G0",
+      "label": "infra",
+      "docs": [
+        "docs/devops/01_chuan_bi_va_spike.md §4",
+        "docs/devops/spike_results.md §3",
+        "docs/devops/00_tong_quan.md §3"
+      ],
+      "start": [
+        "AD-OPS-05",
+        "AD-OPS-06"
+      ],
+      "finish": [
+        "AD-BI-01"
+      ],
+      "issue": 9
+    },
+    {
+      "id": "AD-OPS-08",
+      "title": "Apply bootstrap, chuyển state lên blob và cấu hình OIDC cho GitHub Actions",
+      "role": "P1",
+      "gate": "G1",
+      "label": "infra",
+      "docs": [
+        "docs/devops/02_bootstrap_tfstate.md §3",
+        "docs/devops/02_bootstrap_tfstate.md §6",
+        "infra/AGENTS.md"
+      ],
+      "start": [
+        "AD-OPS-07"
+      ],
+      "finish": [],
+      "issue": 10
+    },
+    {
+      "id": "AD-OPS-09",
+      "title": "Dựng ADLS Gen2 với 7 container và lifecycle landing sang cool (10-core bước 3.2)",
+      "role": "P1",
+      "gate": "G1",
+      "label": "infra",
+      "docs": [
+        "docs/devops/03_terraform_azure.md §2",
+        "docs/devops/03_terraform_azure.md §3 bước 3.1–3.2"
+      ],
+      "start": [
+        "AD-OPS-08"
+      ],
+      "finish": [],
+      "issue": 11
+    },
+    {
+      "id": "AD-OPS-10",
+      "title": "Dựng Key Vault, Access Connector và danh tính id-func-recommend (10-core bước 3.3–3.4)",
+      "role": "P1",
+      "gate": "G1",
+      "label": "infra",
+      "docs": [
+        "docs/devops/03_terraform_azure.md §3 bước 3.3–3.4"
+      ],
+      "start": [
+        "AD-OPS-09"
+      ],
+      "finish": [],
+      "issue": 12
+    },
+    {
+      "id": "AD-OPS-11",
+      "title": "Dựng Databricks workspace Premium (10-core bước 3.5)",
+      "role": "P1",
+      "gate": "G1",
+      "label": "infra",
+      "docs": [
+        "docs/devops/03_terraform_azure.md §3 bước 3.5"
+      ],
+      "start": [
+        "AD-OPS-08"
+      ],
+      "finish": [],
+      "issue": 13
+    },
+    {
+      "id": "AD-OPS-12",
+      "title": "Dựng Azure SQL retail_db free offer, firewall và secret mật khẩu (10-core bước 3.6)",
+      "role": "P1",
+      "gate": "G1",
+      "label": "infra",
+      "docs": [
+        "docs/devops/03_terraform_azure.md §3 bước 3.6",
+        "docs/de/01_ingest_landing.md §3"
+      ],
+      "start": [
+        "AD-OPS-10"
+      ],
+      "finish": [],
+      "issue": 14
+    },
+    {
+      "id": "AD-OPS-13",
+      "title": "Dựng Data Factory với managed identity và quyền (10-core bước 3.7)",
+      "role": "P1",
+      "gate": "G1",
+      "label": "infra",
+      "docs": [
+        "docs/devops/03_terraform_azure.md §3 bước 3.7"
+      ],
+      "start": [
+        "AD-OPS-10",
+        "AD-OPS-11"
+      ],
+      "finish": [],
+      "issue": 15
+    },
+    {
+      "id": "AD-OPS-14",
+      "title": "Cấp RBAC cho 4 thành viên và đặt budget cảnh báo chi phí (10-core bước 3.8–3.9)",
+      "role": "P1",
+      "gate": "G1",
+      "label": "infra",
+      "docs": [
+        "docs/devops/03_terraform_azure.md §3 bước 3.8–3.9"
+      ],
+      "start": [
+        "AD-OPS-10"
+      ],
+      "finish": [],
+      "issue": 16
+    },
+    {
+      "id": "AD-OPS-15",
+      "title": "Nghiệm thu stack 10-core và hoàn thiện output bước 3.10",
+      "role": "P1",
+      "gate": "G1",
+      "label": "infra",
+      "docs": [
+        "docs/devops/03_terraform_azure.md §3 bước 3.10 và checklist 10-core"
+      ],
+      "start": [
+        "AD-OPS-12",
+        "AD-OPS-13",
+        "AD-OPS-14"
+      ],
+      "finish": [],
+      "issue": 17
+    },
+    {
+      "id": "AD-OPS-16",
+      "title": "Bổ sung job java, Infracost và chặn trivy trong pr-checks",
+      "role": "P1",
+      "gate": "G1",
+      "label": "infra",
+      "docs": [
+        "docs/devops/04_github_actions_cicd.md §3.1",
+        "docs/devops/04_github_actions_cicd.md §4"
+      ],
+      "start": [],
+      "finish": [
+        "AD-OPS-15"
+      ],
+      "issue": 18
+    },
+    {
+      "id": "AD-OPS-17",
+      "title": "Chạy thử trọn chuỗi CI hạ tầng bằng PR đổi tag ở 10-core",
+      "role": "P1",
+      "gate": "G1",
+      "label": "infra",
+      "docs": [
+        "docs/devops/04_github_actions_cicd.md §1",
+        "docs/devops/04_github_actions_cicd.md §3.2–3.3",
+        "docs/devops/04_github_actions_cicd.md §5"
+      ],
+      "start": [
+        "AD-OPS-02",
+        "AD-OPS-15"
+      ],
+      "finish": [],
+      "issue": 19
+    },
+    {
+      "id": "AD-OPS-18",
+      "title": "Thêm service principal CI, SP Function và user theo vai trò vào workspace (30-databricks bước 2)",
+      "role": "P1",
+      "gate": "G1",
+      "label": "infra",
+      "docs": [
+        "docs/devops/05_databricks_platform.md §2",
+        "docs/devops/05_databricks_platform.md §3 bước 2"
+      ],
+      "start": [
+        "AD-OPS-10",
+        "AD-OPS-11"
+      ],
+      "finish": [],
+      "issue": 20
+    },
+    {
+      "id": "AD-OPS-19",
+      "title": "Tạo storage credential, external location, catalog instacart, 8 schema và volume (30-databricks bước 3–4)",
+      "role": "P1",
+      "gate": "G1",
+      "label": "infra",
+      "docs": [
+        "docs/devops/05_databricks_platform.md §3 bước 3–4"
+      ],
+      "start": [
+        "AD-OPS-10",
+        "AD-OPS-11"
+      ],
+      "finish": [],
+      "issue": 21
+    },
+    {
+      "id": "AD-OPS-20",
+      "title": "Cấp quyền Unity Catalog theo vai trò (30-databricks bước 5)",
+      "role": "P1",
+      "gate": "G1",
+      "label": "infra",
+      "docs": [
+        "docs/devops/05_databricks_platform.md §3 bước 5"
+      ],
+      "start": [
+        "AD-OPS-18",
+        "AD-OPS-19"
+      ],
+      "finish": [],
+      "issue": 22
+    },
+    {
+      "id": "AD-OPS-21",
+      "title": "Tạo cluster policy single-node, pipeline và ds-benchmark, chặn tạo cluster tự do (30-databricks bước 6)",
+      "role": "P1",
+      "gate": "G1",
+      "label": "infra",
+      "docs": [
+        "docs/devops/05_databricks_platform.md §3 bước 6",
+        "docs/de/02_bronze_ldp.md §2.1"
+      ],
+      "start": [
+        "AD-OPS-18"
+      ],
+      "finish": [],
+      "issue": 23
+    },
+    {
+      "id": "AD-OPS-22",
+      "title": "Tạo secret scope Key Vault, serverless SQL warehouse và output cho DAB, Power BI (30-databricks bước 7–9)",
+      "role": "P1",
+      "gate": "G1",
+      "label": "infra",
+      "docs": [
+        "docs/devops/05_databricks_platform.md §3 bước 7–9",
+        "infra/AGENTS.md"
+      ],
+      "start": [
+        "AD-OPS-18"
+      ],
+      "finish": [
+        "AD-OPS-12"
+      ],
+      "issue": 24
+    },
+    {
+      "id": "AD-OPS-23",
+      "title": "Nghiệm thu G1: chạy 30-databricks qua CI và thử de-deploy dev/prod",
+      "role": "P1",
+      "gate": "G1",
+      "label": "infra",
+      "docs": [
+        "docs/devops/05_databricks_platform.md §5",
+        "docs/devops/04_github_actions_cicd.md §3.4",
+        "docs/devops/04_github_actions_cicd.md §5"
+      ],
+      "start": [
+        "AD-OPS-17",
+        "AD-OPS-20",
+        "AD-OPS-21",
+        "AD-OPS-22"
+      ],
+      "finish": [
+        "AD-DE-18"
+      ],
+      "issue": 25
+    },
+    {
+      "id": "AD-OPS-24",
+      "title": "Dựng stack 20-stream (Event Hubs, SAS, secret) và nghiệm thu stream-toggle",
+      "role": "P3",
+      "gate": "G2",
+      "label": "infra",
+      "docs": [
+        "docs/devops/03_terraform_azure.md §4",
+        "docs/devops/04_github_actions_cicd.md §3.5"
+      ],
+      "start": [
+        "AD-OPS-02",
+        "AD-OPS-10"
+      ],
+      "finish": [],
+      "issue": 26
+    },
+    {
+      "id": "AD-OPS-25",
+      "title": "Khai báo linked service và dataset ADF trong stack 40-orchestration",
+      "role": "P1",
+      "gate": "G3",
+      "label": "infra",
+      "docs": [
+        "docs/devops/06_de_den_dashboard.md §1"
+      ],
+      "start": [
+        "AD-OPS-12",
+        "AD-OPS-13"
+      ],
+      "finish": [
+        "AD-OPS-17"
+      ],
+      "issue": 27
+    },
+    {
+      "id": "AD-OPS-26",
+      "title": "Đưa pipeline và trigger ADF vào 40-orchestration, bật lịch hằng ngày khi pl_master đạt",
+      "role": "P1",
+      "gate": "G3",
+      "label": "infra",
+      "docs": [
+        "docs/devops/06_de_den_dashboard.md §1",
+        "docs/devops/06_de_den_dashboard.md §3"
+      ],
+      "start": [
+        "AD-OPS-23",
+        "AD-OPS-25"
+      ],
+      "finish": [
+        "AD-DE-06",
+        "AD-DE-07",
+        "AD-DE-19",
+        "AD-DE-18"
+      ],
+      "issue": 28
+    },
+    {
+      "id": "AD-OPS-27",
+      "title": "Kiểm thử drift-check bằng một thay đổi tay có chủ đích",
+      "role": "P1",
+      "gate": "G3",
+      "label": "infra",
+      "docs": [
+        "docs/devops/04_github_actions_cicd.md §3.6"
+      ],
+      "start": [
+        "AD-OPS-23",
+        "AD-OPS-25"
+      ],
+      "finish": [],
+      "issue": 29
+    },
+    {
+      "id": "AD-OPS-28",
+      "title": "Lập bảng theo dõi chi phí theo tag và quota vCPU hằng tuần",
+      "role": "P1",
+      "gate": "G4",
+      "label": "infra",
+      "docs": [
+        "docs/devops/00_tong_quan.md §1",
+        "docs/devops/02_bootstrap_tfstate.md §4",
+        "docs/devops/06_de_den_dashboard.md §6.4"
+      ],
+      "start": [
+        "AD-OPS-14"
+      ],
+      "finish": [],
+      "issue": 30
+    },
+    {
+      "id": "AD-OPS-29",
+      "title": "Dựng workspace sandbox 90-sandbox cho DS ở Sub C",
+      "role": "P4",
+      "gate": "G3",
+      "label": "infra",
+      "docs": [
+        "docs/devops/03_terraform_azure.md §5",
+        "docs/ds/04_thuc_nghiem_danh_gia.md §5.2"
+      ],
+      "start": [
+        "AD-OPS-08"
+      ],
+      "finish": [
+        "AD-DE-21"
+      ],
+      "issue": 31
+    },
+    {
+      "id": "AD-OPS-30",
+      "title": "Mở rộng khung bundle và quyền cho các job DS",
+      "role": "P1",
+      "gate": "G3",
+      "label": "infra",
+      "docs": [
+        "docs/devops/05_databricks_platform.md §4",
+        "docs/devops/06_de_den_dashboard.md §7"
+      ],
+      "start": [
+        "AD-OPS-20",
+        "AD-OPS-21"
+      ],
+      "finish": [
+        "AD-OPS-29"
+      ],
+      "issue": 32
+    },
+    {
+      "id": "AD-OPS-31",
+      "title": "Dựng stack 50-serving: Function App Flex Consumption cho API gợi ý",
+      "role": "P1",
+      "gate": "G5",
+      "label": "infra",
+      "docs": [
+        "docs/devops/03_terraform_azure.md §5.1",
+        "docs/ds/05_mlflow_serving_bao_cao.md §3"
+      ],
+      "start": [
+        "AD-OPS-23"
+      ],
+      "finish": [
+        "AD-DS-23"
+      ],
+      "issue": 33
+    },
+    {
+      "id": "AD-OPS-32",
+      "title": "Viết workflow func-deploy đưa code Function lên Azure",
+      "role": "P1",
+      "gate": "G5",
+      "label": "infra",
+      "docs": [
+        "docs/devops/04_github_actions_cicd.md §3.8",
+        "docs/ds/05_mlflow_serving_bao_cao.md §3.2"
+      ],
+      "start": [
+        "AD-OPS-31"
+      ],
+      "finish": [
+        "AD-DS-24"
+      ],
+      "issue": 34
+    },
+    {
+      "id": "AD-OPS-33",
+      "title": "Tổng hợp bằng chứng hạ tầng cho rubric 1.4, 3.2, 3.4 và 5.4",
+      "role": "P1",
+      "gate": "G4",
+      "label": "infra",
+      "docs": [
+        "docs/devops/00_tong_quan.md §1",
+        "docs/devops/00_tong_quan.md §5",
+        "docs/devops/04_github_actions_cicd.md §2"
+      ],
+      "start": [
+        "AD-OPS-24",
+        "AD-OPS-27",
+        "AD-OPS-28"
+      ],
+      "finish": [
+        "AD-OPS-26"
+      ],
+      "issue": 35
+    },
+    {
+      "id": "AD-OPS-34",
+      "title": "Hủy hạ tầng cuối kỳ theo thứ tự ngược và chốt báo cáo chi phí",
+      "role": "P1",
+      "gate": "G5",
+      "label": "infra",
+      "docs": [
+        "docs/devops/03_terraform_azure.md §6",
+        "AGENTS.md (Lệnh không được chạy)"
+      ],
+      "start": [
+        "AD-OPS-33"
+      ],
+      "finish": [
+        "AD-RP-09",
+        "AD-RP-10"
+      ],
+      "issue": 36
+    },
+    {
+      "id": "AD-DE-01",
+      "title": "Chuyển khung src sang cấu trúc đích và tạo dữ liệu mẫu 1%",
+      "role": "P2",
+      "gate": "G0",
+      "label": "de-batch",
+      "docs": [
+        "docs/de/00_tong_quan_de.md §5, §6",
+        "src/AGENTS.md"
+      ],
+      "start": [],
+      "finish": [],
+      "issue": 37
+    },
+    {
+      "id": "AD-DE-02",
+      "title": "Viết hàm thuần sim_time và chuẩn hóa tên kèm test",
+      "role": "P2",
+      "gate": "G0",
+      "label": "de-batch",
+      "docs": [
+        "docs/de/03_silver_cdc_scd_dq.md §3.1, §5",
+        "docs/de/04_streaming.md §2.2",
+        "docs/data/data_dictionary.md §4, §5.6"
+      ],
+      "start": [],
+      "finish": [
+        "AD-DE-01"
+      ],
+      "issue": 38
+    },
+    {
+      "id": "AD-DE-03",
+      "title": "Viết khuôn quarantine và bộ luật chất lượng dùng chung",
+      "role": "P2",
+      "gate": "G0",
+      "label": "de-batch",
+      "docs": [
+        "docs/de/03_silver_cdc_scd_dq.md §4",
+        "docs/de/04_streaming.md §4.1"
+      ],
+      "start": [],
+      "finish": [
+        "AD-DE-01"
+      ],
+      "issue": 39
+    },
+    {
+      "id": "AD-DE-04",
+      "title": "Viết script SQL tạo bảng nguồn, bật CDC và bảng điều khiển etl",
+      "role": "P2",
+      "gate": "G1",
+      "label": "de-batch",
+      "docs": [
+        "docs/de/01_ingest_landing.md §3.2, §3.3, §3.7"
+      ],
+      "start": [],
+      "finish": [
+        "AD-OPS-12",
+        "AD-OPS-06"
+      ],
+      "issue": 40
+    },
+    {
+      "id": "AD-DE-05",
+      "title": "Viết seed_retail_db theo đợt và job chạy seed",
+      "role": "P2",
+      "gate": "G1",
+      "label": "de-batch",
+      "docs": [
+        "docs/de/01_ingest_landing.md §3.4",
+        "docs/devops/06_de_den_dashboard.md §2.1, §3"
+      ],
+      "start": [],
+      "finish": [
+        "AD-DE-04",
+        "AD-OPS-22"
+      ],
+      "issue": 41
+    },
+    {
+      "id": "AD-DE-06",
+      "title": "Dựng ADF pl_ingest_instacart chép CSV Zenodo vào landing",
+      "role": "P2",
+      "gate": "G1",
+      "label": "de-batch",
+      "docs": [
+        "docs/de/01_ingest_landing.md §1, §2",
+        "docs/devops/06_de_den_dashboard.md §1"
+      ],
+      "start": [],
+      "finish": [
+        "AD-OPS-25"
+      ],
+      "issue": 42
+    },
+    {
+      "id": "AD-DE-07",
+      "title": "Dựng ADF pl_ingest_retail_db đọc CDC theo LSN",
+      "role": "P2",
+      "gate": "G1",
+      "label": "de-batch",
+      "docs": [
+        "docs/de/01_ingest_landing.md §3.5, §3.6, §6, §7"
+      ],
+      "start": [
+        "AD-DE-04"
+      ],
+      "finish": [
+        "AD-DE-05",
+        "AD-OPS-25"
+      ],
+      "issue": 43
+    },
+    {
+      "id": "AD-DE-08",
+      "title": "Khai báo pipeline instacart_batch trong DAB với schema dev riêng",
+      "role": "P2",
+      "gate": "G1",
+      "label": "de-batch",
+      "docs": [
+        "docs/de/02_bronze_ldp.md §2.2",
+        "docs/de/06_van_hanh_chay_lai.md §3",
+        "bundles/AGENTS.md"
+      ],
+      "start": [],
+      "finish": [
+        "AD-OPS-19",
+        "AD-OPS-21",
+        "AD-OPS-20",
+        "AD-OPS-05"
+      ],
+      "issue": 44
+    },
+    {
+      "id": "AD-DE-09",
+      "title": "Viết bronze.py nạp landing vào bronze bằng Auto Loader",
+      "role": "P2",
+      "gate": "G1",
+      "label": "de-batch",
+      "docs": [
+        "docs/de/02_bronze_ldp.md §3, §5, §6"
+      ],
+      "start": [],
+      "finish": [
+        "AD-DE-06",
+        "AD-DE-07",
+        "AD-DE-08"
+      ],
+      "issue": 45
+    },
+    {
+      "id": "AD-DE-10",
+      "title": "Viết crawler Open Food Facts và tải ảnh theo lô",
+      "role": "P2",
+      "gate": "G3",
+      "label": "de-batch",
+      "docs": [
+        "docs/de/01_ingest_landing.md §4",
+        "docs/data/data_dictionary.md §5.2–5.5"
+      ],
+      "start": [],
+      "finish": [
+        "AD-DE-09"
+      ],
+      "issue": 46
+    },
+    {
+      "id": "AD-DE-11",
+      "title": "Dựng silver SCD2 lịch sử giá và SCD1 khuyến mãi",
+      "role": "P2",
+      "gate": "G3",
+      "label": "de-batch",
+      "docs": [
+        "docs/de/03_silver_cdc_scd_dq.md §2",
+        "docs/de/01_ingest_landing.md §3.6"
+      ],
+      "start": [],
+      "finish": [
+        "AD-DE-03",
+        "AD-DE-09"
+      ],
+      "issue": 47
+    },
+    {
+      "id": "AD-DE-12",
+      "title": "Dựng silver đơn hàng: order_time_sim, orders_batch, order_items_prior",
+      "role": "P2",
+      "gate": "G3",
+      "label": "de-batch",
+      "docs": [
+        "docs/de/03_silver_cdc_scd_dq.md §3, §4"
+      ],
+      "start": [],
+      "finish": [
+        "AD-DE-02",
+        "AD-DE-03",
+        "AD-DE-09"
+      ],
+      "issue": 48
+    },
+    {
+      "id": "AD-DE-13",
+      "title": "Làm phẳng OFF và fuzzy match sang sản phẩm Instacart",
+      "role": "P2",
+      "gate": "G3",
+      "label": "de-batch",
+      "docs": [
+        "docs/de/03_silver_cdc_scd_dq.md §5",
+        "docs/data/data_dictionary.md §5.6"
+      ],
+      "start": [],
+      "finish": [
+        "AD-DE-02",
+        "AD-DE-10"
+      ],
+      "issue": 49
+    },
+    {
+      "id": "AD-DE-14",
+      "title": "Dựng silver.dim_product không nhân dòng",
+      "role": "P2",
+      "gate": "G3",
+      "label": "de-batch",
+      "docs": [
+        "docs/de/03_silver_cdc_scd_dq.md §6"
+      ],
+      "start": [],
+      "finish": [
+        "AD-DE-11",
+        "AD-DE-13"
+      ],
+      "issue": 50
+    },
+    {
+      "id": "AD-DE-15",
+      "title": "Gộp batch với stream ở silver và dựng baskets",
+      "role": "P2",
+      "gate": "G3",
+      "label": "de-batch",
+      "docs": [
+        "docs/de/03_silver_cdc_scd_dq.md §7"
+      ],
+      "start": [],
+      "finish": [
+        "AD-DE-12",
+        "AD-ST-05"
+      ],
+      "issue": 51
+    },
+    {
+      "id": "AD-DE-16",
+      "title": "Viết collect_dq ghi kết quả expectations vào ops.dq_results",
+      "role": "P2",
+      "gate": "G3",
+      "label": "de-batch",
+      "docs": [
+        "docs/de/06_van_hanh_chay_lai.md §3"
+      ],
+      "start": [],
+      "finish": [
+        "AD-DE-08",
+        "AD-DE-12",
+        "AD-OPS-22",
+        "AD-OPS-20"
+      ],
+      "issue": 52
+    },
+    {
+      "id": "AD-DE-17",
+      "title": "Viết reconcile đối soát nguồn, bronze, silver vào ops.reconciliation",
+      "role": "P2",
+      "gate": "G3",
+      "label": "de-batch",
+      "docs": [
+        "docs/de/06_van_hanh_chay_lai.md §4",
+        "docs/de/03_silver_cdc_scd_dq.md §9"
+      ],
+      "start": [],
+      "finish": [
+        "AD-DE-14",
+        "AD-DE-15",
+        "AD-ST-07"
+      ],
+      "issue": 53
+    },
+    {
+      "id": "AD-DE-18",
+      "title": "Hoàn thiện job instacart-batch-medallion trong DAB",
+      "role": "P2",
+      "gate": "G3",
+      "label": "de-batch",
+      "docs": [
+        "docs/de/06_van_hanh_chay_lai.md §2, §8",
+        "docs/devops/06_de_den_dashboard.md §2.1",
+        "bundles/AGENTS.md"
+      ],
+      "start": [
+        "AD-DE-08"
+      ],
+      "finish": [
+        "AD-DE-15",
+        "AD-DE-16",
+        "AD-DE-17",
+        "AD-OPS-22",
+        "AD-OPS-20"
+      ],
+      "issue": 54
+    },
+    {
+      "id": "AD-DE-19",
+      "title": "Dựng ADF pl_ingest_off và pl_master điều phối hằng ngày",
+      "role": "P2",
+      "gate": "G3",
+      "label": "de-batch",
+      "docs": [
+        "docs/de/01_ingest_landing.md §5",
+        "docs/devops/06_de_den_dashboard.md §1, §3"
+      ],
+      "start": [
+        "AD-DE-07"
+      ],
+      "finish": [
+        "AD-DE-10",
+        "AD-DE-18",
+        "AD-OPS-25",
+        "AD-OPS-23"
+      ],
+      "issue": 55
+    },
+    {
+      "id": "AD-DE-20",
+      "title": "Viết SQL ds-prepare: snapshot, item_index, transactions, holdout_eval",
+      "role": "P2",
+      "gate": "G3",
+      "label": "de-batch",
+      "docs": [
+        "docs/de/08_du_lieu_cho_ds.md §2, §3, §4, §6"
+      ],
+      "start": [],
+      "finish": [
+        "AD-DE-15",
+        "AD-OPS-19",
+        "AD-OPS-20"
+      ],
+      "issue": 56
+    },
+    {
+      "id": "AD-DE-21",
+      "title": "Xuất file txt cho Hadoop, dựng job ds-prepare và chạy v1",
+      "role": "P2",
+      "gate": "G3",
+      "label": "de-batch",
+      "docs": [
+        "docs/de/08_du_lieu_cho_ds.md §5, §6, §7, §8"
+      ],
+      "start": [
+        "AD-DE-17",
+        "AD-DE-20"
+      ],
+      "finish": [
+        "AD-OPS-19",
+        "AD-OPS-20"
+      ],
+      "issue": 57
+    },
+    {
+      "id": "AD-DE-22",
+      "title": "Dựng gold.fact_order_lines với giá theo thời điểm",
+      "role": "P2",
+      "gate": "G4",
+      "label": "de-batch",
+      "docs": [
+        "docs/de/05_gold_serving.md §1, §2.1, §4"
+      ],
+      "start": [],
+      "finish": [
+        "AD-DE-11",
+        "AD-DE-14",
+        "AD-DE-15"
+      ],
+      "issue": 58
+    },
+    {
+      "id": "AD-DE-23",
+      "title": "Dựng gold tổng hợp, dim và bảng phân quyền bi_user_access",
+      "role": "P2",
+      "gate": "G4",
+      "label": "de-batch",
+      "docs": [
+        "docs/de/05_gold_serving.md §2.2, §2.3, §4, §8"
+      ],
+      "start": [],
+      "finish": [
+        "AD-DE-22"
+      ],
+      "issue": 59
+    },
+    {
+      "id": "AD-DE-24",
+      "title": "Dựng gold.product_pair_counts cho trang chi tiết sản phẩm",
+      "role": "P2",
+      "gate": "G4",
+      "label": "de-batch",
+      "docs": [
+        "docs/de/05_gold_serving.md §2.2"
+      ],
+      "start": [],
+      "finish": [
+        "AD-DE-15",
+        "AD-DE-23"
+      ],
+      "issue": 60
+    },
+    {
+      "id": "AD-DE-25",
+      "title": "Viết refresh_bi và ghi ops.pipeline_runs",
+      "role": "P2",
+      "gate": "G4",
+      "label": "de-batch",
+      "docs": [
+        "docs/de/07_power_bi.md §7",
+        "docs/de/06_van_hanh_chay_lai.md §2",
+        "docs/de/00_tong_quan_de.md §3.3"
+      ],
+      "start": [],
+      "finish": [
+        "AD-DE-18",
+        "AD-BI-09",
+        "AD-BI-01"
+      ],
+      "issue": 61
+    },
+    {
+      "id": "AD-DE-26",
+      "title": "Chạy benchmark CSV, Parquet, Delta, Delta OPTIMIZE",
+      "role": "P2",
+      "gate": "G4",
+      "label": "de-batch",
+      "docs": [
+        "docs/de/05_gold_serving.md §5, §5.1"
+      ],
+      "start": [],
+      "finish": [
+        "AD-DE-12"
+      ],
+      "issue": 62
+    },
+    {
+      "id": "AD-DE-27",
+      "title": "Viết runbook chạy lại và diễn tập 4 kịch bản lỗi",
+      "role": "P2",
+      "gate": "G4",
+      "label": "de-batch",
+      "docs": [
+        "docs/de/06_van_hanh_chay_lai.md §1, §5, §6, §7, §8"
+      ],
+      "start": [
+        "AD-DE-18",
+        "AD-DE-19"
+      ],
+      "finish": [
+        "AD-DE-14",
+        "AD-ST-07"
+      ],
+      "issue": 63
+    },
+    {
+      "id": "AD-ST-01",
+      "title": "Viết simulator dựng sự kiện đơn hàng từ tập train",
+      "role": "P3",
+      "gate": "G0",
+      "label": "de-stream",
+      "docs": [
+        "docs/de/04_streaming.md §2",
+        "docs/data/data_dictionary.md §4"
+      ],
+      "start": [],
+      "finish": [
+        "AD-DE-02"
+      ],
+      "issue": 64
+    },
+    {
+      "id": "AD-ST-02",
+      "title": "Gửi sự kiện thử vào Event Hubs bằng giao thức Kafka",
+      "role": "P3",
+      "gate": "G2",
+      "label": "de-stream",
+      "docs": [
+        "docs/de/04_streaming.md §2.2"
+      ],
+      "start": [
+        "AD-ST-01"
+      ],
+      "finish": [
+        "AD-OPS-24"
+      ],
+      "issue": 65
+    },
+    {
+      "id": "AD-ST-03",
+      "title": "Khai báo pipeline instacart_stream và job instacart-stream-15m trong DAB",
+      "role": "P3",
+      "gate": "G2",
+      "label": "de-stream",
+      "docs": [
+        "docs/de/04_streaming.md §3.1, §5",
+        "docs/de/06_van_hanh_chay_lai.md §3"
+      ],
+      "start": [],
+      "finish": [
+        "AD-DE-08",
+        "AD-OPS-21",
+        "AD-OPS-20",
+        "AD-OPS-22",
+        "AD-OPS-24"
+      ],
+      "issue": 66
+    },
+    {
+      "id": "AD-ST-04",
+      "title": "Viết bronze_events đọc Kafka vào bronze.order_events",
+      "role": "P3",
+      "gate": "G2",
+      "label": "de-stream",
+      "docs": [
+        "docs/de/04_streaming.md §3.2"
+      ],
+      "start": [],
+      "finish": [
+        "AD-ST-02",
+        "AD-ST-03"
+      ],
+      "issue": 67
+    },
+    {
+      "id": "AD-ST-05",
+      "title": "Dựng silver stream: parse, kiểm chất lượng, AUTO CDC theo order_id",
+      "role": "P3",
+      "gate": "G2",
+      "label": "de-stream",
+      "docs": [
+        "docs/de/04_streaming.md §4.1, §4.2, §8"
+      ],
+      "start": [],
+      "finish": [
+        "AD-DE-03",
+        "AD-ST-04"
+      ],
+      "issue": 68
+    },
+    {
+      "id": "AD-ST-06",
+      "title": "Dựng gold stream và bảng độ trễ ops.streaming_latency",
+      "role": "P3",
+      "gate": "G2",
+      "label": "de-stream",
+      "docs": [
+        "docs/de/04_streaming.md §4.3"
+      ],
+      "start": [],
+      "finish": [
+        "AD-ST-05"
+      ],
+      "issue": 69
+    },
+    {
+      "id": "AD-ST-07",
+      "title": "Phát đủ tập train, phát lại và đối soát phần stream",
+      "role": "P3",
+      "gate": "G3",
+      "label": "de-stream",
+      "docs": [
+        "docs/de/04_streaming.md §6, §7, §8",
+        "docs/de/06_van_hanh_chay_lai.md §6 (dòng 11, 12)"
+      ],
+      "start": [
+        "AD-ST-05"
+      ],
+      "finish": [
+        "AD-ST-06"
+      ],
+      "issue": 70
+    },
+    {
+      "id": "AD-ST-08",
+      "title": "Kiểm đổi eh_generation khi Event Hubs được tạo lại",
+      "role": "P3",
+      "gate": "G2",
+      "label": "de-stream",
+      "docs": [
+        "docs/de/04_streaming.md §3.2",
+        "docs/devops/06_de_den_dashboard.md §2.2"
+      ],
+      "start": [
+        "AD-ST-04"
+      ],
+      "finish": [
+        "AD-OPS-24",
+        "AD-OPS-05"
+      ],
+      "issue": 71
+    },
+    {
+      "id": "AD-ST-09",
+      "title": "Đo độ trễ Event Hubs khác region và cùng region",
+      "role": "P3",
+      "gate": "G4",
+      "label": "de-stream",
+      "docs": [
+        "docs/de/04_streaming.md §4.4, §5"
+      ],
+      "start": [
+        "AD-ST-06"
+      ],
+      "finish": [
+        "AD-OPS-24"
+      ],
+      "issue": 72
+    },
+    {
+      "id": "AD-ST-10",
+      "title": "Đẩy KPI stream lên push semantic model của Power BI",
+      "role": "P3",
+      "gate": "G4",
+      "label": "de-stream",
+      "docs": [
+        "docs/de/04_streaming.md §4.5",
+        "docs/de/07_power_bi.md §6"
+      ],
+      "start": [
+        "AD-ST-06"
+      ],
+      "finish": [
+        "AD-BI-08",
+        "AD-OPS-05"
+      ],
+      "issue": 73
+    },
+    {
+      "id": "AD-BI-01",
+      "title": "Spike Power BI: giấy phép Pro, workspace instacart-bi, connector, push model, APR, quyền API",
+      "role": "P4",
+      "gate": "G0",
+      "label": "bi",
+      "docs": [
+        "docs/devops/01_chuan_bi_va_spike.md §3.6",
+        "docs/de/07_power_bi.md"
+      ],
+      "start": [],
+      "finish": [
+        "AD-OPS-04"
+      ],
+      "issue": 74
+    },
+    {
+      "id": "AD-BI-02",
+      "title": "Kết nối Power BI với warehouse và tạo dự án PBIP",
+      "role": "P4",
+      "gate": "G4",
+      "label": "bi",
+      "docs": [
+        "docs/de/07_power_bi.md §1",
+        "docs/devops/06_de_den_dashboard.md §4, §5.1"
+      ],
+      "start": [],
+      "finish": [
+        "AD-DE-23",
+        "AD-OPS-22",
+        "AD-OPS-20",
+        "AD-BI-01"
+      ],
+      "issue": 75
+    },
+    {
+      "id": "AD-BI-03",
+      "title": "Dựng star schema và measure DAX",
+      "role": "P4",
+      "gate": "G4",
+      "label": "bi",
+      "docs": [
+        "docs/de/07_power_bi.md §2, §3"
+      ],
+      "start": [
+        "AD-BI-02"
+      ],
+      "finish": [
+        "AD-DE-24"
+      ],
+      "issue": 76
+    },
+    {
+      "id": "AD-BI-04",
+      "title": "Dựng trang 1 Tổng quan và trang 3 thời gian mua",
+      "role": "P4",
+      "gate": "G4",
+      "label": "bi",
+      "docs": [
+        "docs/de/07_power_bi.md §4"
+      ],
+      "start": [
+        "AD-BI-03"
+      ],
+      "finish": [],
+      "issue": 77
+    },
+    {
+      "id": "AD-BI-05",
+      "title": "Dựng trang 2 chi tiết sản phẩm, trang 4 danh mục và điều hướng",
+      "role": "P4",
+      "gate": "G4",
+      "label": "bi",
+      "docs": [
+        "docs/de/07_power_bi.md §4"
+      ],
+      "start": [
+        "AD-BI-03"
+      ],
+      "finish": [
+        "AD-BI-04"
+      ],
+      "issue": 78
+    },
+    {
+      "id": "AD-BI-06",
+      "title": "Cài RLS DeptManager và Executive từ bi_user_access",
+      "role": "P4",
+      "gate": "G4",
+      "label": "bi",
+      "docs": [
+        "docs/de/07_power_bi.md §5",
+        "docs/de/05_gold_serving.md §2.3"
+      ],
+      "start": [
+        "AD-BI-03"
+      ],
+      "finish": [
+        "AD-DE-23"
+      ],
+      "issue": 79
+    },
+    {
+      "id": "AD-BI-07",
+      "title": "Dựng trang 5 vận hành và real-time",
+      "role": "P4",
+      "gate": "G4",
+      "label": "bi",
+      "docs": [
+        "docs/de/07_power_bi.md §2, §4, §6b"
+      ],
+      "start": [
+        "AD-BI-03"
+      ],
+      "finish": [
+        "AD-DE-16",
+        "AD-DE-17",
+        "AD-ST-06",
+        "AD-ST-09"
+      ],
+      "issue": 80
+    },
+    {
+      "id": "AD-BI-08",
+      "title": "Tạo push semantic model và dashboard Instacart Live",
+      "role": "P4",
+      "gate": "G4",
+      "label": "bi",
+      "docs": [
+        "docs/de/07_power_bi.md §6a",
+        "docs/devops/06_de_den_dashboard.md §5.3"
+      ],
+      "start": [],
+      "finish": [
+        "AD-BI-04",
+        "AD-BI-01"
+      ],
+      "issue": 81
+    },
+    {
+      "id": "AD-BI-09",
+      "title": "Publish báo cáo, tạo App và lịch refresh",
+      "role": "P4",
+      "gate": "G4",
+      "label": "bi",
+      "docs": [
+        "docs/de/07_power_bi.md §7, §8",
+        "docs/devops/06_de_den_dashboard.md §5.1, §5.6"
+      ],
+      "start": [
+        "AD-BI-04",
+        "AD-BI-05",
+        "AD-BI-06"
+      ],
+      "finish": [
+        "AD-BI-07"
+      ],
+      "issue": 82
+    },
+    {
+      "id": "AD-BI-10",
+      "title": "Dựng mobile layout cho các trang và chụp ảnh trên điện thoại",
+      "role": "P4",
+      "gate": "G4",
+      "label": "bi",
+      "docs": [
+        "docs/de/07_power_bi.md §8",
+        "docs/devops/06_de_den_dashboard.md §5.5"
+      ],
+      "start": [
+        "AD-BI-05"
+      ],
+      "finish": [
+        "AD-BI-09"
+      ],
+      "issue": 83
+    },
+    {
+      "id": "AD-BI-11",
+      "title": "Mở rộng semantic model cho view DS (khung trang 6–7)",
+      "role": "P4",
+      "gate": "G5",
+      "label": "bi",
+      "docs": [
+        "docs/de/07_power_bi.md §2, §4",
+        "docs/ds/05_mlflow_serving_bao_cao.md §4, §5"
+      ],
+      "start": [
+        "AD-BI-03"
+      ],
+      "finish": [
+        "AD-DS-22"
+      ],
+      "issue": 84
+    },
+    {
+      "id": "AD-BI-12",
+      "title": "Nghiệm thu checklist G4 và diễn tập demo 95/5",
+      "role": "P4",
+      "gate": "G4",
+      "label": "bi",
+      "docs": [
+        "docs/de/07_power_bi.md §9",
+        "docs/devops/06_de_den_dashboard.md §6.4"
+      ],
+      "start": [
+        "AD-BI-07",
+        "AD-BI-08",
+        "AD-BI-09",
+        "AD-BI-10",
+        "AD-ST-10"
+      ],
+      "finish": [
+        "AD-DE-26"
+      ],
+      "issue": 85
+    },
+    {
+      "id": "AD-DS-01",
+      "title": "Cài apriori_gen, DApriori và DATID trên RDD kèm test vét cạn",
+      "role": "P4",
+      "gate": "G0",
+      "label": "ds",
+      "docs": [
+        "docs/ds/00_tong_quan_ds.md §2, §8",
+        "docs/ds/02_thuat_toan_spark.md §1–3, §6.1"
+      ],
+      "start": [],
+      "finish": [],
+      "issue": 86
+    },
+    {
+      "id": "AD-DS-02",
+      "title": "Cài sinh luật gen_rules và bọc FP-Growth MLlib, test so khớp với MLlib",
+      "role": "P4",
+      "gate": "G0",
+      "label": "ds",
+      "docs": [
+        "docs/ds/02_thuat_toan_spark.md §4–6"
+      ],
+      "start": [],
+      "finish": [
+        "AD-DS-01"
+      ],
+      "issue": 87
+    },
+    {
+      "id": "AD-DS-03",
+      "title": "Viết hàm đọc dữ liệu thực nghiệm data.py và bộ đo measure.py có test local",
+      "role": "P4",
+      "gate": "G0",
+      "label": "ds",
+      "docs": [
+        "docs/ds/01_du_lieu_thuc_nghiem.md §1–2",
+        "docs/ds/04_thuc_nghiem_danh_gia.md §4"
+      ],
+      "start": [],
+      "finish": [],
+      "issue": 88
+    },
+    {
+      "id": "AD-DS-04",
+      "title": "Dựng cụm Hadoop HDFS + YARN + Spark on YARN bằng Docker ở local",
+      "role": "P3",
+      "gate": "G0",
+      "label": "ds",
+      "docs": [
+        "docs/ds/03_hadoop_mapreduce_local.md §1–2"
+      ],
+      "start": [],
+      "finish": [],
+      "issue": 89
+    },
+    {
+      "id": "AD-DS-05",
+      "title": "Viết chương trình MapReduce Java ItemCount và PairCount kèm test MiniMRYarnCluster",
+      "role": "P3",
+      "gate": "G0",
+      "label": "ds",
+      "docs": [
+        "docs/ds/03_hadoop_mapreduce_local.md §4.1–4.3"
+      ],
+      "start": [],
+      "finish": [],
+      "issue": 90
+    },
+    {
+      "id": "AD-DS-06",
+      "title": "Viết đếm cặp Spark on YARN bản DataFrame và RDD, đối chiếu với MapReduce",
+      "role": "P3",
+      "gate": "G0",
+      "label": "ds",
+      "docs": [
+        "docs/ds/03_hadoop_mapreduce_local.md §5"
+      ],
+      "start": [
+        "AD-DS-04"
+      ],
+      "finish": [
+        "AD-DS-05"
+      ],
+      "issue": 91
+    },
+    {
+      "id": "AD-DS-07",
+      "title": "Viết script tải dữ liệu export về máy và nạp lên HDFS local",
+      "role": "P3",
+      "gate": "G5",
+      "label": "ds",
+      "docs": [
+        "docs/ds/03_hadoop_mapreduce_local.md §3",
+        "docs/de/08_du_lieu_cho_ds.md §5"
+      ],
+      "start": [
+        "AD-DS-04"
+      ],
+      "finish": [
+        "AD-DE-21"
+      ],
+      "issue": 92
+    },
+    {
+      "id": "AD-DS-08",
+      "title": "Viết bench.py chạy lưới E6 và script upload kết quả lên ds/inbox",
+      "role": "P3",
+      "gate": "G5",
+      "label": "ds",
+      "docs": [
+        "docs/ds/03_hadoop_mapreduce_local.md §6–7, §9",
+        "docs/ds/00_tong_quan_ds.md §6.2"
+      ],
+      "start": [
+        "AD-DS-06"
+      ],
+      "finish": [],
+      "issue": 93
+    },
+    {
+      "id": "AD-DS-09",
+      "title": "Định nghĩa lưới experiments.yml và viết plan_grid.py bung tổ hợp theo run_key",
+      "role": "P4",
+      "gate": "G5",
+      "label": "ds",
+      "docs": [
+        "docs/ds/04_thuc_nghiem_danh_gia.md §2–3, §5.1, §5.4, §6",
+        "docs/ds/00_tong_quan_ds.md §6.2",
+        "docs/ds/01_du_lieu_thuc_nghiem.md §4"
+      ],
+      "start": [],
+      "finish": [],
+      "issue": 94
+    },
+    {
+      "id": "AD-DS-10",
+      "title": "Viết run_experiment.py chạy một tổ hợp, ghi ml.experiment_runs và MLflow",
+      "role": "P4",
+      "gate": "G5",
+      "label": "ds",
+      "docs": [
+        "docs/ds/04_thuc_nghiem_danh_gia.md §4, §5.3–5.4, §6",
+        "docs/ds/05_mlflow_serving_bao_cao.md §1",
+        "docs/ds/02_thuat_toan_spark.md §6.2"
+      ],
+      "start": [
+        "AD-DS-01",
+        "AD-DS-02",
+        "AD-DS-03",
+        "AD-DS-09"
+      ],
+      "finish": [],
+      "issue": 95
+    },
+    {
+      "id": "AD-DS-11",
+      "title": "Khám phá dữ liệu ds_data v1 và chốt lưới MinSupport theo cấp item",
+      "role": "P4",
+      "gate": "G3",
+      "label": "ds",
+      "docs": [
+        "docs/ds/01_du_lieu_thuc_nghiem.md §1, §3–5",
+        "docs/de/08_du_lieu_cho_ds.md §7"
+      ],
+      "start": [
+        "AD-DE-21"
+      ],
+      "finish": [
+        "AD-DS-09"
+      ],
+      "issue": 96
+    },
+    {
+      "id": "AD-DS-12",
+      "title": "Khai báo job ds-benchmark trong DAB và viết ingest_local.sql",
+      "role": "P4",
+      "gate": "G5",
+      "label": "ds",
+      "docs": [
+        "docs/ds/04_thuc_nghiem_danh_gia.md §5.1–5.2",
+        "docs/ds/03_hadoop_mapreduce_local.md §7",
+        "docs/devops/05_databricks_platform.md (phần DS trong bundle)"
+      ],
+      "start": [],
+      "finish": [
+        "AD-DS-08",
+        "AD-DS-10",
+        "AD-OPS-30",
+        "AD-OPS-22"
+      ],
+      "issue": 97
+    },
+    {
+      "id": "AD-DS-13",
+      "title": "Chạy spike DS-1 và thực nghiệm E1 kiểm đúng đắn trên dữ liệu thật",
+      "role": "P4",
+      "gate": "G5",
+      "label": "ds",
+      "docs": [
+        "docs/ds/04_thuc_nghiem_danh_gia.md §2 (mốc DS-1)",
+        "docs/ds/02_thuat_toan_spark.md §6.2, §7",
+        "docs/ds/00_tong_quan_ds.md §5"
+      ],
+      "start": [
+        "AD-DS-11",
+        "AD-DS-12"
+      ],
+      "finish": [],
+      "issue": 98
+    },
+    {
+      "id": "AD-DS-14",
+      "title": "Chạy toàn bộ lưới E2–E5 trên Databricks",
+      "role": "P4",
+      "gate": "G5",
+      "label": "ds",
+      "docs": [
+        "docs/ds/04_thuc_nghiem_danh_gia.md §1–2, §5–6"
+      ],
+      "start": [
+        "AD-DS-13"
+      ],
+      "finish": [],
+      "issue": 99
+    },
+    {
+      "id": "AD-DS-15",
+      "title": "Chạy lưới E6 MapReduce và Spark on YARN ở local, nạp kết quả lên ml.experiment_runs",
+      "role": "P3",
+      "gate": "G5",
+      "label": "ds",
+      "docs": [
+        "docs/ds/03_hadoop_mapreduce_local.md §6–7, §9",
+        "docs/ds/04_thuc_nghiem_danh_gia.md §2"
+      ],
+      "start": [
+        "AD-DS-07",
+        "AD-DS-08"
+      ],
+      "finish": [
+        "AD-DS-12"
+      ],
+      "issue": 100
+    },
+    {
+      "id": "AD-DS-16",
+      "title": "Cài AprioriMR lặp k ≤ 3 trên MapReduce và DApriori trên YARN (mở rộng)",
+      "role": "P3",
+      "gate": "G5",
+      "label": "ds",
+      "docs": [
+        "docs/ds/03_hadoop_mapreduce_local.md §4.4"
+      ],
+      "start": [
+        "AD-DS-15"
+      ],
+      "finish": [],
+      "issue": 101
+    },
+    {
+      "id": "AD-DS-17",
+      "title": "Dựng demo pipeline HDFS + Spark dựng giỏ prior từ CSV gốc (tùy chọn)",
+      "role": "P4",
+      "gate": "G5",
+      "label": "ds",
+      "docs": [
+        "docs/ds/03_hadoop_mapreduce_local.md §8"
+      ],
+      "start": [
+        "AD-DS-04"
+      ],
+      "finish": [
+        "AD-DE-17"
+      ],
+      "issue": 102
+    },
+    {
+      "id": "AD-DS-18",
+      "title": "Viết đánh giá luật trên holdout evaluate_holdout.py và baseline phổ biến",
+      "role": "P4",
+      "gate": "G5",
+      "label": "ds",
+      "docs": [
+        "docs/ds/04_thuc_nghiem_danh_gia.md §7"
+      ],
+      "start": [],
+      "finish": [],
+      "issue": 103
+    },
+    {
+      "id": "AD-DS-19",
+      "title": "Viết model pyfunc BasketRules gợi ý món từ giỏ hàng kèm test",
+      "role": "P4",
+      "gate": "G5",
+      "label": "ds",
+      "docs": [
+        "docs/ds/05_mlflow_serving_bao_cao.md §2.2"
+      ],
+      "start": [],
+      "finish": [
+        "AD-DS-18"
+      ],
+      "issue": 104
+    },
+    {
+      "id": "AD-DS-20",
+      "title": "Chạy thực nghiệm E7 và đánh giá luật trên holdout val/test",
+      "role": "P4",
+      "gate": "G5",
+      "label": "ds",
+      "docs": [
+        "docs/ds/04_thuc_nghiem_danh_gia.md §2–3, §7",
+        "docs/ds/05_mlflow_serving_bao_cao.md §1"
+      ],
+      "start": [
+        "AD-DS-13",
+        "AD-DS-18"
+      ],
+      "finish": [],
+      "issue": 105
+    },
+    {
+      "id": "AD-DS-21",
+      "title": "Chọn champion, đăng ký model basket_rules vào Unity Catalog và khai báo job ds-champion",
+      "role": "P4",
+      "gate": "G5",
+      "label": "ds",
+      "docs": [
+        "docs/ds/05_mlflow_serving_bao_cao.md §2, §7",
+        "docs/devops/03_terraform_azure.md (ds/serving/)"
+      ],
+      "start": [
+        "AD-DS-19",
+        "AD-DS-20"
+      ],
+      "finish": [],
+      "issue": 106
+    },
+    {
+      "id": "AD-DS-22",
+      "title": "Viết view gold cho DS: association_rules, recommendations, experiment_metrics, holdout_metrics",
+      "role": "P4",
+      "gate": "G5",
+      "label": "ds",
+      "docs": [
+        "docs/ds/05_mlflow_serving_bao_cao.md §4",
+        "docs/ds/00_tong_quan_ds.md §6.1",
+        "docs/ds/04_thuc_nghiem_danh_gia.md §8"
+      ],
+      "start": [],
+      "finish": [
+        "AD-DS-14",
+        "AD-DS-15",
+        "AD-DS-21",
+        "AD-OPS-20"
+      ],
+      "issue": 107
+    },
+    {
+      "id": "AD-DS-23",
+      "title": "Khai báo Model Serving endpoint instacart-basket-rules trong DAB và kiểm API",
+      "role": "P4",
+      "gate": "G5",
+      "label": "ds",
+      "docs": [
+        "docs/ds/05_mlflow_serving_bao_cao.md §3.1",
+        "docs/devops/05_databricks_platform.md (serving_ds.yml)"
+      ],
+      "start": [
+        "AD-DS-21",
+        "AD-OPS-18"
+      ],
+      "finish": [],
+      "issue": 108
+    },
+    {
+      "id": "AD-DS-24",
+      "title": "Viết Azure Function recommend gọi endpoint, có phương án B tự tra luật",
+      "role": "P4",
+      "gate": "G5",
+      "label": "ds",
+      "docs": [
+        "docs/ds/05_mlflow_serving_bao_cao.md §3.2–3.3",
+        "docs/devops/04_github_actions_cicd.md §3.8"
+      ],
+      "start": [],
+      "finish": [
+        "AD-DS-21",
+        "AD-DS-23",
+        "AD-OPS-31"
+      ],
+      "issue": 109
+    },
+    {
+      "id": "AD-DS-25",
+      "title": "Làm Power BI trang 6 luật kết hợp và trang 7 thực nghiệm thuật toán",
+      "role": "P4",
+      "gate": "G5",
+      "label": "ds",
+      "docs": [
+        "docs/ds/05_mlflow_serving_bao_cao.md §5",
+        "docs/de/07_power_bi.md §4",
+        "docs/ds/04_thuc_nghiem_danh_gia.md §8"
+      ],
+      "start": [
+        "AD-DS-22",
+        "AD-BI-11",
+        "AD-BI-09"
+      ],
+      "finish": [],
+      "issue": 110
+    },
+    {
+      "id": "AD-DS-26",
+      "title": "Phân tích kết quả thực nghiệm và viết phần DS của báo cáo, đối chiếu bài báo",
+      "role": "P4",
+      "gate": "G5",
+      "label": "ds",
+      "docs": [
+        "docs/ds/04_thuc_nghiem_danh_gia.md §8",
+        "docs/ds/00_tong_quan_ds.md §2",
+        "docs/ds/02_thuat_toan_spark.md §2, §5, §7"
+      ],
+      "start": [
+        "AD-DS-14",
+        "AD-DS-15",
+        "AD-DS-20"
+      ],
+      "finish": [
+        "AD-DS-21"
+      ],
+      "issue": 111
+    },
+    {
+      "id": "AD-DS-27",
+      "title": "Đối chiếu checklist G5 và chốt bằng chứng phần DS",
+      "role": "P4",
+      "gate": "G5",
+      "label": "ds",
+      "docs": [
+        "docs/ds/05_mlflow_serving_bao_cao.md §6",
+        "docs/00_tong_quan_du_an.md (cổng G0–G5)"
+      ],
+      "start": [
+        "AD-DS-25",
+        "AD-DS-26"
+      ],
+      "finish": [
+        "AD-DS-23",
+        "AD-DS-24"
+      ],
+      "issue": 112
+    },
+    {
+      "id": "AD-RP-01",
+      "title": "Lập khung báo cáo cuối kỳ và bảng truy vết rubric → bằng chứng",
+      "role": "P3",
+      "gate": "G0",
+      "label": "report",
+      "docs": [
+        "docs/00_tong_quan_du_an.md §1.4, §6",
+        "docs/devops/00_tong_quan.md §1"
+      ],
+      "start": [],
+      "finish": [],
+      "issue": 113
+    },
+    {
+      "id": "AD-RP-02",
+      "title": "Viết chương mở đầu, dữ liệu và kiến trúc của báo cáo",
+      "role": "P3",
+      "gate": "G1",
+      "label": "report",
+      "docs": [
+        "docs/00_tong_quan_du_an.md",
+        "docs/architecture/*.png",
+        "docs/data/data_dictionary.md"
+      ],
+      "start": [
+        "AD-RP-01"
+      ],
+      "finish": [
+        "AD-OPS-07"
+      ],
+      "issue": 114
+    },
+    {
+      "id": "AD-RP-03",
+      "title": "Viết chương ETL batch, streaming và bằng chứng rubric mục 3",
+      "role": "P2",
+      "gate": "G4",
+      "label": "report",
+      "docs": [
+        "docs/de/00_tong_quan_de.md",
+        "docs/devops/06_de_den_dashboard.md §6.4"
+      ],
+      "start": [
+        "AD-DE-26",
+        "AD-ST-09"
+      ],
+      "finish": [
+        "AD-DE-27",
+        "AD-OPS-33"
+      ],
+      "issue": 115
+    },
+    {
+      "id": "AD-RP-04",
+      "title": "Viết chương trực quan dữ liệu (rubric mục 4) với ảnh dashboard",
+      "role": "P4",
+      "gate": "G4",
+      "label": "report",
+      "docs": [
+        "docs/de/07_power_bi.md",
+        "docs/devops/06_de_den_dashboard.md §5"
+      ],
+      "start": [
+        "AD-BI-12"
+      ],
+      "finish": [],
+      "issue": 116
+    },
+    {
+      "id": "AD-RP-05",
+      "title": "Viết chương quản lý dự án trên cloud (rubric mục 5.4)",
+      "role": "P1",
+      "gate": "G4",
+      "label": "report",
+      "docs": [
+        "docs/devops/04_github_actions_cicd.md",
+        "docs/devops/02_bootstrap_tfstate.md"
+      ],
+      "start": [
+        "AD-OPS-33"
+      ],
+      "finish": [],
+      "issue": 117
+    },
+    {
+      "id": "AD-RP-06",
+      "title": "Ghép báo cáo hoàn chỉnh, thống nhất hình bảng và trích dẫn",
+      "role": "P3",
+      "gate": "G5",
+      "label": "report",
+      "docs": [
+        "docs/report/00_khung_bao_cao.md"
+      ],
+      "start": [
+        "AD-RP-02",
+        "AD-RP-03",
+        "AD-RP-04",
+        "AD-RP-05",
+        "AD-DS-26"
+      ],
+      "finish": [
+        "AD-DS-27"
+      ],
+      "issue": 118
+    },
+    {
+      "id": "AD-RP-07",
+      "title": "Soạn slide thuyết trình",
+      "role": "P2",
+      "gate": "G5",
+      "label": "report",
+      "docs": [
+        "docs/report/00_khung_bao_cao.md"
+      ],
+      "start": [
+        "AD-RP-01"
+      ],
+      "finish": [
+        "AD-RP-06"
+      ],
+      "issue": 119
+    },
+    {
+      "id": "AD-RP-08",
+      "title": "Viết kịch bản demo đầu cuối và quay video dự phòng",
+      "role": "P1",
+      "gate": "G5",
+      "label": "report",
+      "docs": [
+        "docs/devops/06_de_den_dashboard.md §6.4",
+        "docs/ds/05_mlflow_serving_bao_cao.md"
+      ],
+      "start": [
+        "AD-BI-12",
+        "AD-DS-27"
+      ],
+      "finish": [],
+      "issue": 120
+    },
+    {
+      "id": "AD-RP-09",
+      "title": "Diễn tập thuyết trình và demo toàn nhóm, sửa lỗi phát hiện",
+      "role": "P2",
+      "gate": "G5",
+      "label": "report",
+      "docs": [
+        "docs/report/demo_runbook.md"
+      ],
+      "start": [
+        "AD-RP-07",
+        "AD-RP-08"
+      ],
+      "finish": [],
+      "issue": 121
+    },
+    {
+      "id": "AD-RP-10",
+      "title": "Đóng gói nộp bài: release, hướng dẫn tái lập, kiểm link",
+      "role": "P1",
+      "gate": "G5",
+      "label": "report",
+      "docs": [
+        "README.md",
+        "CONTRIBUTING.md"
+      ],
+      "start": [
+        "AD-RP-06",
+        "AD-RP-09"
+      ],
+      "finish": [],
+      "issue": 122
+    }
+  ]
+}
