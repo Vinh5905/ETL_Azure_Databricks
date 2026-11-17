@@ -34,6 +34,10 @@ jobs:
         working-directory: infra/stacks/${{ matrix.stack }}
     steps:
       - uses: actions/checkout@v4
+      # Repo public: log ai cũng xem được. Che subscription, tenant, object ID, IP trước mọi bước khác.
+      - name: Che giá trị riêng trong log
+        working-directory: .
+        run: scripts/ci/mask_private_values.sh
       - uses: azure/login@v2
         with:
           client-id: ${{ vars.AZURE_CLIENT_ID }}
@@ -51,22 +55,30 @@ jobs:
         run: |
           set +e
           terraform plan -input=false -no-color -lock=false -detailed-exitcode \
-            -var-file=../../envs/${{ matrix.stack }}.tfvars > plan.txt 2>&1
+            -var-file=../../envs/${{ matrix.stack }}.tfvars -out=tfplan > plan.txt 2>&1
           code=$?
           set -e
+          cat plan.txt
           echo "exitcode=$code" >> "$GITHUB_OUTPUT"
-          if [ $code -eq 1 ]; then cat plan.txt; exit 1; fi
+          if [ $code -eq 1 ]; then exit 1; fi
+      # Issue công khai chỉ có tóm tắt (địa chỉ + hành động), không có thuộc tính tài nguyên.
       - if: steps.plan.outputs.exitcode == '2'
         env:
           GH_TOKEN: ${{ github.token }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         run: |
+          "$GITHUB_WORKSPACE/scripts/ci/plan_summary.sh" plan.txt tfplan
           {
             echo "Plan hằng tuần của \`${{ matrix.stack }}\` phát hiện khác biệt giữa code và Azure."
             echo "Có thể ai đó đã sửa tay trên Portal/Studio. Đưa thay đổi vào code qua PR, hoặc apply lại."
             echo
+            echo "**$(cat totals.txt)**"
+            echo
             echo '```'
-            tail -c 60000 plan.txt
+            awk -F '\t' '{ printf "%-14s %s\n", $1, $2 }' summary.txt | head -c 60000
             echo '```'
+            echo
+            echo "Plan đầy đủ (đã che ID) nằm trong [log của job]($RUN_URL)."
           } > body.md
           gh label create drift --color B60205 --description "Hạ tầng lệch khỏi Terraform" 2>/dev/null || true
           gh issue create --title "Drift: ${{ matrix.stack }} ($(date -u +%F))" --label drift --body-file body.md

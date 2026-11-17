@@ -167,6 +167,7 @@ jobs:
         stack: ${{ fromJson(needs.detect.outputs.stacks) }}
     steps:
       - uses: actions/checkout@v4
+      - run: scripts/ci/mask_private_values.sh   # che ID, IP trong log (repo public)
       - uses: azure/login@v2
         with:
           client-id: ${{ vars.AZURE_CLIENT_ID }}
@@ -176,8 +177,17 @@ jobs:
       - run: terraform init -input=false -backend-config=../../backend.hcl
         working-directory: infra/stacks/${{ matrix.stack }}
       - run: terraform plan -input=false -no-color -lock-timeout=5m -var-file=../../envs/${{ matrix.stack }}.tfvars -out=tfplan
-      # Bước cuối: đăng plan lên PR (vd. actions/github-script, cắt bớt nếu > 60k ký tự)
+      # Tóm tắt bằng scripts/ci/plan_summary.sh rồi comment lên PR bằng actions/github-script
 ```
+
+**Repo public, nên comment chỉ có tóm tắt, không có plan đầy đủ.** Plan đầy đủ chứa subscription ID (trong mọi resource ID), object ID của thành viên (`principal_id`) và IP. Ai không đăng nhập cũng đọc được comment, log và issue của repo public.
+
+| Chỗ | Nội dung |
+|---|---|
+| Comment trên PR | Dòng `Plan: X to add, Y to change, Z to destroy` (hoặc `No changes.`); danh sách `hành động  địa chỉ tài nguyên`, gồm cả tài nguyên bị lệch ngoài Terraform (`drift`); cảnh báo ⚠️ nếu có tài nguyên bị xóa hoặc tạo lại. Plan lỗi thì chỉ có các dòng `Error: …`. GUID và IPv4 còn sót bị thay bằng `<guid>`, `<ip>`. |
+| Log của job | Plan đầy đủ. Bước `mask_private_values.sh` chạy đầu tiên nên subscription, tenant, client ID, object ID và IP hiện thành `***`. |
+
+Người review cần xem thuộc tính cụ thể (ví dụ role nào, scope nào) thì mở log của job: link nằm cuối comment. Không đính kèm plan làm artifact, vì artifact của repo public ai cũng tải được.
 
 Biến không bí mật (Object ID của thành viên, IP...) được đọc từ GitHub Variables rồi chuyển thành `TF_VAR_*`, vì CI không có file `*.auto.tfvars`.
 
@@ -255,6 +265,8 @@ Khi chạy theo lịch thì không có reviewer bấm duyệt. Vì vậy dùng e
 ### 3.6 `drift-check.yml`: phát hiện sửa tay
 
 Chạy hằng tuần vào thứ Hai với `terraform plan -detailed-exitcode` cho các stack `10/30/40`. Nếu có thay đổi thì tự mở issue gắn label `drift`. Mục đích là giữ nguyên tắc "không sửa tay trên Portal".
+
+Issue cũng công khai, nên thân issue chỉ có tóm tắt giống comment của `tf-plan` (§3.2) và link tới log của job. `tf-apply` (`_tf-stack.yml`) cũng chạy `mask_private_values.sh` đầu job để log apply không lộ ID.
 
 ### 3.7 `pbi-deploy.yml` (tùy chọn)
 

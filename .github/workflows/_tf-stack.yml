@@ -35,6 +35,10 @@ jobs:
         working-directory: infra/stacks/${{ inputs.stack }}
     steps:
       - uses: actions/checkout@v4
+      # Repo public: log ai cũng xem được. Che subscription, tenant, object ID, IP trước mọi bước khác.
+      - name: Che giá trị riêng trong log
+        working-directory: .
+        run: scripts/ci/mask_private_values.sh
       - uses: azure/login@v2
         with:
           client-id: ${{ vars.AZURE_CLIENT_ID }}
