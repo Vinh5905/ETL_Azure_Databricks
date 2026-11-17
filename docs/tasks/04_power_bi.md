@@ -27,7 +27,7 @@
 - Tài liệu: `docs/devops/01_chuan_bi_va_spike.md §3.6`, `docs/de/07_power_bi.md`
 - **Bắt đầu sau:** Không có.
 - **Hoàn tất còn cần:** [AD-OPS-04](01_devops.md#ad-ops-04) [#6](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/6)
-- **Mở khóa:** [AD-OPS-07](01_devops.md#ad-ops-07) (hoàn tất), [AD-DE-25](02_de_batch.md#ad-de-25) (hoàn tất), [AD-BI-02](04_power_bi.md#ad-bi-02) (hoàn tất), [AD-BI-08](04_power_bi.md#ad-bi-08) (hoàn tất)
+- **Mở khóa:** [AD-OPS-07b](01_devops.md#ad-ops-07b) (bắt đầu), [AD-DE-25](02_de_batch.md#ad-de-25) (hoàn tất), [AD-BI-02](04_power_bi.md#ad-bi-02) (hoàn tất), [AD-BI-08](04_power_bi.md#ad-bi-08) (hoàn tất)
 
 Phép thử Power BI thuộc cổng G0. Kết quả quyết định lớp serving cho Power BI, cách làm tile real-time và có tự động publish/refresh bằng API được không.
 
@@ -48,7 +48,7 @@ Phép thử Power BI thuộc cổng G0. Kết quả quyết định lớp servin
 **Xong khi**
 
 - [ ] Đủ 6 phép thử ở devops/01 §3.6 có kết quả Đạt/Không đạt kèm bằng chứng
-- [ ] Đã chốt lớp serving cho Power BI và cách làm tile real-time để ghi vào quyết định G0 (AD-OPS-07)
+- [ ] Đã chốt lớp serving cho Power BI và cách làm tile real-time để ghi vào quyết định G0 (AD-OPS-07b)
 
 ### AD-BI-02
 

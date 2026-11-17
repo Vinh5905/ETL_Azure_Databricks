@@ -10,7 +10,8 @@
 | [AD-OPS-04](#ad-ops-04) | Spike Databricks nền: workspace, Unity Catalog, serverless warehouse, cluster single-node | P1 | G0 | Bắt đầu: AD-OPS-03 | [#6](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/6) |
 | [AD-OPS-05](#ad-ops-05) | Spike Databricks nâng cao: Lakeflow single-node, Kafka, policy local[n], for_each_task, Model Serving | P1 | G0 | Bắt đầu: AD-OPS-04; Hoàn tất: AD-OPS-06 | [#7](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/7) |
 | [AD-OPS-06](#ad-ops-06) | Spike Azure SQL free offer, CDC, Event Hubs Kafka, ADF và Azure Functions | P1 | G0 | Bắt đầu: AD-OPS-03 | [#8](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/8) |
-| [AD-OPS-07](#ad-ops-07) | Chốt quyết định G0, dọn tài nguyên spike và mở cổng G0 | P1 | G0 | Bắt đầu: AD-OPS-05, AD-OPS-06; Hoàn tất: AD-BI-01 | [#9](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/9) |
+| [AD-OPS-07](#ad-ops-07) | Chốt quyết định G0, dọn tài nguyên spike và mở cổng G0 | P1 | G0 | Bắt đầu: AD-OPS-05, AD-OPS-06 | [#9](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/9) |
+| [AD-OPS-07b](#ad-ops-07b) | Chốt lớp serving Power BI, xóa tài nguyên spike và đóng cổng G0 | P1 | G0 | Bắt đầu: AD-BI-01 | [#147](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/147) |
 | [AD-OPS-08](#ad-ops-08) | Apply bootstrap, chuyển state lên blob và cấu hình OIDC cho GitHub Actions | P1 | G1 | Bắt đầu: AD-OPS-07 | [#10](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/10) |
 | [AD-OPS-09](#ad-ops-09) | Dựng ADLS Gen2 với 7 container và lifecycle landing sang cool (10-core bước 3.2) | P1 | G1 | Bắt đầu: AD-OPS-08 | [#11](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/11) |
 | [AD-OPS-10](#ad-ops-10) | Dựng Key Vault, Access Connector và danh tính id-func-recommend (10-core bước 3.3–3.4) | P1 | G1 | Bắt đầu: AD-OPS-09 | [#12](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/12) |
@@ -248,30 +249,59 @@ Nguồn SQL CDC, Kafka endpoint ở Sub B, ADF gọi Databricks Job và Function
 - Issue: [#9](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/9)
 - Tài liệu: `docs/devops/01_chuan_bi_va_spike.md §4`, `docs/devops/spike_results.md §3`, `docs/devops/00_tong_quan.md §3`
 - **Bắt đầu sau:** [AD-OPS-05](01_devops.md#ad-ops-05) [#7](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/7), [AD-OPS-06](01_devops.md#ad-ops-06) [#8](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/8)
-- **Hoàn tất còn cần:** [AD-BI-01](04_power_bi.md#ad-bi-01) [#74](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/74)
+- **Hoàn tất còn cần:** Không có.
 - **Mở khóa:** [AD-OPS-08](01_devops.md#ad-ops-08) (bắt đầu), [AD-RP-02](06_bao_cao_demo.md#ad-rp-02) (hoàn tất)
 
-Cổng G0 mở khóa DE viết code local và DS đọc thuật toán. Terraform phải dựng lại từ đầu nên tài nguyên tạo tay khi spike phải xóa.
+Cổng G0 mở khóa DE viết code local và DS đọc thuật toán. Phần phải chờ người khác đã tách: dòng serving Power BI và việc xóa `rg-spike` sang [AD-OPS-07b](#ad-ops-07b) (chờ AD-BI-01), region Sub B sang [#131](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/131) (G2).
 
 **Việc cần làm**
 
-1. Điền bảng Quyết định G0 (region Sub A/B/C, auth CI, UC, serving Power BI, compute, pipeline DE, nguồn SQL, nơi chạy DS, API model)
+1. Điền bảng Quyết định G0 (region Sub A/C, auth CI, UC, compute, pipeline DE, nguồn SQL, nơi chạy DS, API model); region Sub B chờ #131, serving Power BI chờ AD-OPS-07b
 2. Cập nhật infra/envs/*.tfvars với region đã chốt (không có ID)
 3. Ghi lựa chọn sandbox cùng hay khác region với Sub A
-4. P1 tự xóa rg-spike và workspace thử trên Portal (agent không chạy lệnh xóa)
-5. Đánh dấu ô 'Đã xóa rg-spike' và đóng milestone G0
+4. Sửa tài liệu lệch với kết quả spike (máy cluster, policy, SQL auth, trial, ADF, nhóm UC)
 
 **Đầu ra**
 
-- docs/devops/spike_results.md mục 2 và 3 đủ, ô xóa rg-spike được đánh dấu
-- infra/envs/10-core.tfvars, 20-stream.tfvars, 90-sandbox-p4.tfvars có region đã chốt
+- docs/devops/spike_results.md mục 3 đủ, trừ hai dòng đã chuyển sang #131 và AD-OPS-07b
+- infra/envs/10-core.tfvars, 90-sandbox-p4.tfvars có region đã chốt
+
+**Xong khi**
+
+- [ ] Bảng Quyết định G0 chỉ còn ô region Sub B và serving Power BI, mỗi ô ghi rõ đang chờ issue nào
+- [ ] PR cập nhật spike_results và envs đã merge
+
+### AD-OPS-07b
+
+**Chốt lớp serving Power BI, xóa tài nguyên spike và đóng cổng G0**
+
+- Vai dự kiến: **P1 · DevOps**
+- Cổng: **G0**
+- Issue: [#147](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/147)
+- Tài liệu: `docs/devops/spike_results.md §3`, `docs/devops/01_chuan_bi_va_spike.md §4`
+- **Bắt đầu sau:** [AD-BI-01](04_power_bi.md#ad-bi-01) [#74](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/74)
+- **Hoàn tất còn cần:** Không có.
+- **Mở khóa:** Không có.
+
+Tách từ AD-OPS-07 để AD-OPS-08 không phải chờ P3. `dbw-spike` được giữ cho P3 thử Power BI, nên chỉ xóa được sau AD-BI-01.
+
+**Việc cần làm**
+
+1. Điền dòng "Lớp serving Power BI" trong bảng G0 theo kết quả AD-BI-01
+2. P1 tự xóa rg-spike (dbw-spike, ac-spike, id-spike) trên Portal hoặc az CLI (agent không chạy lệnh xóa)
+3. Xóa account group spike-acct-grp
+4. Đánh dấu ô 'Đã xóa rg-spike' và đóng milestone G0
+
+**Đầu ra**
+
+- docs/devops/spike_results.md có dòng serving Power BI, ô xóa rg-spike được đánh dấu
 - Milestone G0 đóng
 
 **Xong khi**
 
-- [ ] Bảng Quyết định G0 không còn ô trống
 - [ ] `az group list --query "[?name=='rg-spike']"` trả về rỗng
-- [ ] PR cập nhật spike_results và envs đã merge
+- [ ] spike-acct-grp không còn trên account
+- [ ] PR cập nhật spike_results đã merge
 
 ### AD-OPS-08
 

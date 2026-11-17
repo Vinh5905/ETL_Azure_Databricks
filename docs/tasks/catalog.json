@@ -109,10 +109,24 @@
         "AD-OPS-05",
         "AD-OPS-06"
       ],
-      "finish": [
+      "finish": [],
+      "issue": 9
+    },
+    {
+      "id": "AD-OPS-07b",
+      "title": "Chốt lớp serving Power BI, xóa tài nguyên spike và đóng cổng G0",
+      "role": "P1",
+      "gate": "G0",
+      "label": "infra",
+      "docs": [
+        "docs/devops/spike_results.md §3",
+        "docs/devops/01_chuan_bi_va_spike.md §4"
+      ],
+      "start": [
         "AD-BI-01"
       ],
-      "issue": 9
+      "finish": [],
+      "issue": 147
     },
     {
       "id": "AD-OPS-08",

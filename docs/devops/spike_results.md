@@ -73,7 +73,7 @@ Ngày làm spike: 2026-11-16 → 2026-11-17 (Sub A) · Người tổng hợp: P1
 | Unity Catalog | External location (storage credential từ Access Connector) trên metastore tự gán; nhóm dùng **account group do workspace admin tạo**, quyền cấp rõ cho từng principal | 3.4 |
 | Nguồn `retail_db` | CDC theo LSN (`fn_cdc_get_all_changes`) trên DB free offer; không cần watermark `updated_at` | 3.5 |
 | Xác thực Azure SQL | SQL auth (login `sqladmin`, mật khẩu trong Key Vault) **cộng** Entra admin; không bật Entra-only. Lý do: seed job dùng `pymssql` + mật khẩu, lấy token Entra từ cluster chưa thử ([03 §3.6](03_terraform_azure.md)) | 3.5 |
-| Lớp serving Power BI | **Chờ AD-BI-01 (#74, P3).** Đề xuất serverless warehouse (`wh-spike` đạt `SELECT 1` trong 7 giây); chốt khi Power BI Desktop nối được tới warehouse | 3.4, 3.6 |
+| Lớp serving Power BI | **Chờ AD-BI-01 (#74, P3), chốt ở AD-OPS-07b (#147).** Đề xuất serverless warehouse (`wh-spike` đạt `SELECT 1` trong 7 giây); chốt khi Power BI Desktop nối được tới warehouse | 3.4, 3.6 |
 | Compute | Single-node **`Standard_D4ds_v4`** (4 vCPU, 16 GB), DBR 15.4 LTS, `SINGLE_USER`. Sub A không mua được DS3_v2 | 3.2, 3.4 |
 | SKU workspace | `premium`, không trial: DBU tính vào credit từ ngày đầu. `no_public_ip = false` để không phát sinh NAT gateway | 3.4 |
 | Pipeline DE | LDP Advanced classic single-node, `pipelines.clusterShutdown.delay = 60s`; serverless pipeline làm dự phòng khi quota vCPU đang bận | 3.4 |
@@ -81,7 +81,7 @@ Ngày làm spike: 2026-11-16 → 2026-11-17 (Sub A) · Người tổng hợp: P1
 | API model | Phương án A: Model Serving (`scale_to_zero`) + Azure Function Flex Consumption (Python 3.11) làm proxy | 3.4, 3.5 |
 
 > **Ghi chú G0 (AD-OPS-07):**
-> - Hai dòng còn chờ không chặn G1: region Sub B chỉ cần trước `20-stream` (G2), lớp serving Power BI chỉ cần trước dashboard. Đóng #9 khi cả hai có kết quả và `rg-spike` đã xóa.
+> - Hai dòng còn chờ không chặn G1: region Sub B chỉ cần trước `20-stream` (G2) và theo dõi ở #131; lớp serving Power BI chỉ cần trước dashboard và theo dõi ở AD-OPS-07b (#147), cùng việc xóa `rg-spike` và đóng milestone G0.
 > - Tài liệu đã sửa theo kết quả spike: máy `Standard_D4ds_v4` (devops/00, 01, 05, de/02, de/05, ds/02, ds/04, tasks/01, sơ đồ 1 và 2), job cluster không dùng `apply_policy_default_values` (devops/05 §3 bước 6, de/06, de/08, ds/04, `bundles/AGENTS.md`), `pipelines.clusterShutdown.delay` (devops/05), account group (devops/05 bước 2), SQL auth + Entra admin (devops/03 §3.6, AD-OPS-12), không trial (devops/00, 03), mapping và retry của ADF (de/01 §2, devops/06, AD-DE-06).
 > - `no_public_ip = false` đã có sẵn ở devops/03 bước 3.5 và `infra/modules/dbx_workspace`.
 > - Còn giữ cho P3 làm AD-BI-01: `dbw-spike` (kèm `rg-spike-dbw-managed`, warehouse `wh-spike`), `ac-spike`, `id-spike`, account group `spike-acct-grp`. NAT gateway của `dbw-spike` tốn khoảng 1,2 USD/ngày cho tới khi xóa.

@@ -1,6 +1,6 @@
 # Phân việc toàn dự án
 
-Toàn bộ việc còn lại của dự án được tách thành **120 task**. Làm xong hết các task này là xong dự án: hạ tầng, pipeline batch và stream, Power BI, phần DS, báo cáo và demo.
+Toàn bộ việc còn lại của dự án được tách thành **121 task**. Làm xong hết các task này là xong dự án: hạ tầng, pipeline batch và stream, Power BI, phần DS, báo cáo và demo.
 
 Mỗi task là một issue trên GitHub và một thẻ trên GitHub Project [ETL Instacart Azure Databricks](https://github.com/users/Vinh5905/projects/8). Tiêu đề issue bắt đầu bằng mã task, ví dụ `AD-DE-02 — …`.
 
@@ -8,7 +8,7 @@ Mỗi task là một issue trên GitHub và một thẻ trên GitHub Project [ET
 
 | Mã | File | Số task |
 |---|---|---:|
-| `AD-OPS-xx` | [DevOps / nền tảng](01_devops.md) | 34 |
+| `AD-OPS-xx` | [DevOps / nền tảng](01_devops.md) | 35 |
 | `AD-DE-xx` | [DE batch](02_de_batch.md) | 27 |
 | `AD-ST-xx` | [DE streaming](03_de_stream.md) | 10 |
 | `AD-BI-xx` | [Power BI](04_power_bi.md) | 12 |
@@ -71,7 +71,8 @@ Muốn thấy kết quả ngay thì chạy tay `python3 scripts/sync_task_board.
 | [AD-OPS-04](01_devops.md#ad-ops-04) | Spike Databricks nền: workspace, Unity Catalog, serverless warehouse, cluster single-node | P1 | G0 | Bắt đầu: AD-OPS-03 | AD-OPS-05 (bắt đầu), AD-BI-01 (hoàn tất) | [#6](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/6) |
 | [AD-OPS-05](01_devops.md#ad-ops-05) | Spike Databricks nâng cao: Lakeflow single-node, Kafka, policy local[n], for_each_task, Model Serving | P1 | G0 | Bắt đầu: AD-OPS-04; Hoàn tất: AD-OPS-06 | AD-OPS-07 (bắt đầu), AD-DE-08 (hoàn tất), AD-ST-08 (hoàn tất), AD-ST-10 (hoàn tất) | [#7](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/7) |
 | [AD-OPS-06](01_devops.md#ad-ops-06) | Spike Azure SQL free offer, CDC, Event Hubs Kafka, ADF và Azure Functions | P1 | G0 | Bắt đầu: AD-OPS-03 | AD-OPS-05 (hoàn tất), AD-OPS-07 (bắt đầu), AD-DE-04 (hoàn tất) | [#8](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/8) |
-| [AD-OPS-07](01_devops.md#ad-ops-07) | Chốt quyết định G0, dọn tài nguyên spike và mở cổng G0 | P1 | G0 | Bắt đầu: AD-OPS-05, AD-OPS-06; Hoàn tất: AD-BI-01 | AD-OPS-08 (bắt đầu), AD-RP-02 (hoàn tất) | [#9](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/9) |
+| [AD-OPS-07](01_devops.md#ad-ops-07) | Chốt quyết định G0, dọn tài nguyên spike và mở cổng G0 | P1 | G0 | Bắt đầu: AD-OPS-05, AD-OPS-06 | AD-OPS-08 (bắt đầu), AD-RP-02 (hoàn tất) | [#9](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/9) |
+| [AD-OPS-07b](01_devops.md#ad-ops-07b) | Chốt lớp serving Power BI, xóa tài nguyên spike và đóng cổng G0 | P1 | G0 | Bắt đầu: AD-BI-01 | Không có | [#147](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/147) |
 | [AD-OPS-08](01_devops.md#ad-ops-08) | Apply bootstrap, chuyển state lên blob và cấu hình OIDC cho GitHub Actions | P1 | G1 | Bắt đầu: AD-OPS-07 | AD-OPS-09 (bắt đầu), AD-OPS-11 (bắt đầu), AD-OPS-29 (bắt đầu) | [#10](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/10) |
 | [AD-OPS-09](01_devops.md#ad-ops-09) | Dựng ADLS Gen2 với 7 container và lifecycle landing sang cool (10-core bước 3.2) | P1 | G1 | Bắt đầu: AD-OPS-08 | AD-OPS-10 (bắt đầu) | [#11](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/11) |
 | [AD-OPS-10](01_devops.md#ad-ops-10) | Dựng Key Vault, Access Connector và danh tính id-func-recommend (10-core bước 3.3–3.4) | P1 | G1 | Bắt đầu: AD-OPS-09 | AD-OPS-12 (bắt đầu), AD-OPS-13 (bắt đầu), AD-OPS-14 (bắt đầu), AD-OPS-18 (bắt đầu), AD-OPS-19 (bắt đầu), AD-OPS-24 (bắt đầu) | [#12](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/12) |
@@ -136,7 +137,7 @@ Muốn thấy kết quả ngay thì chạy tay `python3 scripts/sync_task_board.
 | [AD-ST-08](03_de_stream.md#ad-st-08) | Kiểm đổi eh_generation khi Event Hubs được tạo lại | P3 | G2 | Bắt đầu: AD-ST-04; Hoàn tất: AD-OPS-24, AD-OPS-05 | Không | [#71](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/71) |
 | [AD-ST-09](03_de_stream.md#ad-st-09) | Đo độ trễ Event Hubs khác region và cùng region | P3 | G4 | Bắt đầu: AD-ST-06; Hoàn tất: AD-OPS-24 | AD-BI-07 (hoàn tất), AD-RP-03 (bắt đầu) | [#72](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/72) |
 | [AD-ST-10](03_de_stream.md#ad-st-10) | Đẩy KPI stream lên push semantic model của Power BI | P3 | G4 | Bắt đầu: AD-ST-06; Hoàn tất: AD-BI-08, AD-OPS-05 | AD-BI-12 (bắt đầu) | [#73](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/73) |
-| [AD-BI-01](04_power_bi.md#ad-bi-01) | Spike Power BI: giấy phép Pro, workspace instacart-bi, connector, push model, APR, quyền API | P3 | G0 | Chuẩn bị ngay; Hoàn tất: AD-OPS-04 | AD-OPS-07 (hoàn tất), AD-DE-25 (hoàn tất), AD-BI-02 (hoàn tất), AD-BI-08 (hoàn tất) | [#74](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/74) |
+| [AD-BI-01](04_power_bi.md#ad-bi-01) | Spike Power BI: giấy phép Pro, workspace instacart-bi, connector, push model, APR, quyền API | P3 | G0 | Chuẩn bị ngay; Hoàn tất: AD-OPS-04 | AD-OPS-07b (bắt đầu), AD-DE-25 (hoàn tất), AD-BI-02 (hoàn tất), AD-BI-08 (hoàn tất) | [#74](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/74) |
 | [AD-BI-02](04_power_bi.md#ad-bi-02) | Kết nối Power BI với warehouse và tạo dự án PBIP | P3 | G4 | Chuẩn bị ngay; Hoàn tất: AD-DE-23, AD-OPS-22, AD-OPS-20, AD-BI-01 | AD-BI-03 (bắt đầu) | [#75](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/75) |
 | [AD-BI-03](04_power_bi.md#ad-bi-03) | Dựng star schema và measure DAX | P3 | G4 | Bắt đầu: AD-BI-02; Hoàn tất: AD-DE-24 | AD-BI-04 (bắt đầu), AD-BI-05 (bắt đầu), AD-BI-06 (bắt đầu), AD-BI-07 (bắt đầu), AD-BI-11 (bắt đầu) | [#76](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/76) |
 | [AD-BI-04](04_power_bi.md#ad-bi-04) | Dựng trang 1 Tổng quan và trang 3 thời gian mua | P3 | G4 | Bắt đầu: AD-BI-03 | AD-BI-05 (hoàn tất), AD-BI-08 (hoàn tất), AD-BI-09 (bắt đầu) | [#77](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/77) |
