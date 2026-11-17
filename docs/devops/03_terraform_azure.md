@@ -113,7 +113,7 @@ Mỗi bước là **một PR nhỏ**, `plan` sạch rồi mới làm bước k�
 
 ```hcl
 terraform {
-  required_version = "~> 1.10"
+  required_version = "~> 1.11"                   # AVM Key Vault từ 0.11 cần 1.11
   required_providers {
     azurerm = { source = "hashicorp/azurerm", version = "~> 4.0" }
   }
@@ -195,21 +195,27 @@ Các thành viên tải/upload bằng AzCopy với quyền *Storage Blob Data Co
 **Vì sao:** chứa bí mật như mật khẩu SQL, SAS của Event Hubs và push URL của Power BI. Databricks đọc bí mật qua *secret scope* dựa trên Key Vault, nên trong code không có bí mật nào. Dùng **RBAC mode** để phân quyền bằng role Azure, không dùng access policy.
 
 ```hcl
+data "azurerm_client_config" "current" {}
+
 module "kv" {
   source  = "Azure/avm-res-keyvault-vault/azurerm"
-  version = "x.y.z"
-  name                       = module.nt.names.key_vault.name_unique
-  resource_group_name        = azurerm_resource_group.core.name
-  location                   = var.location
-  tenant_id                  = var.tenant_id
-  sku_name                   = "standard"
-  purge_protection_enabled   = false     # để destroy/dựng lại được khi làm đồ án
+  version = "0.13.1"                         # cần Terraform >= 1.11, azurerm >= 4.81
+  name      = module.nt.names.key_vault.name_unique
+  parent_id = azurerm_resource_group.core.id # AVM nhận ID của RG, không nhận tên
+  location  = azurerm_resource_group.core.location
+  tenant_id = data.azurerm_client_config.current.tenant_id
+  sku_name                   = "standard"    # mặc định của AVM là premium
+  purge_protection_enabled   = false         # để destroy/dựng lại được khi làm đồ án
   soft_delete_retention_days = 7
-  public_network_access_enabled = true    # Databricks không dùng VNet injection
+  # Mặc định của AVM là chặn mọi IP; dự án không dùng private endpoint nên mở và kiểm bằng RBAC.
+  public_network_access_enabled = true
+  network_acls = { bypass = "AzureServices", default_action = "Allow" }
   enable_telemetry = false
-  tags = module.nt.tags
+  tags             = module.nt.tags
 }
 ```
+
+AVM mặc định bật RBAC mode (`legacy_access_policies_enabled = false`), nên không cần khai báo thêm. Key Vault chưa gán role nào ở bước này. Bảng quyền ở bước 3.8 cho P1 và UAMI CI role *Key Vault Secrets Officer*, nhưng bước 3.6 đã ghi secret `sql-admin-password`, nên người chạy apply cần role này trước bước 3.6.
 
 ### Bước 3.4 · Access Connector (managed identity cho Unity Catalog)
 
@@ -227,6 +233,7 @@ resource "azurerm_role_assignment" "uc_lake" {
   scope                = module.lake.resource_id
   role_definition_name = "Storage Blob Data Contributor"
   principal_id         = azurerm_databricks_access_connector.uc.identity[0].principal_id
+  principal_type       = "ServicePrincipal"
 }
 
 # Danh tính cho Azure Function gợi ý (G5). Tạo sẵn ở đây (không tốn tiền) để stack 30-databricks

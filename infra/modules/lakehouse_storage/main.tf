@@ -2,7 +2,7 @@
 # AVM 0.11.0 chỉ dùng provider azapi và cần Terraform >= 1.10.
 
 terraform {
-  required_version = "~> 1.10"
+  required_version = "~> 1.11"
 
   required_providers {
     azapi = {

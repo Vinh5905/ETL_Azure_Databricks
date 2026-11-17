@@ -13,7 +13,7 @@
 | Công cụ | Phiên bản gợi ý | Dùng để | Cài trên macOS |
 |---|---|---|---|
 | Azure CLI | mới nhất | Đăng nhập, kiểm tra policy/quota, backend Terraform | `brew install azure-cli` |
-| Terraform | `>= 1.10`, CI dùng `1.16.x` (`required_version = "~> 1.10"`; AVM storage từ 0.7 cần 1.10) | IaC | `brew install hashicorp/tap/terraform` |
+| Terraform | `>= 1.11`, CI dùng `1.16.x` (`required_version = "~> 1.11"`; AVM storage từ 0.7 cần 1.10, AVM Key Vault từ 0.11 cần 1.11) | IaC | `brew install hashicorp/tap/terraform` |
 | TFLint + ruleset azurerm | mới nhất | Lint Terraform | Homebrew core đã bỏ `tflint`. Tải từ GitHub release: `gh release download -R terraform-linters/tflint -p 'tflint_darwin_arm64.zip' -p checksums.txt`, kiểm `shasum -a 256 -c`, giải nén vào `~/.local/bin`. Sau đó chạy `tflint --init` |
 | Trivy (hoặc Checkov) | mới nhất | Quét cấu hình sai về bảo mật | `brew install trivy` |
 | Databricks CLI (bản mới, có `bundle`) | `>= 0.230` | Databricks Asset Bundles, kiểm tra workspace | `brew tap databricks/tap && brew install databricks` |

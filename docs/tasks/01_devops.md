@@ -436,6 +436,8 @@ Key Vault giữ mọi bí mật; Access Connector là danh tính để Unity Cat
 4. Thêm output key_vault_id, key_vault_uri, access_connector_id, func_identity_id, func_identity_client_id
 5. Đánh dấu [x] 3.3, 3.4
 
+AVM Key Vault từ 0.11 cần Terraform >= 1.11, nên `required_version` của các stack và module nội bộ đổi thành `~> 1.11` trong cùng PR. Key Vault chưa gán role nào. [AD-OPS-12](01_devops.md#ad-ops-12) ghi secret mật khẩu SQL, nên người chạy apply cần role Key Vault Secrets Officer trước đó (bảng quyền ở bước 3.8, [AD-OPS-14](01_devops.md#ad-ops-14)).
+
 **Đầu ra**
 
 - Key Vault, dbac-instacart, id-func-recommend trên rg-instacart-core

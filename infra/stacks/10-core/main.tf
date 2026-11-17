@@ -3,7 +3,7 @@
 #
 # [x] 3.1  Provider, backend, resource group
 # [x] 3.2  ADLS Gen2 (HNS) + 7 container + lifecycle landing → cool
-# [ ] 3.3  Key Vault (RBAC mode)
+# [x] 3.3  Key Vault (RBAC mode)
 # [ ] 3.4  Access Connector + Storage Blob Data Contributor trên ADLS
 # [ ] 3.5  Databricks workspace Premium
 # [ ] 3.6  Azure SQL (free offer) + firewall + secret mật khẩu
@@ -32,4 +32,33 @@ module "lake" {
   resource_group_id = azurerm_resource_group.core.id
   location          = azurerm_resource_group.core.location
   tags              = module.nt.tags
+}
+
+data "azurerm_client_config" "current" {}
+
+# Bước 3.3: Key Vault giữ mọi bí mật (mật khẩu SQL, SAS Event Hubs, push URL Power BI).
+# RBAC mode: phân quyền bằng role Azure, không dùng access policy.
+module "kv" {
+  source  = "Azure/avm-res-keyvault-vault/azurerm"
+  version = "0.13.1"
+
+  name      = module.nt.names.key_vault.name_unique
+  parent_id = azurerm_resource_group.core.id
+  location  = azurerm_resource_group.core.location
+  tenant_id = data.azurerm_client_config.current.tenant_id
+
+  sku_name                   = "standard" # mặc định của AVM là premium
+  purge_protection_enabled   = false      # để destroy/dựng lại được khi làm đồ án
+  soft_delete_retention_days = 7
+
+  # Mặc định của AVM là chặn mọi IP. Dự án không dùng private endpoint hay VNet injection,
+  # nên mở mạng và kiểm quyền bằng RBAC (giống storage ở bước 3.2).
+  public_network_access_enabled = true
+  network_acls = {
+    bypass         = "AzureServices"
+    default_action = "Allow"
+  }
+
+  enable_telemetry = false
+  tags             = module.nt.tags
 }

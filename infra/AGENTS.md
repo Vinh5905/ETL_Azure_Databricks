@@ -15,4 +15,4 @@
 - **Sau khi sửa:**
   - Chạy `terraform fmt` và `terraform -chdir=<dir> init -backend=false && terraform -chdir=<dir> validate` cho mọi thư mục bị đụng (module bị đụng thì validate cả các stack gọi nó).
   - Commit `.terraform.lock.hcl` nếu provider đổi.
-- **Provider pin:** `azurerm ~> 4.0`, `databricks ~> 1.60`, `azapi ~> 2.12`, `random ~> 3.6`, Terraform `~> 1.10` (CI chạy `1.16.x`; riêng `bootstrap` vẫn `~> 1.9`).
+- **Provider pin:** `azurerm ~> 4.0`, `databricks ~> 1.60`, `azapi ~> 2.12`, `random ~> 3.6`, Terraform `~> 1.11` (CI chạy `1.16.x`; riêng `bootstrap` vẫn `~> 1.9`).

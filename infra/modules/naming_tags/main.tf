@@ -1,7 +1,7 @@
 # Tên theo quy ước CAF và tag chuẩn cho mọi stack, để Cost Management lọc theo owner/stack.
 
 terraform {
-  required_version = "~> 1.10"
+  required_version = "~> 1.11"
 }
 
 module "naming" {

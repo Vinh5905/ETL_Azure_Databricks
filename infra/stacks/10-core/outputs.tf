@@ -20,3 +20,11 @@ output "lake_account_id" {
 output "lake_dfs_endpoint" {
   value = "abfss://{container}@${module.lake.name}.dfs.core.windows.net"
 }
+
+output "key_vault_id" {
+  value = module.kv.resource_id
+}
+
+output "key_vault_uri" {
+  value = module.kv.uri
+}
