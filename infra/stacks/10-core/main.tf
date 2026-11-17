@@ -22,8 +22,7 @@ module "nt" {
 resource "azurerm_resource_group" "core" {
   name     = "rg-instacart-core"
   location = var.location
-  # ci_test: tag tạm của AD-OPS-17 để chạy thử chuỗi PR → tf-plan → merge → tf-apply; PR sau gỡ.
-  tags = merge(module.nt.tags, { ci_test = "1" })
+  tags     = module.nt.tags
 }
 
 # Bước 3.2: ADLS Gen2 cho mọi tầng dữ liệu và container ds-data (docs/devops/03, bước 3.2).
