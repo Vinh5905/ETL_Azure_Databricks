@@ -1,12 +1,13 @@
 # Phân việc · DevOps / nền tảng (`AD-OPS-xx`)
 
-34 task. Quy ước, trạng thái và bảng tổng ở [README](README.md). Vai ghi theo P1–P4, người thật được gán trên GitHub Project.
+36 task. Quy ước, trạng thái và bảng tổng ở [README](README.md). Vai ghi theo P1–P4, người thật được gán trên GitHub Project.
 
 | Mã | Việc | Vai | Cổng | Phụ thuộc | Issue |
 |---|---|---|---|---|---|
 | [AD-OPS-01](#ad-ops-01) | Cài bộ công cụ cho cả 4 máy và ghi bảng công cụ vào spike_results | P1 | G0 | Chuẩn bị ngay | [#3](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/3) |
 | [AD-OPS-02](#ad-ops-02) | Thiết lập quản trị repo: board, label, milestone, CODEOWNERS, branch protection, environment | P1 | G0 | Chuẩn bị ngay | [#4](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/4) |
 | [AD-OPS-03](#ad-ops-03) | Spike region được phép, quota vCPU và quyền trong tenant trường | P1 | G0 | Chuẩn bị ngay | [#5](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/5) |
+| [AD-OPS-03b](#ad-ops-03b) | Kiểm region Sub B–D và quyền chéo Sub B cho UAMI | P1 | G2 | Chuẩn bị ngay | [#131](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/131) |
 | [AD-OPS-04](#ad-ops-04) | Spike Databricks nền: workspace, Unity Catalog, serverless warehouse, cluster single-node | P1 | G0 | Bắt đầu: AD-OPS-03 | [#6](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/6) |
 | [AD-OPS-05](#ad-ops-05) | Spike Databricks nâng cao: Lakeflow single-node, Kafka, policy local[n], for_each_task, Model Serving | P1 | G0 | Bắt đầu: AD-OPS-04; Hoàn tất: AD-OPS-06 | [#7](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/7) |
 | [AD-OPS-06](#ad-ops-06) | Spike Azure SQL free offer, CDC, Event Hubs Kafka, ADF và Azure Functions | P1 | G0 | Bắt đầu: AD-OPS-03 | [#8](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/8) |
@@ -28,7 +29,7 @@
 | [AD-OPS-21](#ad-ops-21) | Tạo cluster policy single-node, pipeline và ds-benchmark, chặn tạo cluster tự do (30-databricks bước 6) | P1 | G1 | Bắt đầu: AD-OPS-18 | [#23](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/23) |
 | [AD-OPS-22](#ad-ops-22) | Tạo secret scope Key Vault, serverless SQL warehouse và output cho DAB, Power BI (30-databricks bước 7–9) | P1 | G1 | Bắt đầu: AD-OPS-18; Hoàn tất: AD-OPS-12 | [#24](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/24) |
 | [AD-OPS-23](#ad-ops-23) | Nghiệm thu G1: chạy 30-databricks qua CI và thử de-deploy dev/prod | P1 | G1 | Bắt đầu: AD-OPS-17, AD-OPS-20, AD-OPS-21, AD-OPS-22; Hoàn tất: AD-DE-18 | [#25](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/25) |
-| [AD-OPS-24](#ad-ops-24) | Dựng stack 20-stream (Event Hubs, SAS, secret) và nghiệm thu stream-toggle | P3 | G2 | Bắt đầu: AD-OPS-02, AD-OPS-10 | [#26](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/26) |
+| [AD-OPS-24](#ad-ops-24) | Dựng stack 20-stream (Event Hubs, SAS, secret) và nghiệm thu stream-toggle | P3 | G2 | Bắt đầu: AD-OPS-02, AD-OPS-10; Hoàn tất: AD-OPS-03b | [#26](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/26) |
 | [AD-OPS-25](#ad-ops-25) | Khai báo linked service và dataset ADF trong stack 40-orchestration | P1 | G3 | Bắt đầu: AD-OPS-12, AD-OPS-13; Hoàn tất: AD-OPS-17 | [#27](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/27) |
 | [AD-OPS-26](#ad-ops-26) | Đưa pipeline và trigger ADF vào 40-orchestration, bật lịch hằng ngày khi pl_master đạt | P1 | G3 | Bắt đầu: AD-OPS-23, AD-OPS-25; Hoàn tất: AD-DE-06, AD-DE-07, AD-DE-19, AD-DE-18 | [#28](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/28) |
 | [AD-OPS-27](#ad-ops-27) | Kiểm thử drift-check bằng một thay đổi tay có chủ đích | P1 | G3 | Bắt đầu: AD-OPS-23, AD-OPS-25 | [#29](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/29) |
@@ -142,6 +143,38 @@ Tài khoản Students giới hạn region, quota và quyền tenant mà tài li�
 - [ ] Mỗi dòng 3.1–3.3 ghi Đạt hoặc Không đạt kèm phương án dự phòng
 - [ ] Đã có ứng viên region Sub A và một region khác cho Sub B
 - [ ] Không có subscription ID, object ID, email trong file commit
+
+### AD-OPS-03b
+
+**Kiểm region Sub B–D và quyền chéo Sub B cho UAMI**
+
+- Vai dự kiến: **P1 · DevOps**
+- Cổng: **G2**
+- Issue: [#131](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/131)
+- Tài liệu: `docs/devops/01_chuan_bi_va_spike.md §3.1`, `docs/devops/spike_results.md §3`
+- **Bắt đầu sau:** Không có.
+- **Hoàn tất còn cần:** Không có.
+- **Mở khóa:** [AD-OPS-24](01_devops.md#ad-ops-24) (hoàn tất)
+
+Tách từ AD-OPS-03 để AD-OPS-03 đóng được với phần Sub A. Region Sub B chỉ cần trước khi apply `20-stream`, nên dời sang G2. P1 điều phối; chủ Sub B, C, D chạy lệnh trên subscription của mình, P3 gán quyền trên Sub B. Trong lúc chờ, CI chỉ apply Sub A, Sub B do P3 apply từ máy.
+
+**Việc cần làm**
+
+1. Chủ Sub B, C, D chạy lệnh policy region ở 01 §3.1 trên subscription của mình, gửi danh sách region được phép
+2. Chốt region Event Hubs cho Sub B, khác region Sub A (`eastasia`); ứng viên `japaneast` hoặc `koreacentral`
+3. P3 gán Contributor trên Sub B cho principal của UAMI thử (P1 gửi ID riêng, không ghi vào issue hay file commit)
+4. Gỡ quyền vừa gán sau khi thử xong
+5. Cập nhật dòng 3.1 và dòng "Gán role chéo subscription (Sub B → UAMI)" trong spike_results.md
+
+**Đầu ra**
+
+- docs/devops/spike_results.md dòng 3.1 có kết quả Sub B, C, D và dòng gán role chéo có kết quả
+
+**Xong khi**
+
+- [ ] Dòng 3.1 có kết quả của Sub B, C, D
+- [ ] Dòng gán role chéo ghi Đạt hoặc Không đạt kèm phương án dự phòng
+- [ ] Có region Sub B khác Sub A
 
 ### AD-OPS-04
 
@@ -845,7 +878,7 @@ Notebook đọc bí mật qua scope kv; Power BI cần host và HTTP path của 
 - Issue: [#26](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/26)
 - Tài liệu: `docs/devops/03_terraform_azure.md §4`, `docs/devops/04_github_actions_cicd.md §3.5`
 - **Bắt đầu sau:** [AD-OPS-02](01_devops.md#ad-ops-02) [#4](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/4), [AD-OPS-10](01_devops.md#ad-ops-10) [#12](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/12)
-- **Hoàn tất còn cần:** Không có.
+- **Hoàn tất còn cần:** [AD-OPS-03b](01_devops.md#ad-ops-03b) [#131](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/131)
 - **Mở khóa:** [AD-OPS-33](01_devops.md#ad-ops-33) (bắt đầu), [AD-ST-02](03_de_stream.md#ad-st-02) (hoàn tất), [AD-ST-03](03_de_stream.md#ad-st-03) (hoàn tất), [AD-ST-08](03_de_stream.md#ad-st-08) (hoàn tất), [AD-ST-09](03_de_stream.md#ad-st-09) (hoàn tất)
 
 Event Hubs ở Sub B, cố ý khác region Sub A để đo độ trễ rubric 3.3; bật tắt theo buổi để tiết kiệm. P3 giữ Sub B, P1 duyệt PR.

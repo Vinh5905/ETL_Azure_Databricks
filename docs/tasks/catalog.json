@@ -46,6 +46,20 @@
       "issue": 5
     },
     {
+      "id": "AD-OPS-03b",
+      "title": "Kiểm region Sub B–D và quyền chéo Sub B cho UAMI",
+      "role": "P1",
+      "gate": "G2",
+      "label": "infra",
+      "docs": [
+        "docs/devops/01_chuan_bi_va_spike.md §3.1",
+        "docs/devops/spike_results.md §3"
+      ],
+      "start": [],
+      "finish": [],
+      "issue": 131
+    },
+    {
       "id": "AD-OPS-04",
       "title": "Spike Databricks nền: workspace, Unity Catalog, serverless warehouse, cluster single-node",
       "role": "P1",
@@ -408,7 +422,9 @@
         "AD-OPS-02",
         "AD-OPS-10"
       ],
-      "finish": [],
+      "finish": [
+        "AD-OPS-03b"
+      ],
       "issue": 26
     },
     {

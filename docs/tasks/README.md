@@ -1,6 +1,6 @@
 # Phân việc toàn dự án
 
-Toàn bộ việc còn lại của dự án được tách thành **121 task**. Làm xong hết các task này là xong dự án: hạ tầng, pipeline batch và stream, Power BI, phần DS, báo cáo và demo.
+Toàn bộ việc còn lại của dự án được tách thành **122 task**. Làm xong hết các task này là xong dự án: hạ tầng, pipeline batch và stream, Power BI, phần DS, báo cáo và demo.
 
 Mỗi task là một issue trên GitHub và một thẻ trên GitHub Project [ETL Instacart Azure Databricks](https://github.com/users/Vinh5905/projects/8). Tiêu đề issue bắt đầu bằng mã task, ví dụ `AD-DE-02 — …`.
 
@@ -8,7 +8,7 @@ Mỗi task là một issue trên GitHub và một thẻ trên GitHub Project [ET
 
 | Mã | File | Số task |
 |---|---|---:|
-| `AD-OPS-xx` | [DevOps / nền tảng](01_devops.md) | 35 |
+| `AD-OPS-xx` | [DevOps / nền tảng](01_devops.md) | 36 |
 | `AD-DE-xx` | [DE batch](02_de_batch.md) | 27 |
 | `AD-ST-xx` | [DE streaming](03_de_stream.md) | 10 |
 | `AD-BI-xx` | [Power BI](04_power_bi.md) | 12 |
@@ -68,6 +68,7 @@ Muốn thấy kết quả ngay thì chạy tay `python3 scripts/sync_task_board.
 | [AD-OPS-01](01_devops.md#ad-ops-01) | Cài bộ công cụ cho cả 4 máy và ghi bảng công cụ vào spike_results | P1 | G0 | Chuẩn bị ngay | Không | [#3](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/3) |
 | [AD-OPS-02](01_devops.md#ad-ops-02) | Thiết lập quản trị repo: board, label, milestone, CODEOWNERS, branch protection, environment | P1 | G0 | Chuẩn bị ngay | AD-OPS-17 (bắt đầu), AD-OPS-24 (bắt đầu) | [#4](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/4) |
 | [AD-OPS-03](01_devops.md#ad-ops-03) | Spike region được phép, quota vCPU và quyền trong tenant trường | P1 | G0 | Chuẩn bị ngay | AD-OPS-04 (bắt đầu), AD-OPS-06 (bắt đầu) | [#5](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/5) |
+| [AD-OPS-03b](01_devops.md#ad-ops-03b) | Kiểm region Sub B–D và quyền chéo Sub B cho UAMI | P1 | G2 | Chuẩn bị ngay | AD-OPS-24 (hoàn tất) | [#131](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/131) |
 | [AD-OPS-04](01_devops.md#ad-ops-04) | Spike Databricks nền: workspace, Unity Catalog, serverless warehouse, cluster single-node | P1 | G0 | Bắt đầu: AD-OPS-03 | AD-OPS-05 (bắt đầu), AD-BI-01 (hoàn tất) | [#6](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/6) |
 | [AD-OPS-05](01_devops.md#ad-ops-05) | Spike Databricks nâng cao: Lakeflow single-node, Kafka, policy local[n], for_each_task, Model Serving | P1 | G0 | Bắt đầu: AD-OPS-04; Hoàn tất: AD-OPS-06 | AD-OPS-07 (bắt đầu), AD-DE-08 (hoàn tất), AD-ST-08 (hoàn tất), AD-ST-10 (hoàn tất) | [#7](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/7) |
 | [AD-OPS-06](01_devops.md#ad-ops-06) | Spike Azure SQL free offer, CDC, Event Hubs Kafka, ADF và Azure Functions | P1 | G0 | Bắt đầu: AD-OPS-03 | AD-OPS-05 (hoàn tất), AD-OPS-07 (bắt đầu), AD-DE-04 (hoàn tất) | [#8](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/8) |
@@ -89,7 +90,7 @@ Muốn thấy kết quả ngay thì chạy tay `python3 scripts/sync_task_board.
 | [AD-OPS-21](01_devops.md#ad-ops-21) | Tạo cluster policy single-node, pipeline và ds-benchmark, chặn tạo cluster tự do (30-databricks bước 6) | P1 | G1 | Bắt đầu: AD-OPS-18 | AD-OPS-23 (bắt đầu), AD-OPS-30 (bắt đầu), AD-DE-08 (hoàn tất), AD-ST-03 (hoàn tất) | [#23](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/23) |
 | [AD-OPS-22](01_devops.md#ad-ops-22) | Tạo secret scope Key Vault, serverless SQL warehouse và output cho DAB, Power BI (30-databricks bước 7–9) | P1 | G1 | Bắt đầu: AD-OPS-18; Hoàn tất: AD-OPS-12 | AD-OPS-23 (bắt đầu), AD-DE-05 (hoàn tất), AD-DE-16 (hoàn tất), AD-DE-18 (hoàn tất), AD-ST-03 (hoàn tất), AD-BI-02 (hoàn tất), AD-DS-12 (hoàn tất) | [#24](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/24) |
 | [AD-OPS-23](01_devops.md#ad-ops-23) | Nghiệm thu G1: chạy 30-databricks qua CI và thử de-deploy dev/prod | P1 | G1 | Bắt đầu: AD-OPS-17, AD-OPS-20, AD-OPS-21, AD-OPS-22; Hoàn tất: AD-DE-18 | AD-OPS-26 (bắt đầu), AD-OPS-27 (bắt đầu), AD-OPS-31 (bắt đầu), AD-DE-19 (hoàn tất) | [#25](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/25) |
-| [AD-OPS-24](01_devops.md#ad-ops-24) | Dựng stack 20-stream (Event Hubs, SAS, secret) và nghiệm thu stream-toggle | P3 | G2 | Bắt đầu: AD-OPS-02, AD-OPS-10 | AD-OPS-33 (bắt đầu), AD-ST-02 (hoàn tất), AD-ST-03 (hoàn tất), AD-ST-08 (hoàn tất), AD-ST-09 (hoàn tất) | [#26](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/26) |
+| [AD-OPS-24](01_devops.md#ad-ops-24) | Dựng stack 20-stream (Event Hubs, SAS, secret) và nghiệm thu stream-toggle | P3 | G2 | Bắt đầu: AD-OPS-02, AD-OPS-10; Hoàn tất: AD-OPS-03b | AD-OPS-33 (bắt đầu), AD-ST-02 (hoàn tất), AD-ST-03 (hoàn tất), AD-ST-08 (hoàn tất), AD-ST-09 (hoàn tất) | [#26](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/26) |
 | [AD-OPS-25](01_devops.md#ad-ops-25) | Khai báo linked service và dataset ADF trong stack 40-orchestration | P1 | G3 | Bắt đầu: AD-OPS-12, AD-OPS-13; Hoàn tất: AD-OPS-17 | AD-OPS-26 (bắt đầu), AD-OPS-27 (bắt đầu), AD-DE-06 (hoàn tất), AD-DE-07 (hoàn tất), AD-DE-19 (hoàn tất) | [#27](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/27) |
 | [AD-OPS-26](01_devops.md#ad-ops-26) | Đưa pipeline và trigger ADF vào 40-orchestration, bật lịch hằng ngày khi pl_master đạt | P1 | G3 | Bắt đầu: AD-OPS-23, AD-OPS-25; Hoàn tất: AD-DE-06, AD-DE-07, AD-DE-19, AD-DE-18 | AD-OPS-33 (hoàn tất) | [#28](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/28) |
 | [AD-OPS-27](01_devops.md#ad-ops-27) | Kiểm thử drift-check bằng một thay đổi tay có chủ đích | P1 | G3 | Bắt đầu: AD-OPS-23, AD-OPS-25 | AD-OPS-33 (bắt đầu) | [#29](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/29) |
