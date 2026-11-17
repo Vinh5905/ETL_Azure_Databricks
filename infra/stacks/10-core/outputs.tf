@@ -61,3 +61,17 @@ output "sql_server_fqdn" {
 output "sql_database_name" {
   value = azapi_resource.retail_db.name
 }
+
+# Stack 40-orchestration khai báo linked service, dataset, pipeline vào factory này.
+output "adf_id" {
+  value = module.adf.resource_id
+}
+
+output "adf_name" {
+  value = module.adf.name
+}
+
+# Principal ID của managed identity ADF, để kiểm role bằng az role assignment list --assignee.
+output "adf_principal_id" {
+  value = module.adf.resource.identity[0].principal_id
+}

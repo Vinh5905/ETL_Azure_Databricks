@@ -7,7 +7,7 @@
 # [x] 3.4  Access Connector + Storage Blob Data Contributor trên ADLS
 # [x] 3.5  Databricks workspace Premium
 # [x] 3.6  Azure SQL (free offer) + firewall + secret mật khẩu
-# [ ] 3.7  Data Factory + managed identity + quyền
+# [x] 3.7  Data Factory + managed identity + quyền
 # [ ] 3.8  RBAC cho 4 thành viên
 # [ ] 3.9  Action group + budget 25/50/75/90%
 
@@ -215,6 +215,38 @@ resource "azapi_resource" "retail_db" {
       freeLimitExhaustionBehavior = "AutoPause"
     }
   }
+}
+
+# Bước 3.7: Data Factory chỉ gồm factory + system-assigned identity + quyền.
+# Linked service, dataset, pipeline, trigger nằm ở stack 40-orchestration vì đổi thường xuyên.
+module "adf" {
+  source  = "Azure/avm-res-datafactory-factory/azurerm"
+  version = "0.3.0"
+
+  name                = module.nt.names.data_factory.name_unique
+  resource_group_name = azurerm_resource_group.core.name
+  location            = azurerm_resource_group.core.location
+  managed_identities  = { system_assigned = true }
+
+  enable_telemetry = false
+  tags             = module.nt.tags
+}
+
+# Ba role của ADF, đều nằm trong ci_assignable_role_ids của bootstrap nên CI apply được.
+resource "azurerm_role_assignment" "adf" {
+  for_each = {
+    # Ghi file vào landing/.
+    lake = { scope = module.lake.resource_id, role = "Storage Blob Data Contributor" }
+    # Đọc sql-admin-password cho linked service ls_sql_retail.
+    kv = { scope = module.kv.resource_id, role = "Key Vault Secrets User" }
+    # Linked service Databricks xác thực bằng MSI để gọi Job.
+    dbw = { scope = module.dbw.resource_id, role = "Contributor" }
+  }
+
+  scope                = each.value.scope
+  role_definition_name = each.value.role
+  principal_id         = module.adf.resource.identity[0].principal_id
+  principal_type       = "ServicePrincipal"
 }
 
 # Danh tính cho Azure Function gợi ý (G5). Tạo sẵn ở đây (không tốn tiền) để 30-databricks

@@ -371,13 +371,28 @@ Script seed sinh dữ liệu giá/khuyến mãi (có seed cố định) **không
 ```hcl
 module "adf" {
   source  = "Azure/avm-res-datafactory-factory/azurerm"
-  version = "x.y.z"
+  version = "0.3.0"
+
   name                = module.nt.names.data_factory.name_unique
   resource_group_name = azurerm_resource_group.core.name
-  location            = var.location
+  location            = azurerm_resource_group.core.location
   managed_identities  = { system_assigned = true }
-  enable_telemetry    = false
-  tags                = module.nt.tags
+
+  enable_telemetry = false
+  tags             = module.nt.tags
+}
+
+resource "azurerm_role_assignment" "adf" {
+  for_each = {
+    lake = { scope = module.lake.resource_id, role = "Storage Blob Data Contributor" }
+    kv   = { scope = module.kv.resource_id, role = "Key Vault Secrets User" }
+    dbw  = { scope = module.dbw.resource_id, role = "Contributor" }
+  }
+
+  scope                = each.value.scope
+  role_definition_name = each.value.role
+  principal_id         = module.adf.resource.identity[0].principal_id
+  principal_type       = "ServicePrincipal"
 }
 ```
 
@@ -388,6 +403,22 @@ Quyền của ADF managed identity:
 | ADLS `lake` | Storage Blob Data Contributor | Ghi `landing/` |
 | Key Vault | Key Vault Secrets User | Đọc mật khẩu SQL trong linked service |
 | Databricks workspace | Contributor | Linked service Databricks dùng MSI để gọi Job |
+
+Lưu ý:
+- AVM 0.3.0 cần `azapi ~> 2.12` và `azurerm ~> 4.0`, khớp pin của stack nên lock file không đổi. Mặc định của module là bật public network, không managed VNet, đúng với dự án.
+- Cả 3 role đều nằm trong `local.ci_assignable_role_ids` của `bootstrap/rbac.tf`, nên CI apply được mà không phải sửa bootstrap.
+- Role *Contributor* trên workspace làm managed identity của ADF tự thành **workspace admin** trong Databricks và có quyền xóa workspace ở tầng Azure. Đây là đánh đổi có chủ ý: linked service Databricks dùng MSI cần đúng role này, đổi lại không phải lưu PAT.
+- Principal ID của managed identity lấy từ `module.adf.resource.identity[0].principal_id`, vì module không có output riêng cho nó.
+- Output thêm: `adf_id`, `adf_name` (cho stack `40-orchestration`) và `adf_principal_id` (để kiểm role).
+
+Kiểm sau khi apply:
+
+```bash
+az role assignment list --assignee "$(terraform -chdir=infra/stacks/10-core output -raw adf_principal_id)" \
+  --all --query "[].roleDefinitionName" -o tsv
+```
+
+Lệnh phải in đủ 3 role. Mở factory trong ADF Studio (Portal → Data factory → *Launch studio*) để chắc factory dùng được.
 
 ### Bước 3.8 · RBAC cho 4 thành viên
 
@@ -471,6 +502,8 @@ output "access_connector_id"      { value = azurerm_databricks_access_connector.
 output "databricks_workspace_url" { value = module.dbw.databricks_workspace_url }
 output "databricks_workspace_id"  { value = module.dbw.resource_id }
 output "adf_id"                   { value = module.adf.resource_id }
+output "adf_name"                 { value = module.adf.name }
+output "adf_principal_id"         { value = module.adf.resource.identity[0].principal_id }
 output "sql_server_fqdn"          { value = "${module.sql.resource_name}.database.windows.net" }
 output "func_identity_id"         { value = azurerm_user_assigned_identity.func.id }
 output "func_identity_client_id"  { value = azurerm_user_assigned_identity.func.client_id }
