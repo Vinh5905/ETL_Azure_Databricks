@@ -35,14 +35,51 @@ rules = [
     (r"databricks\s+bundle\s+(deploy|destroy)\b.*(-t|--target)[ =]?prod\b", "Deploy/destroy bundle prod chỉ chạy qua workflow de-deploy.", False),
     (r"az\s+(group|resource)\s+delete\b", "Không xóa tài nguyên Azure từ Claude; dùng terraform qua PR.", False),
     (r"az\s+keyvault\s+secret\s+(show|download)\b", "Không in giá trị secret ra màn hình.", False),
-    (r"git\s+push\b.*(--force\b|--force-with-lease\b|\s-f\b)", "Không force-push.", False),
     (r"git\s+(commit\b.*(--no-verify\b|\s-n\b)|push\b.*--no-verify\b)","Không lách hook (--no-verify); sửa lỗi theo CONTRIBUTING.md.", False),
     (r"(cat|head|tail|less|more|bat|sed|awk|grep|rg|cp|scp|curl)\b.*[\w./-]+\.(auto\.tfvars|tfstate)(?![\w.])", "Không đọc *.auto.tfvars / *.tfstate (chứa ID và giá trị nhạy cảm).", False),
 ]
+
+def block(reason):
+    print(f"Bị chặn bởi .claude/hooks/guard_bash.sh: {reason}", file=sys.stderr)
+    sys.exit(2)
+
+
+def current_branch():
+    try:
+        import subprocess
+        out = subprocess.run(["git", "rev-parse", "--abbrev-ref", "HEAD"], capture_output=True, text=True, timeout=5)
+        return out.stdout.strip()
+    except Exception:
+        return ""
+
+
+def check_push(args):
+    """Chỉ cho --force-with-lease lên nhánh PR; mọi kiểu force lên main đều bị chặn."""
+    force = any(a == "--force" or re.fullmatch(r"-[A-Za-z]*f[A-Za-z]*", a) for a in args)
+    lease = any(a.startswith("--force-with-lease") for a in args)
+    positional = [a for a in args if not a.startswith("-")]
+    refspecs = positional[1:]
+    if force or any(r.startswith("+") for r in refspecs):
+        block("Không dùng --force, -f hay refspec +; nhánh PR chỉ được --force-with-lease (CONTRIBUTING.md §2).")
+    if not lease:
+        return
+    if any(a in ("--all", "--mirror", "--tags") for a in args):
+        block("--force-with-lease chỉ dùng cho một nhánh PR, không kèm --all/--mirror/--tags.")
+    targets = []
+    for ref in refspecs or ["HEAD"]:
+        dst = ref.split(":")[-1] or ref
+        targets.append(current_branch() if dst == "HEAD" else dst)
+    for dst in targets:
+        if dst.removeprefix("refs/heads/") in ("main", "") or dst == "HEAD":
+            block("Không bao giờ force-push lên main (hoặc không xác định được nhánh đích).")
+
+
 for seg in segments:
     for pattern, reason, bypass in rules:
         if not bypass and re.search(prefix + pattern, seg):
-            print(f"Bị chặn bởi .claude/hooks/guard_bash.sh: {reason}", file=sys.stderr)
-            sys.exit(2)
+            block(reason)
+    m = re.search(prefix + r"git\s+push\b(.*)", seg)
+    if m:
+        check_push(m.group(1).split())
 sys.exit(0)
 '

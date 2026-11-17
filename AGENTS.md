@@ -123,7 +123,8 @@ databricks bundle validate -t dev         # chạy trong bundles/, cần DATABRI
 - `databricks bundle deploy|destroy -t prod`.
 - `az group delete`, `az resource delete`.
 - `az keyvault secret show`.
-- `git push --force`, `git commit --no-verify`.
+- `git push --force` / `-f` / refspec `+`, `git commit --no-verify`. Mọi kiểu force push lên `main`.
+  Ngoại lệ: `git push --force-with-lease` lên nhánh PR của chính mình sau khi rebase (`CONTRIBUTING.md` §2).
 - Apply chỉ đi qua PR → workflow `tf-apply`. Ngoại lệ: `bootstrap` và secret scope Key Vault do P1 tự chạy.
 - Với Claude Code, các lệnh trên đã bị chặn bằng hook. **Agent khác phải tự tuân thủ.**
 
@@ -167,6 +168,9 @@ Chi tiết và ví dụ ở `CONTRIBUTING.md`. Luật được kiểm bằng `sc
 - Không `--no-verify`, không commit thẳng vào `main`, chỉ commit khi người dùng yêu cầu.
 
 **Nhánh:** `<type>/<vai>-<việc>`, ví dụ `feat/p1-core-storage`.
+- Tạo từ `origin/main` sau khi `git fetch origin`, không từ `main` ở máy.
+- **Mỗi lần push hoặc mở PR, nhánh phải up-to-date với `origin/main`.** Tụt sau thì `git rebase origin/main`, chạy lại kiểm tra, rồi `git push --force-with-lease` nếu nhánh đã push.
+- PR xếp chồng được phép: để draft, ghi `Depends on #…`. Khi PR nền đã merge thì `git rebase --onto origin/main <commit cuối của PR nền>`, kiểm diff chỉ còn phần của mình rồi mới chuyển ready. Chi tiết ở `CONTRIBUTING.md` §2.
 
 **PR**
 - Tiêu đề cùng định dạng commit (merge bằng squash nên tiêu đề thành commit trên `main`).

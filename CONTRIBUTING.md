@@ -80,6 +80,27 @@ Ví dụ sai: `update code`, `Fix bug`, `feat: Thêm storage`, `feat(infra): add
 - Không commit thẳng vào `main`; mọi thay đổi đi qua PR.
 - Một PR nên nhỏ: một bước trong checklist stack, hoặc một bảng/pipeline.
 
+### Giữ nhánh cập nhật với `main`
+
+**Mỗi lần push hoặc mở PR, nhánh phải chứa `main` mới nhất của repo gốc.** `main` ở máy có thể đã cũ, nên luôn so với `origin/main` (làm trên fork thì là remote trỏ tới repo gốc, thường đặt tên `upstream`).
+
+- **Tạo nhánh mới:** `git fetch origin && git switch -c <nhánh> origin/main`.
+- **Trước khi push/mở PR:**
+  1. `git fetch origin`, rồi `git rev-list --count HEAD..origin/main`. Kết quả khác `0` là nhánh đang tụt sau `main`.
+  2. Cập nhật bằng `git rebase origin/main`, gỡ conflict nếu có.
+  3. Chạy lại kiểm tra (`/check` hoặc `uv run pytest -q`).
+  4. Nhánh chưa từng push: `git push -u origin HEAD`. Nhánh đã push: `git push --force-with-lease`.
+- **Force push:**
+  - Chỉ dùng `--force-with-lease`, và chỉ trên **nhánh PR của chính mình**. Nhánh của người khác chỉ force khi chủ nhánh đồng ý.
+  - **Không bao giờ force lên `main`.** Không dùng `--force`, `-f` hay refspec có dấu `+`.
+  - `main` còn được branch protection chặn force push ở phía GitHub; hook `guard_bash.sh` của Claude Code chặn thêm ở máy.
+- **PR xếp chồng (PR B làm tiếp trên nhánh của PR A chưa merge) được phép:**
+  - PR B để **draft**, ghi `Depends on #<A>` ở mục Liên quan.
+  - Sau khi A squash merge, commit của A trên `main` khác với các commit A trong nhánh B, nên `git rebase origin/main` thường sẽ conflict. Dùng:
+    `git rebase --onto origin/main <commit cuối của A> <nhánh B>` để chỉ chuyển các commit riêng của B.
+  - Kiểm `git diff --stat origin/main...HEAD` chỉ còn file của B, rồi mới `git push --force-with-lease` và chuyển PR sang ready.
+- Cập nhật lúc mở PR là để thấy conflict sớm. Lúc merge, branch protection (`strict`) còn bắt nhánh phải up-to-date lần nữa; khi đó bấm **Update branch** trên GitHub là đủ.
+
 ## 3. Pull Request
 
 **Tiêu đề PR:** tiếng Anh, **cùng định dạng commit**. PR được merge bằng *squash*, nên tiêu đề PR trở thành commit trên `main`.

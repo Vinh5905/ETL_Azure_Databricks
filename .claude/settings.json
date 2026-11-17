@@ -51,7 +51,6 @@
       "Bash(az group delete:*)",
       "Bash(az resource delete:*)",
       "Bash(az keyvault secret show:*)",
-      "Bash(git push --force:*)",
       "Bash(git push -f:*)"
     ]
   },
