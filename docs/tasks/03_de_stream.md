@@ -19,7 +19,7 @@
 
 **Viết simulator dựng sự kiện đơn hàng từ tập train**
 
-- Vai dự kiến: **P3 · DE stream**
+- Vai dự kiến: **P3 · Stream/BI**
 - Cổng: **G0**
 - Issue: [#64](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/64)
 - Tài liệu: `docs/de/04_streaming.md §2`, `docs/data/data_dictionary.md §4`
@@ -52,7 +52,7 @@ Simulator phát đơn train thành sự kiện JSON. Phần dựng sự kiện v
 
 **Gửi sự kiện thử vào Event Hubs bằng giao thức Kafka**
 
-- Vai dự kiến: **P3 · DE stream**
+- Vai dự kiến: **P3 · Stream/BI**
 - Cổng: **G2**
 - Issue: [#65](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/65)
 - Tài liệu: `docs/de/04_streaming.md §2.2`
@@ -83,7 +83,7 @@ Nối simulator với Event Hubs ở Sub B (khác region), key là order_id, pro
 
 **Khai báo pipeline instacart_stream và job instacart-stream-15m trong DAB**
 
-- Vai dự kiến: **P3 · DE stream**
+- Vai dự kiến: **P3 · Stream/BI**
 - Cổng: **G2**
 - Issue: [#66](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/66)
 - Tài liệu: `docs/de/04_streaming.md §3.1, §5`, `docs/de/06_van_hanh_chay_lai.md §3`
@@ -113,7 +113,7 @@ Pipeline stream độc lập với batch, triggered mỗi 15 phút hoặc contin
 
 **Viết bronze_events đọc Kafka vào bronze.order_events**
 
-- Vai dự kiến: **P3 · DE stream**
+- Vai dự kiến: **P3 · Stream/BI**
 - Cổng: **G2**
 - Issue: [#67](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/67)
 - Tài liệu: `docs/de/04_streaming.md §3.2`
@@ -144,7 +144,7 @@ Bronze stream giữ nguyên bản tin JSON và metadata Event Hubs, append-only,
 
 **Dựng silver stream: parse, kiểm chất lượng, AUTO CDC theo order_id**
 
-- Vai dự kiến: **P3 · DE stream**
+- Vai dự kiến: **P3 · Stream/BI**
 - Cổng: **G2**
 - Issue: [#68](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/68)
 - Tài liệu: `docs/de/04_streaming.md §4.1, §4.2, §8`
@@ -178,7 +178,7 @@ Silver stream_orders và stream_order_items upsert theo khóa nên phát lại k
 
 **Dựng gold stream và bảng độ trễ ops.streaming_latency**
 
-- Vai dự kiến: **P3 · DE stream**
+- Vai dự kiến: **P3 · Stream/BI**
 - Cổng: **G2**
 - Issue: [#69](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/69)
 - Tài liệu: `docs/de/04_streaming.md §4.3`
@@ -210,7 +210,7 @@ Gold gần thời gian thực theo thời gian nhận: KPI mỗi phút cho tile 
 
 **Phát đủ tập train, phát lại và đối soát phần stream**
 
-- Vai dự kiến: **P3 · DE stream**
+- Vai dự kiến: **P3 · Stream/BI**
 - Cổng: **G3**
 - Issue: [#70](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/70)
 - Tài liệu: `docs/de/04_streaming.md §6, §7, §8`, `docs/de/06_van_hanh_chay_lai.md §6 (dòng 11, 12)`
@@ -243,7 +243,7 @@ G3 cần đủ 131.209 đơn stream trong silver. Phát lại toàn bộ là b�
 
 **Kiểm đổi eh_generation khi Event Hubs được tạo lại**
 
-- Vai dự kiến: **P3 · DE stream**
+- Vai dự kiến: **P3 · Stream/BI**
 - Cổng: **G2**
 - Issue: [#71](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/71)
 - Tài liệu: `docs/de/04_streaming.md §3.2`, `docs/devops/06_de_den_dashboard.md §2.2`
@@ -274,7 +274,7 @@ Event Hubs bị xóa mỗi đêm và offset về 0. Flow mới theo eh_generatio
 
 **Đo độ trễ Event Hubs khác region và cùng region**
 
-- Vai dự kiến: **P3 · DE stream**
+- Vai dự kiến: **P3 · Stream/BI**
 - Cổng: **G4**
 - Issue: [#72](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/72)
 - Tài liệu: `docs/de/04_streaming.md §4.4, §5`
@@ -306,7 +306,7 @@ Bằng chứng rubric mục 3 về độ trễ khi server ở region khác: so t
 
 **Đẩy KPI stream lên push semantic model của Power BI**
 
-- Vai dự kiến: **P3 · DE stream**
+- Vai dự kiến: **P3 · Stream/BI**
 - Cổng: **G4**
 - Issue: [#73](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/73)
 - Tài liệu: `docs/de/04_streaming.md §4.5`, `docs/de/07_power_bi.md §6`

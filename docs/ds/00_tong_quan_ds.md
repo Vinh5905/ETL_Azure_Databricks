@@ -8,7 +8,7 @@
 | 0 | `00_tong_quan_ds.md` (file này) | Đề tài, bám bài báo thế nào, luồng DS trên Azure + local, cổng, quy ước | Cả nhóm |
 | 1 | [01_du_lieu_thuc_nghiem.md](01_du_lieu_thuc_nghiem.md) | DS nhận dữ liệu gì từ DE, khám phá dữ liệu, chọn ngưỡng | P4 |
 | 2 | [02_thuat_toan_spark.md](02_thuat_toan_spark.md) | Cài DApriori, DATID, sinh luật, FP-Growth MLlib; kiểm tra đúng đắn | P4 (+ P2 review) |
-| 3 | [03_hadoop_mapreduce_local.md](03_hadoop_mapreduce_local.md) | Cụm Hadoop HDFS + YARN bằng Docker, MapReduce so với Spark | P4 + P3 |
+| 3 | [03_hadoop_mapreduce_local.md](03_hadoop_mapreduce_local.md) | Cụm Hadoop HDFS + YARN bằng Docker, MapReduce so với Spark | P4 |
 | 4 | [04_thuc_nghiem_danh_gia.md](04_thuc_nghiem_danh_gia.md) | Ma trận thực nghiệm, đo thời gian / bộ nhớ / speedup, đánh giá trên holdout | P4 |
 | 5 | [05_mlflow_serving_bao_cao.md](05_mlflow_serving_bao_cao.md) | MLflow, chọn model champion, API, Power BI, checklist G5 | P4 + P1 |
 
@@ -93,9 +93,9 @@
 | D2 | Khám phá dữ liệu, chọn lưới MinSupport | DS (P4) | Databricks notebook | [01](01_du_lieu_thuc_nghiem.md) |
 | D3 | Khai phá: DApriori, DATID, FP-Growth, sinh luật; **kiểm tra đúng đắn** | DS | Databricks, job `ds-benchmark` | [02](02_thuat_toan_spark.md), [04](04_thuc_nghiem_danh_gia.md) |
 | D4 | Chạy lưới thực nghiệm E1–E5, E7 → `ml.experiment_runs`, MLflow | DS | Databricks | [04](04_thuc_nghiem_danh_gia.md) |
-| D5 | **MapReduce và Spark** trên Hadoop local (E6) → upload kết quả lên `ds/inbox/` | DS + P3 | Máy local, Docker | [03](03_hadoop_mapreduce_local.md) |
+| D5 | **MapReduce và Spark** trên Hadoop local (E6) → upload kết quả lên `ds/inbox/` | DS (P4) | Máy local, Docker | [03](03_hadoop_mapreduce_local.md) |
 | D6 | Chọn cấu hình champion, đóng gói model `pyfunc`, đăng ký UC, phục vụ qua API | DS + P1 | Databricks, Model Serving / Azure Functions | [05](05_mlflow_serving_bao_cao.md) |
-| D7 | Công bố view `gold.*` cho Power BI: luật, gợi ý, kết quả thực nghiệm | DS (view) + P4 (report) | Serverless SQL warehouse | [05 §4](05_mlflow_serving_bao_cao.md), [de/07](../de/07_power_bi.md) |
+| D7 | Công bố view `gold.*` cho Power BI: luật, gợi ý, kết quả thực nghiệm | DS (P4: view, trang 6–7) + BI (P3: semantic model) | Serverless SQL warehouse | [05 §4](05_mlflow_serving_bao_cao.md), [de/07](../de/07_power_bi.md) |
 
 **Vì sao DS chạy job riêng, không gắn vào batch job hằng ngày** (hình kiến trúc 2 vẽ riêng dải "Job DS"):
 - `ds_data.baskets` (`v1`) là bản cố định, nên không cần train lại mỗi đêm.
@@ -150,9 +150,9 @@ Hệ quả:
 
 | Người | Phần DS |
 |---|---|
-| P4 | Chủ trì: thuật toán, thực nghiệm, MLflow, Power BI trang 6–7, báo cáo |
+| P4 | Chủ trì toàn bộ DS: thuật toán, cụm Hadoop Docker + MapReduce Java (E6), thực nghiệm, MLflow, Power BI trang 6–7, báo cáo |
 | P2 | Job `ds-prepare` (D0–D1); review code PySpark của DS |
-| P3 | Cùng P4 dựng cụm Hadoop Docker, viết MapReduce Java (đã quen JVM/Kafka ở phần stream) |
+| P3 | Chủ Power BI: mở rộng semantic model cho view DS (AD-BI-11) để P4 dựng trang 6–7 |
 | P1 | Hạ tầng: container `ds`, schema, policy, MLflow, serving endpoint, Azure Function ([devops/05](../devops/05_databricks_platform.md), [devops/03](../devops/03_terraform_azure.md)) |
 
 ## 8. Cấu trúc code

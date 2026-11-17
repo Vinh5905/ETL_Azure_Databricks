@@ -78,8 +78,8 @@ Nhóm tập trung vào **mục 4 (phân tích dữ liệu + trực quan dữ li�
 |---|---|---|---|
 | **P1 · Platform / DevOps** | Sub A (core) | Tài liệu 01–05, stack `bootstrap`, `10-core`, `30-databricks`, workflow CI/CD, chi phí | `infra/**`, `.github/**` |
 | **P2 · DE batch** | — (dùng Sub A) | ADF pipeline, Auto Loader, bronze → silver → gold batch, DQ | `adf/**`, `src/ingest/**`, `src/pipelines/batch/**`, `src/tasks/**` |
-| **P3 · DE streaming** | Sub B (stream) | Stack `20-stream`, simulator, streaming jobs, đo độ trễ khác region | `src/streaming/**`, `infra/stacks/20-stream/**` |
-| **P4 · BI / DS** | Sub C (sandbox), Sub D dự phòng | Power BI (4 report, RLS, mobile), lớp serving; sau G3 làm DApriori / DATID / FP-Growth, thực nghiệm, MapReduce (cùng P3) | `powerbi/**`, `src/ml/**`, `src/mapreduce/**`, `local/hadoop/**` |
+| **P3 · DE streaming + BI** | Sub B (stream) | Stack `20-stream`, simulator, streaming jobs, đo độ trễ khác region; Power BI (semantic model, 5 trang, RLS, mobile, real-time) | `src/streaming/**`, `src/pipelines/stream/**`, `infra/stacks/20-stream/**`, `powerbi/**` |
+| **P4 · DS** | Sub C (sandbox), Sub D dự phòng | DApriori / DATID / FP-Growth, cụm Hadoop + MapReduce local, thực nghiệm, MLflow, API, Power BI trang 6–7 | `src/ml/**`, `src/mapreduce/**`, `local/hadoop/**`, `src/serving_func/**` |
 
 Mỗi PR cần ít nhất 1 người khác duyệt. PR đụng `infra/**` bắt buộc có P1 duyệt (CODEOWNERS). Lịch sử PR, review, issue và board trên GitHub Projects là bằng chứng cho rubric 5.4.
 
@@ -97,14 +97,14 @@ Mỗi PR cần ít nhất 1 người khác duyệt. PR đụng `infra/**` bắt 
 
 ## 6. Timeline (tuần tương đối, căn theo hạn nộp thật)
 
-| Tuần | P1 Platform | P2 DE batch | P3 DE stream | P4 BI/DS | Cổng |
+| Tuần | P1 Platform | P2 DE batch | P3 DE stream + BI | P4 DS | Cổng |
 |---|---|---|---|---|---|
-| 1 | Spike, bootstrap, stack core | Code ingest + silver local | Simulator local (Kafka trong Docker) | Kiểm tra giấy phép Power BI, phác thảo 4 report | G0 |
-| 2 | CI/CD, stack Databricks | ADF Zenodo + SQL → landing → bronze | Stack stream, Kafka → bronze | Mockup report trên dữ liệu mẫu | G1, G2 |
-| 3 | Stack orchestration, Infracost | Silver + DQ + đối soát | stream → silver, MERGE | Semantic model dev | G3 |
-| 4 | Hỗ trợ, tối ưu chi phí | Gold batch, benchmark đọc ghi; `ds-prepare` ngay sau G3 | pair counts, đo độ trễ; cùng P4 dựng cụm Hadoop Docker | Publish Power BI, RLS, mobile, real-time; EDA + spike hiệu năng DS (DS-1) | G4 |
-| 5–6 | Hạ tầng DS (G5): serving, `50-serving` | Tối ưu (OPTIMIZE, clustering) | MapReduce Java, E6 | Lưới E1–E5, E7, champion, trang 6–7 | G5 |
-| 7 | Báo cáo chi phí, quota | Báo cáo | Báo cáo | Báo cáo + demo | — |
+| 1 | Spike, bootstrap, stack core | Code ingest + silver local | Simulator local (Kafka trong Docker); kiểm tra giấy phép Power BI, phác thảo 4 report | Cài DApriori / DATID / FP-Growth và test local; dựng cụm Hadoop Docker | G0 |
+| 2 | CI/CD, stack Databricks | ADF Zenodo + SQL → landing → bronze | Stack stream, Kafka → bronze; mockup report trên dữ liệu mẫu | MapReduce Java ItemCount / PairCount, đếm cặp Spark on YARN | G1, G2 |
+| 3 | Stack orchestration, Infracost | Silver + DQ + đối soát | stream → silver, MERGE; semantic model dev | Lưới thực nghiệm, `run_experiment`, holdout | G3 |
+| 4 | Hỗ trợ, tối ưu chi phí | Gold batch, benchmark đọc ghi; `ds-prepare` ngay sau G3 | Đo độ trễ; publish Power BI, RLS, mobile, real-time | EDA + spike hiệu năng DS (DS-1) | G4 |
+| 5–6 | Hạ tầng DS (G5): serving, `50-serving` | Tối ưu (OPTIMIZE, clustering) | Mở rộng semantic model cho view DS, hỗ trợ trang 6–7 | Lưới E1–E7 (gồm E6 MapReduce local), champion, trang 6–7 | G5 |
+| 7 | Báo cáo chi phí, quota | Báo cáo | Báo cáo + demo dashboard | Báo cáo phần DS | — |
 
 ## 7. Rủi ro lớn nhất (chi tiết ở tài liệu 01)
 

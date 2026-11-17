@@ -408,7 +408,7 @@ resources:
 
 - [ ] `terraform plan` của `30-databricks` báo *No changes* sau khi apply.
 - [ ] `SHOW SCHEMAS IN instacart` liệt kê đủ 8 schema (thêm `ds_data`); `DESCRIBE EXTERNAL LOCATION el-bronze` trả về đúng URL.
-- [ ] P2 (vai `de`) tạo được bảng trong `bronze`. P4 (vai `bi`) **không** đọc được `bronze` (lỗi PERMISSION_DENIED) nhưng đọc được `gold`.
+- [ ] P2 (vai `de`) tạo được bảng trong `bronze`. P3 (vai `bi`) **không** đọc được `bronze` (lỗi PERMISSION_DENIED) nhưng đọc được `gold`.
 - [ ] Không chọn được cấu hình cluster nào ngoài policy single-node; cluster tự tắt sau 20 phút.
 - [ ] `dbutils.secrets.get("kv","sql-admin-password")` trả về `[REDACTED]` trong notebook.
 - [ ] `SELECT 1` chạy được trên `wh-instacart-bi` (hoặc đã chốt lớp serving dự phòng).

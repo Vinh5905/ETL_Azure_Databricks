@@ -32,8 +32,8 @@ Cách tổ chức các file hướng dẫn:
 **Vai trò:**
 - **P1** Platform/DevOps (Sub A)
 - **P2** DE batch
-- **P3** DE streaming (Sub B)
-- **P4** BI/DS (Sub C/D)
+- **P3** DE streaming + BI (Sub B, Power BI)
+- **P4** DS (Sub C/D, gồm Hadoop/MapReduce local)
 
 Quyền duyệt PR theo `.github/CODEOWNERS`.
 

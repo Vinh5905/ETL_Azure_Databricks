@@ -183,7 +183,7 @@ def bi_user_access():
     return spark.read.table(f"{LANDING_META}.bi_access_seed")
 ```
 
-**`bi_access_seed` không được commit lên git** (email là dữ liệu cá nhân). P4 nhập tay một lần trong SQL editor:
+**`bi_access_seed` không được commit lên git** (email là dữ liệu cá nhân). P3 nhập tay một lần trong SQL editor:
 
 ```sql
 CREATE TABLE IF NOT EXISTS instacart.landing_meta.bi_access_seed (user_email STRING, department_id INT);

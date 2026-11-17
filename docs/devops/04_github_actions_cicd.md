@@ -49,7 +49,8 @@ tests/        # pytest: unit test hàm transform với pyspark local
 /src/tasks/                  @<P2>
 /src/pipelines/stream/       @<P3>
 /src/streaming/               @<P3>
-/powerbi/  /src/ml/           @<P4>
+/powerbi/                     @<P3>
+/src/ml/                      @<P4>
 ```
 
 **Branch protection cho `main`:**

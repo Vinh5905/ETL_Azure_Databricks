@@ -1226,7 +1226,7 @@
     {
       "id": "AD-BI-01",
       "title": "Spike Power BI: giấy phép Pro, workspace instacart-bi, connector, push model, APR, quyền API",
-      "role": "P4",
+      "role": "P3",
       "gate": "G0",
       "label": "bi",
       "docs": [
@@ -1242,7 +1242,7 @@
     {
       "id": "AD-BI-02",
       "title": "Kết nối Power BI với warehouse và tạo dự án PBIP",
-      "role": "P4",
+      "role": "P3",
       "gate": "G4",
       "label": "bi",
       "docs": [
@@ -1261,7 +1261,7 @@
     {
       "id": "AD-BI-03",
       "title": "Dựng star schema và measure DAX",
-      "role": "P4",
+      "role": "P3",
       "gate": "G4",
       "label": "bi",
       "docs": [
@@ -1278,7 +1278,7 @@
     {
       "id": "AD-BI-04",
       "title": "Dựng trang 1 Tổng quan và trang 3 thời gian mua",
-      "role": "P4",
+      "role": "P3",
       "gate": "G4",
       "label": "bi",
       "docs": [
@@ -1293,7 +1293,7 @@
     {
       "id": "AD-BI-05",
       "title": "Dựng trang 2 chi tiết sản phẩm, trang 4 danh mục và điều hướng",
-      "role": "P4",
+      "role": "P3",
       "gate": "G4",
       "label": "bi",
       "docs": [
@@ -1310,7 +1310,7 @@
     {
       "id": "AD-BI-06",
       "title": "Cài RLS DeptManager và Executive từ bi_user_access",
-      "role": "P4",
+      "role": "P3",
       "gate": "G4",
       "label": "bi",
       "docs": [
@@ -1328,7 +1328,7 @@
     {
       "id": "AD-BI-07",
       "title": "Dựng trang 5 vận hành và real-time",
-      "role": "P4",
+      "role": "P3",
       "gate": "G4",
       "label": "bi",
       "docs": [
@@ -1348,7 +1348,7 @@
     {
       "id": "AD-BI-08",
       "title": "Tạo push semantic model và dashboard Instacart Live",
-      "role": "P4",
+      "role": "P3",
       "gate": "G4",
       "label": "bi",
       "docs": [
@@ -1365,7 +1365,7 @@
     {
       "id": "AD-BI-09",
       "title": "Publish báo cáo, tạo App và lịch refresh",
-      "role": "P4",
+      "role": "P3",
       "gate": "G4",
       "label": "bi",
       "docs": [
@@ -1385,7 +1385,7 @@
     {
       "id": "AD-BI-10",
       "title": "Dựng mobile layout cho các trang và chụp ảnh trên điện thoại",
-      "role": "P4",
+      "role": "P3",
       "gate": "G4",
       "label": "bi",
       "docs": [
@@ -1403,7 +1403,7 @@
     {
       "id": "AD-BI-11",
       "title": "Mở rộng semantic model cho view DS (khung trang 6–7)",
-      "role": "P4",
+      "role": "P3",
       "gate": "G5",
       "label": "bi",
       "docs": [
@@ -1421,7 +1421,7 @@
     {
       "id": "AD-BI-12",
       "title": "Nghiệm thu checklist G4 và diễn tập demo 95/5",
-      "role": "P4",
+      "role": "P3",
       "gate": "G4",
       "label": "bi",
       "docs": [
@@ -1486,7 +1486,7 @@
     {
       "id": "AD-DS-04",
       "title": "Dựng cụm Hadoop HDFS + YARN + Spark on YARN bằng Docker ở local",
-      "role": "P3",
+      "role": "P4",
       "gate": "G0",
       "label": "ds",
       "docs": [
@@ -1499,7 +1499,7 @@
     {
       "id": "AD-DS-05",
       "title": "Viết chương trình MapReduce Java ItemCount và PairCount kèm test MiniMRYarnCluster",
-      "role": "P3",
+      "role": "P4",
       "gate": "G0",
       "label": "ds",
       "docs": [
@@ -1512,7 +1512,7 @@
     {
       "id": "AD-DS-06",
       "title": "Viết đếm cặp Spark on YARN bản DataFrame và RDD, đối chiếu với MapReduce",
-      "role": "P3",
+      "role": "P4",
       "gate": "G0",
       "label": "ds",
       "docs": [
@@ -1529,7 +1529,7 @@
     {
       "id": "AD-DS-07",
       "title": "Viết script tải dữ liệu export về máy và nạp lên HDFS local",
-      "role": "P3",
+      "role": "P4",
       "gate": "G5",
       "label": "ds",
       "docs": [
@@ -1547,7 +1547,7 @@
     {
       "id": "AD-DS-08",
       "title": "Viết bench.py chạy lưới E6 và script upload kết quả lên ds/inbox",
-      "role": "P3",
+      "role": "P4",
       "gate": "G5",
       "label": "ds",
       "docs": [
@@ -1669,7 +1669,7 @@
     {
       "id": "AD-DS-15",
       "title": "Chạy lưới E6 MapReduce và Spark on YARN ở local, nạp kết quả lên ml.experiment_runs",
-      "role": "P3",
+      "role": "P4",
       "gate": "G5",
       "label": "ds",
       "docs": [
@@ -1688,7 +1688,7 @@
     {
       "id": "AD-DS-16",
       "title": "Cài AprioriMR lặp k ≤ 3 trên MapReduce và DApriori trên YARN (mở rộng)",
-      "role": "P3",
+      "role": "P4",
       "gate": "G5",
       "label": "ds",
       "docs": [
@@ -1950,7 +1950,7 @@
     {
       "id": "AD-RP-04",
       "title": "Viết chương trực quan dữ liệu (rubric mục 4) với ảnh dashboard",
-      "role": "P4",
+      "role": "P3",
       "gate": "G4",
       "label": "report",
       "docs": [

@@ -10,9 +10,9 @@
 | 2 | [02_bronze_ldp.md](02_bronze_ldp.md) | Dựng pipeline Lakeflow, Auto Loader nạp landing → bronze | P2 |
 | 3 | [03_silver_cdc_scd_dq.md](03_silver_cdc_scd_dq.md) | CDC → SCD2, kiểm chất lượng, chuẩn hóa, dựng `baskets` | P2 |
 | 4 | [04_streaming.md](04_streaming.md) | Simulator → Event Hubs → bronze/silver/gold gần thời gian thực, phát lại | P3 |
-| 5 | [05_gold_serving.md](05_gold_serving.md) | Bảng gold cho BI, tối ưu lưu trữ, benchmark | P2, P4 |
+| 5 | [05_gold_serving.md](05_gold_serving.md) | Bảng gold cho BI, tối ưu lưu trữ, benchmark | P2, P3 |
 | 6 | [06_van_hanh_chay_lai.md](06_van_hanh_chay_lai.md) | Lỗi ở đâu thì chạy lại thế nào để không mất, không trùng | P2, P3 |
-| 7 | [07_power_bi.md](07_power_bi.md) | Dựng semantic model, 4 trang, RLS, mobile (+ trang 6–7 cho DS) | P4 |
+| 7 | [07_power_bi.md](07_power_bi.md) | Dựng semantic model, 4 trang, RLS, mobile (+ trang 6–7 cho DS) | P3 (trang 6–7: P4) |
 | 8 | [08_du_lieu_cho_ds.md](08_du_lieu_cho_ds.md) | Snapshot và chuẩn bị dữ liệu thực nghiệm cho DS, xuất file cho Hadoop local | P2 |
 
 ---

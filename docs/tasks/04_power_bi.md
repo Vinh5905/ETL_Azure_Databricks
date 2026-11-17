@@ -4,24 +4,24 @@
 
 | Mã | Việc | Vai | Cổng | Phụ thuộc | Issue |
 |---|---|---|---|---|---|
-| [AD-BI-01](#ad-bi-01) | Spike Power BI: giấy phép Pro, workspace instacart-bi, connector, push model, APR, quyền API | P4 | G0 | Chuẩn bị ngay; Hoàn tất: AD-OPS-04 | [#74](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/74) |
-| [AD-BI-02](#ad-bi-02) | Kết nối Power BI với warehouse và tạo dự án PBIP | P4 | G4 | Chuẩn bị ngay; Hoàn tất: AD-DE-23, AD-OPS-22, AD-OPS-20, AD-BI-01 | [#75](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/75) |
-| [AD-BI-03](#ad-bi-03) | Dựng star schema và measure DAX | P4 | G4 | Bắt đầu: AD-BI-02; Hoàn tất: AD-DE-24 | [#76](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/76) |
-| [AD-BI-04](#ad-bi-04) | Dựng trang 1 Tổng quan và trang 3 thời gian mua | P4 | G4 | Bắt đầu: AD-BI-03 | [#77](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/77) |
-| [AD-BI-05](#ad-bi-05) | Dựng trang 2 chi tiết sản phẩm, trang 4 danh mục và điều hướng | P4 | G4 | Bắt đầu: AD-BI-03; Hoàn tất: AD-BI-04 | [#78](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/78) |
-| [AD-BI-06](#ad-bi-06) | Cài RLS DeptManager và Executive từ bi_user_access | P4 | G4 | Bắt đầu: AD-BI-03; Hoàn tất: AD-DE-23 | [#79](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/79) |
-| [AD-BI-07](#ad-bi-07) | Dựng trang 5 vận hành và real-time | P4 | G4 | Bắt đầu: AD-BI-03; Hoàn tất: AD-DE-16, AD-DE-17, AD-ST-06, AD-ST-09 | [#80](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/80) |
-| [AD-BI-08](#ad-bi-08) | Tạo push semantic model và dashboard Instacart Live | P4 | G4 | Chuẩn bị ngay; Hoàn tất: AD-BI-04, AD-BI-01 | [#81](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/81) |
-| [AD-BI-09](#ad-bi-09) | Publish báo cáo, tạo App và lịch refresh | P4 | G4 | Bắt đầu: AD-BI-04, AD-BI-05, AD-BI-06; Hoàn tất: AD-BI-07 | [#82](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/82) |
-| [AD-BI-10](#ad-bi-10) | Dựng mobile layout cho các trang và chụp ảnh trên điện thoại | P4 | G4 | Bắt đầu: AD-BI-05; Hoàn tất: AD-BI-09 | [#83](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/83) |
-| [AD-BI-11](#ad-bi-11) | Mở rộng semantic model cho view DS (khung trang 6–7) | P4 | G5 | Bắt đầu: AD-BI-03; Hoàn tất: AD-DS-22 | [#84](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/84) |
-| [AD-BI-12](#ad-bi-12) | Nghiệm thu checklist G4 và diễn tập demo 95/5 | P4 | G4 | Bắt đầu: AD-BI-07, AD-BI-08, AD-BI-09, AD-BI-10, AD-ST-10; Hoàn tất: AD-DE-26 | [#85](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/85) |
+| [AD-BI-01](#ad-bi-01) | Spike Power BI: giấy phép Pro, workspace instacart-bi, connector, push model, APR, quyền API | P3 | G0 | Chuẩn bị ngay; Hoàn tất: AD-OPS-04 | [#74](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/74) |
+| [AD-BI-02](#ad-bi-02) | Kết nối Power BI với warehouse và tạo dự án PBIP | P3 | G4 | Chuẩn bị ngay; Hoàn tất: AD-DE-23, AD-OPS-22, AD-OPS-20, AD-BI-01 | [#75](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/75) |
+| [AD-BI-03](#ad-bi-03) | Dựng star schema và measure DAX | P3 | G4 | Bắt đầu: AD-BI-02; Hoàn tất: AD-DE-24 | [#76](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/76) |
+| [AD-BI-04](#ad-bi-04) | Dựng trang 1 Tổng quan và trang 3 thời gian mua | P3 | G4 | Bắt đầu: AD-BI-03 | [#77](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/77) |
+| [AD-BI-05](#ad-bi-05) | Dựng trang 2 chi tiết sản phẩm, trang 4 danh mục và điều hướng | P3 | G4 | Bắt đầu: AD-BI-03; Hoàn tất: AD-BI-04 | [#78](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/78) |
+| [AD-BI-06](#ad-bi-06) | Cài RLS DeptManager và Executive từ bi_user_access | P3 | G4 | Bắt đầu: AD-BI-03; Hoàn tất: AD-DE-23 | [#79](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/79) |
+| [AD-BI-07](#ad-bi-07) | Dựng trang 5 vận hành và real-time | P3 | G4 | Bắt đầu: AD-BI-03; Hoàn tất: AD-DE-16, AD-DE-17, AD-ST-06, AD-ST-09 | [#80](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/80) |
+| [AD-BI-08](#ad-bi-08) | Tạo push semantic model và dashboard Instacart Live | P3 | G4 | Chuẩn bị ngay; Hoàn tất: AD-BI-04, AD-BI-01 | [#81](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/81) |
+| [AD-BI-09](#ad-bi-09) | Publish báo cáo, tạo App và lịch refresh | P3 | G4 | Bắt đầu: AD-BI-04, AD-BI-05, AD-BI-06; Hoàn tất: AD-BI-07 | [#82](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/82) |
+| [AD-BI-10](#ad-bi-10) | Dựng mobile layout cho các trang và chụp ảnh trên điện thoại | P3 | G4 | Bắt đầu: AD-BI-05; Hoàn tất: AD-BI-09 | [#83](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/83) |
+| [AD-BI-11](#ad-bi-11) | Mở rộng semantic model cho view DS (khung trang 6–7) | P3 | G5 | Bắt đầu: AD-BI-03; Hoàn tất: AD-DS-22 | [#84](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/84) |
+| [AD-BI-12](#ad-bi-12) | Nghiệm thu checklist G4 và diễn tập demo 95/5 | P3 | G4 | Bắt đầu: AD-BI-07, AD-BI-08, AD-BI-09, AD-BI-10, AD-ST-10; Hoàn tất: AD-DE-26 | [#85](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/85) |
 
 ### AD-BI-01
 
 **Spike Power BI: giấy phép Pro, workspace instacart-bi, connector, push model, APR, quyền API**
 
-- Vai dự kiến: **P4 · BI/DS**
+- Vai dự kiến: **P3 · Stream/BI**
 - Cổng: **G0**
 - Issue: [#74](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/74)
 - Tài liệu: `docs/devops/01_chuan_bi_va_spike.md §3.6`, `docs/de/07_power_bi.md`
@@ -54,7 +54,7 @@ Phép thử Power BI thuộc cổng G0. Kết quả quyết định lớp servin
 
 **Kết nối Power BI với warehouse và tạo dự án PBIP**
 
-- Vai dự kiến: **P4 · BI/DS**
+- Vai dự kiến: **P3 · Stream/BI**
 - Cổng: **G4**
 - Issue: [#75](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/75)
 - Tài liệu: `docs/de/07_power_bi.md §1`, `docs/devops/06_de_den_dashboard.md §4, §5.1`
@@ -86,7 +86,7 @@ Power BI đọc gold qua serverless SQL warehouse bằng Entra ID; nguồn repor
 
 **Dựng star schema và measure DAX**
 
-- Vai dự kiến: **P4 · BI/DS**
+- Vai dự kiến: **P3 · Stream/BI**
 - Cổng: **G4**
 - Issue: [#76](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/76)
 - Tài liệu: `docs/de/07_power_bi.md §2, §3`
@@ -118,7 +118,7 @@ Semantic model dùng chung cho mọi trang: chế độ Import/DirectQuery từn
 
 **Dựng trang 1 Tổng quan và trang 3 thời gian mua**
 
-- Vai dự kiến: **P4 · BI/DS**
+- Vai dự kiến: **P3 · Stream/BI**
 - Cổng: **G4**
 - Issue: [#77](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/77)
 - Tài liệu: `docs/de/07_power_bi.md §4`
@@ -148,7 +148,7 @@ Hai trang KPI theo thời gian: thẻ KPI, xu hướng doanh thu giả lập, he
 
 **Dựng trang 2 chi tiết sản phẩm, trang 4 danh mục và điều hướng**
 
-- Vai dự kiến: **P4 · BI/DS**
+- Vai dự kiến: **P3 · Stream/BI**
 - Cổng: **G4**
 - Issue: [#78](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/78)
 - Tài liệu: `docs/de/07_power_bi.md §4`
@@ -180,7 +180,7 @@ Trang 2 là đích drill-through (ảnh, giá, Nutri-Score, sản phẩm mua kè
 
 **Cài RLS DeptManager và Executive từ bi_user_access**
 
-- Vai dự kiến: **P4 · BI/DS**
+- Vai dự kiến: **P3 · Stream/BI**
 - Cổng: **G4**
 - Issue: [#79](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/79)
 - Tài liệu: `docs/de/07_power_bi.md §5`, `docs/de/05_gold_serving.md §2.3`
@@ -212,7 +212,7 @@ Bảo mật mức dòng theo email người xem; lọc trên dim_department và 
 
 **Dựng trang 5 vận hành và real-time**
 
-- Vai dự kiến: **P4 · BI/DS**
+- Vai dự kiến: **P3 · Stream/BI**
 - Cổng: **G4**
 - Issue: [#80](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/80)
 - Tài liệu: `docs/de/07_power_bi.md §2, §4, §6b`
@@ -242,7 +242,7 @@ Trang 5 cho thấy streaming, độ trễ khác region và chất lượng dữ 
 
 **Tạo push semantic model và dashboard Instacart Live**
 
-- Vai dự kiến: **P4 · BI/DS**
+- Vai dự kiến: **P3 · Stream/BI**
 - Cổng: **G4**
 - Issue: [#81](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/81)
 - Tài liệu: `docs/de/07_power_bi.md §6a`, `docs/devops/06_de_den_dashboard.md §5.3`
@@ -258,7 +258,7 @@ Tile real-time vài giây cần streaming semantic model kiểu API; push URL ch
 2. Lưu Push URL vào Key Vault tên pbi-push-url bằng az keyvault secret set, không dán vào code hay chat
 3. Tạo dashboard Instacart Live: tile Card orders và Line theo minute
 4. Ghim thêm visual trang 1 lên dashboard
-5. Báo P3 tên secret để nối sink
+5. Ghi tên secret để AD-ST-10 nối sink (cùng P3 làm)
 
 **Đầu ra**
 
@@ -275,7 +275,7 @@ Tile real-time vài giây cần streaming semantic model kiểu API; push URL ch
 
 **Publish báo cáo, tạo App và lịch refresh**
 
-- Vai dự kiến: **P4 · BI/DS**
+- Vai dự kiến: **P3 · Stream/BI**
 - Cổng: **G4**
 - Issue: [#82](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/82)
 - Tài liệu: `docs/de/07_power_bi.md §7, §8`, `docs/devops/06_de_den_dashboard.md §5.1, §5.6`
@@ -309,7 +309,7 @@ Người xem nhận báo cáo qua App để RLS có hiệu lực; Import refresh
 
 **Dựng mobile layout cho các trang và chụp ảnh trên điện thoại**
 
-- Vai dự kiến: **P4 · BI/DS**
+- Vai dự kiến: **P3 · Stream/BI**
 - Cổng: **G4**
 - Issue: [#83](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/83)
 - Tài liệu: `docs/de/07_power_bi.md §8`, `docs/devops/06_de_den_dashboard.md §5.5`
@@ -338,7 +338,7 @@ Rubric yêu cầu responsive mobile: mỗi trang có bố cục dọc riêng, ki
 
 **Mở rộng semantic model cho view DS (khung trang 6–7)**
 
-- Vai dự kiến: **P4 · BI/DS**
+- Vai dự kiến: **P3 · Stream/BI**
 - Cổng: **G5**
 - Issue: [#84](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/84)
 - Tài liệu: `docs/de/07_power_bi.md §2, §4`, `docs/ds/05_mlflow_serving_bao_cao.md §4, §5`
@@ -370,7 +370,7 @@ Trang 6–7 do phần DS dựng; phần chung là thêm view DS vào model đún
 
 **Nghiệm thu checklist G4 và diễn tập demo 95/5**
 
-- Vai dự kiến: **P4 · BI/DS**
+- Vai dự kiến: **P3 · Stream/BI**
 - Cổng: **G4**
 - Issue: [#85](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/85)
 - Tài liệu: `docs/de/07_power_bi.md §9`, `docs/devops/06_de_den_dashboard.md §6.4`
@@ -383,7 +383,7 @@ Gom bằng chứng mở cổng G4: điều hướng, RLS, mobile, tile real-time
 **Việc cần làm**
 
 1. Đi lần lượt checklist de/07 §9
-2. Diễn tập 95/5 cùng P3: phát nốt 5% với --rate 20, đo thời gian tile đổi
+2. Diễn tập 95/5 (P3 vừa phát stream vừa theo dõi dashboard): phát nốt 5% với --rate 20, đo thời gian tile đổi
 3. Kiểm tổng Orders trang 1 với SQL
 4. Kiểm powerbi/ không có cache.abf hay thông tin đăng nhập
 5. Gom ảnh vào thư mục bằng chứng báo cáo

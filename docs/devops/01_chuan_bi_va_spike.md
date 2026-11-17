@@ -22,7 +22,7 @@
 | Python 3.11 + uv | 3.11 (khớp Databricks Runtime) | Code PySpark, test | `brew install uv && uv python install 3.11` |
 | Docker Desktop | mới nhất; máy chạy benchmark DS cấp cho Docker ≥ 8 CPU, ≥ 16 GB RAM | Spark/Kafka local; cụm Hadoop HDFS + YARN cho MapReduce ([ds/03](../ds/03_hadoop_mapreduce_local.md)) | — |
 | AzCopy | 10.x | Tải file thực nghiệm từ container `ds`, upload kết quả benchmark (đăng nhập bằng `az login`) | `brew install azcopy` |
-| Power BI Desktop | mới nhất | Làm report (chỉ chạy Windows: máy Windows của P4 hoặc VM) | Microsoft Store |
+| Power BI Desktop | mới nhất | Làm report (chỉ chạy Windows: máy Windows của P3 (BI) hoặc P4 (trang 6–7), hoặc VM) | Microsoft Store |
 | Infracost | mới nhất | Ước tính chi phí trên PR (tùy chọn) | `brew install infracost` |
 
 Một người chạy, những người còn lại kiểm tra lại trên máy mình:
@@ -111,7 +111,7 @@ Tạo tay **một** workspace Premium ở region đã chốt (Portal, mất kho�
 | ADF tải ZIP từ Zenodo qua HTTP | Copy activity: HTTP → ADLS, kiểm tra xem có dùng ZipDeflate được không | Tải về rồi giải nén trong Databricks (`unzip` trên driver) |
 | Azure Functions **Flex Consumption** (G5) | Portal → Function App → Flex Consumption, Python 3.11, ở region Sub A | Gói Consumption cũ (`Y1`); không được nữa thì bỏ Function, gọi endpoint trực tiếp khi demo |
 
-### 3.6 Power BI (P4)
+### 3.6 Power BI (P3)
 
 | Kiểm tra | Cách làm | Dự phòng |
 |---|---|---|

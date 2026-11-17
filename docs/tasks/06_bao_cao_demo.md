@@ -7,7 +7,7 @@
 | [AD-RP-01](#ad-rp-01) | Lập khung báo cáo cuối kỳ và bảng truy vết rubric → bằng chứng | P3 | G0 | Chuẩn bị ngay | [#113](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/113) |
 | [AD-RP-02](#ad-rp-02) | Viết chương mở đầu, dữ liệu và kiến trúc của báo cáo | P3 | G1 | Bắt đầu: AD-RP-01; Hoàn tất: AD-OPS-07 | [#114](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/114) |
 | [AD-RP-03](#ad-rp-03) | Viết chương ETL batch, streaming và bằng chứng rubric mục 3 | P2 | G4 | Bắt đầu: AD-DE-26, AD-ST-09; Hoàn tất: AD-DE-27, AD-OPS-33 | [#115](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/115) |
-| [AD-RP-04](#ad-rp-04) | Viết chương trực quan dữ liệu (rubric mục 4) với ảnh dashboard | P4 | G4 | Bắt đầu: AD-BI-12 | [#116](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/116) |
+| [AD-RP-04](#ad-rp-04) | Viết chương trực quan dữ liệu (rubric mục 4) với ảnh dashboard | P3 | G4 | Bắt đầu: AD-BI-12 | [#116](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/116) |
 | [AD-RP-05](#ad-rp-05) | Viết chương quản lý dự án trên cloud (rubric mục 5.4) | P1 | G4 | Bắt đầu: AD-OPS-33 | [#117](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/117) |
 | [AD-RP-06](#ad-rp-06) | Ghép báo cáo hoàn chỉnh, thống nhất hình bảng và trích dẫn | P3 | G5 | Bắt đầu: AD-RP-02, AD-RP-03, AD-RP-04, AD-RP-05, AD-DS-26; Hoàn tất: AD-DS-27 | [#118](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/118) |
 | [AD-RP-07](#ad-rp-07) | Soạn slide thuyết trình | P2 | G5 | Bắt đầu: AD-RP-01; Hoàn tất: AD-RP-06 | [#119](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/119) |
@@ -19,7 +19,7 @@
 
 **Lập khung báo cáo cuối kỳ và bảng truy vết rubric → bằng chứng**
 
-- Vai dự kiến: **P3 · DE stream**
+- Vai dự kiến: **P3 · Stream/BI**
 - Cổng: **G0**
 - Issue: [#113](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/113)
 - Tài liệu: `docs/00_tong_quan_du_an.md §1.4, §6`, `docs/devops/00_tong_quan.md §1`
@@ -50,7 +50,7 @@ Báo cáo được chấm theo rubric. Có khung và bảng truy vết sớm th�
 
 **Viết chương mở đầu, dữ liệu và kiến trúc của báo cáo**
 
-- Vai dự kiến: **P3 · DE stream**
+- Vai dự kiến: **P3 · Stream/BI**
 - Cổng: **G1**
 - Issue: [#114](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/114)
 - Tài liệu: `docs/00_tong_quan_du_an.md`, `docs/architecture/*.png`, `docs/data/data_dictionary.md`
@@ -114,7 +114,7 @@ Rubric mục 3 cần số đo thật: tốc độ đọc ghi, ETL tự động, 
 
 **Viết chương trực quan dữ liệu (rubric mục 4) với ảnh dashboard**
 
-- Vai dự kiến: **P4 · BI/DS**
+- Vai dự kiến: **P3 · Stream/BI**
 - Cổng: **G4**
 - Issue: [#116](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/116)
 - Tài liệu: `docs/de/07_power_bi.md`, `docs/devops/06_de_den_dashboard.md §5`
@@ -176,7 +176,7 @@ Rubric 5.4 chấm cách nhiều người cùng làm trên một resource, dùng 
 
 **Ghép báo cáo hoàn chỉnh, thống nhất hình bảng và trích dẫn**
 
-- Vai dự kiến: **P3 · DE stream**
+- Vai dự kiến: **P3 · Stream/BI**
 - Cổng: **G5**
 - Issue: [#118](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/118)
 - Tài liệu: `docs/report/00_khung_bao_cao.md`

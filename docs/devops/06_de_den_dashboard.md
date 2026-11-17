@@ -102,7 +102,7 @@ Chạy ở máy local hoặc GitHub Codespace. Đọc `order_products__train` r�
 | 6 | Bật Event Hubs, chạy simulator khoảng 95% tập train | P3 | `stream-toggle up`, simulator |
 | 7 | Chạy pipeline streaming tới silver/gold | P3 | `bundle run instacart_stream` |
 | 8 | Bật trigger hằng ngày | P1 | `triggers_on = true` qua PR |
-| 9 | Dựng Power BI (mục 5) | P4 | — |
+| 9 | Dựng Power BI (mục 5) | P3 | — |
 
 ## 4. Lớp phục vụ (serving) cho Power BI: thang dự phòng
 
@@ -118,7 +118,7 @@ Bảng gold dành cho Power BI phải **nhỏ và đã tổng hợp sẵn**. Kh�
 
 ### 5.1 Workspace, chia sẻ, giấy phép
 
-- Workspace `instacart-bi`: P4 là Admin, P1–P3 là Member.
+- Workspace `instacart-bi`: P3 là Admin, P1, P2, P4 là Member.
 - Phân phối cho người xem bằng **Power BI App** "Instacart Analytics", chia thành audience theo nhóm người xem.
 - **Mọi người xem** (kể cả giảng viên) cần giấy phép Pro hoặc trial, vì workspace không nằm trên Premium/Fabric capacity. Gửi lời mời trước buổi demo.
 - **Không** dùng *Publish to web*: tính năng này công khai link và bỏ qua RLS, trái với yêu cầu bảo mật.
@@ -149,7 +149,7 @@ Bảng gold dành cho Power BI phải **nhỏ và đã tổng hợp sẵn**. Kh�
 | **Push semantic model (streaming tile)** | Vài giây | Microsoft đã thông báo ngừng *tạo mới* real-time semantic model từ **31/10/2027**, nên đồ án vẫn dùng được. Cần kiểm tra lại ở spike 3.6 |
 
 **Cách triển khai push:**
-1. P4 tạo *streaming semantic model* kiểu API và lấy **push URL**. URL này chứa key, nên lưu vào Key Vault với tên `pbi-push-url`.
+1. P3 tạo *streaming semantic model* kiểu API và lấy **push URL**. URL này chứa key, nên lưu vào Key Vault với tên `pbi-push-url`.
 2. Task `pair_counts_gold` trong `foreachBatch` gửi POST các KPI tổng hợp của micro-batch (số đơn, doanh thu giả lập, top cặp) tới push URL.
 3. Ghim tile streaming lên **dashboard** Power BI cạnh các visual của report.
 
@@ -179,7 +179,7 @@ Mỗi trang có **Mobile layout** riêng (View → Mobile layout): sắp lại K
 | Dim sản phẩm, bảng lớn ít đổi | Import | Scheduled refresh 1 lần/ngày, sau `pl_master` (Pro cho tối đa 8 lần/ngày) |
 | Tile real-time | Push | Liên tục khi job streaming chạy |
 
-Thông tin đăng nhập nguồn trên Service: OAuth bằng tài khoản P4, hoặc một tài khoản kỹ thuật chỉ có quyền đọc `gold`. Ghi rõ lựa chọn trong báo cáo.
+Thông tin đăng nhập nguồn trên Service: OAuth bằng tài khoản P3, hoặc một tài khoản kỹ thuật chỉ có quyền đọc `gold`. Ghi rõ lựa chọn trong báo cáo.
 
 ## 6. Checklist nghiệm thu từng cổng
 

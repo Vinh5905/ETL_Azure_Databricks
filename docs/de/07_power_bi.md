@@ -24,7 +24,7 @@
    - **Server hostname:** `adb-<id>.<n>.azuredatabricks.net`.
    - **HTTP path:** `/sql/1.0/warehouses/<warehouse_id>`.
 3. Chọn *Data connectivity mode* theo từng bảng (mục 2). Lần đầu chọn Import cho mọi bảng, sau đó đổi riêng bảng cần DirectQuery.
-4. **Xác thực:** *Microsoft Entra ID* bằng tài khoản P4. Người đó chỉ có quyền đọc `gold` và `ops`, đúng nguyên tắc đặc quyền tối thiểu ([devops/05 bước 5](../devops/05_databricks_platform.md)).
+4. **Xác thực:** *Microsoft Entra ID* bằng tài khoản P3. Người đó chỉ có quyền đọc `gold` và `ops`, đúng nguyên tắc đặc quyền tối thiểu ([devops/05 bước 5](../devops/05_databricks_platform.md)).
 5. Navigator → catalog `instacart` → chọn các bảng ở mục 2. **Không** chọn `fact_order_lines`.
 
 Lưu bằng *File → Save as → Power BI Project (.pbip)* vào `powerbi/`. Thêm `powerbi/**/.pbi/localSettings.json` và `powerbi/**/cache.abf` vào `.gitignore`.
@@ -182,7 +182,7 @@ Có ba lớp, chi tiết vì sao ở [devops/06 §5.3](../devops/06_de_den_dashb
 
 | Cách | Thiết lập | Khi dùng |
 |---|---|---|
-| **Scheduled refresh** (mặc định) | *Semantic model → Settings → Data source credentials* (OAuth2, tài khoản P4) → *Refresh* hằng ngày 04:00 | Luôn bật. `pl_master` chạy 02:00, xong trước 03:30 |
+| **Scheduled refresh** (mặc định) | *Semantic model → Settings → Data source credentials* (OAuth2, tài khoản P3) → *Refresh* hằng ngày 04:00 | Luôn bật. `pl_master` chạy 02:00, xong trước 03:30 |
 | Refresh qua API sau job | Task `refresh_bi` gọi `POST https://api.powerbi.com/v1.0/myorg/groups/{workspaceId}/datasets/{datasetId}/refreshes` | Chỉ khi tenant cho phép service principal gọi API (spike 3.6) |
 
 Nếu tenant chặn service principal thì `refresh_bi.py` chỉ ghi dòng "skipped" vào `ops.pipeline_runs`, còn scheduled refresh lo phần làm mới. Task `reconcile` đứng trước `refresh_bi` nên số sai không bao giờ được đẩy chủ động. Scheduled refresh thì vẫn chạy theo giờ, nên phải theo dõi `ops.reconciliation` ở trang 5.

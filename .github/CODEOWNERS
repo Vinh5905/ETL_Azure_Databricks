@@ -1,23 +1,22 @@
 # Code owner theo vai (tài liệu docs/devops/00, mục 4):
-#   P1 = @Vinh5905   Platform / DevOps
-#   P2 = @HoaiTam    DE batch
-#   P3 = @mtuan2491  DE streaming
-#   P4 = @P4_HANDLE  BI / DS (chưa có username: thay khi thành viên thứ 4 vào repo)
+#   P1 = @Vinh5905     Platform / DevOps
+#   P2 = @HoaiTam      DE batch
+#   P3 = @mtuan2491    DE streaming + Power BI
+#   P4 = @TrungNQ2645  DS (thuật toán, Hadoop/MapReduce local, MLflow, API)
 # Quy tắc ở dưới ghi đè quy tắc ở trên, nên dòng cụ thể đặt sau dòng chung.
-# Dòng còn @P4_HANDLE chưa có owner hợp lệ, GitHub sẽ không yêu cầu review cho các đường dẫn đó.
 
 /infra/                       @Vinh5905
 /.github/                     @Vinh5905
 /infra/stacks/20-stream/      @mtuan2491 @Vinh5905
-/bundles/                     @HoaiTam @mtuan2491
+/bundles/                     @HoaiTam @mtuan2491 @TrungNQ2645
 /adf/                         @HoaiTam
 /src/ingest/                  @HoaiTam
 /src/pipelines/batch/         @HoaiTam
 /src/tasks/                   @HoaiTam
 /src/pipelines/stream/        @mtuan2491
 /src/streaming/               @mtuan2491
-/powerbi/                     @P4_HANDLE
-/src/ml/                      @P4_HANDLE
-/src/mapreduce/               @P4_HANDLE
-/local/hadoop/                @P4_HANDLE
-/src/serving_func/            @P4_HANDLE
+/powerbi/                     @mtuan2491
+/src/ml/                      @TrungNQ2645
+/src/mapreduce/               @TrungNQ2645
+/local/hadoop/                @TrungNQ2645
+/src/serving_func/            @TrungNQ2645

@@ -229,7 +229,7 @@ Hình 2 phóng to khối Databricks của hình 1. Nó cho biết:
 
 ### 4.4 Data Science: khai phá luật kết hợp và so sánh nền tảng
 
-**Tài liệu:** [ds/00](ds/00_tong_quan_ds.md) → 01–05; dữ liệu do DE chuẩn bị ở [de/08](de/08_du_lieu_cho_ds.md). **Người làm chính:** P4, có P2 và P3 hỗ trợ.
+**Tài liệu:** [ds/00](ds/00_tong_quan_ds.md) → 01–05; dữ liệu do DE chuẩn bị ở [de/08](de/08_du_lieu_cho_ds.md). **Người làm chính:** P4, có P2 hỗ trợ dữ liệu.
 
 1. **D0–D1 (DE, job `ds-prepare`, sau G3):**
    - Chụp `silver.baskets` thành bản cố định `ds_data` (`data_version = v1`).
@@ -255,7 +255,7 @@ Hình 2 phóng to khối Databricks của hình 1. Nó cho biết:
 
 ### 4.5 BI: dashboard đạt rubric mục 4
 
-**Tài liệu:** [de/07](de/07_power_bi.md), [devops/06 §5](devops/06_de_den_dashboard.md). **Người làm chính:** P4.
+**Tài liệu:** [de/07](de/07_power_bi.md), [devops/06 §5](devops/06_de_den_dashboard.md). **Người làm chính:** P3; trang 6–7 do P4.
 
 - Power BI Service đọc gold qua serverless SQL warehouse.
 - Star schema: fact `fact_order_lines`, các dim ngày, sản phẩm, ngành hàng.
@@ -297,8 +297,8 @@ Lộ trình theo tuần và checklist từng cổng ở [devops/00 §3, §6](dev
 |---|---|
 | **P1 · Platform / DevOps** | Sub A, Terraform, CI/CD, Unity Catalog, chi phí; hạ tầng DS (serving, Function) |
 | **P2 · DE batch** | ADF, Auto Loader, bronze → silver → gold, chất lượng dữ liệu, `ds-prepare` |
-| **P3 · DE streaming** | Sub B, simulator, pipeline stream, đo độ trễ; cùng P4 làm Hadoop / MapReduce |
-| **P4 · BI / DS** | Power BI; DApriori / DATID / FP-Growth, thực nghiệm, MLflow, API |
+| **P3 · DE streaming + BI** | Sub B, simulator, pipeline stream, đo độ trễ; Power BI (semantic model, 5 trang, RLS, mobile, real-time) |
+| **P4 · DS** | Sub C (sandbox); DApriori / DATID / FP-Growth, Hadoop / MapReduce local, thực nghiệm, MLflow, API, Power BI trang 6–7 |
 
 Mỗi PR cần ít nhất một người khác duyệt; quy ước commit và PR ở [CONTRIBUTING.md](../CONTRIBUTING.md).
 

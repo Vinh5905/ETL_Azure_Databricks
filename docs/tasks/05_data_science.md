@@ -7,19 +7,19 @@
 | [AD-DS-01](#ad-ds-01) | Cài apriori_gen, DApriori và DATID trên RDD kèm test vét cạn | P4 | G0 | Chuẩn bị ngay | [#86](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/86) |
 | [AD-DS-02](#ad-ds-02) | Cài sinh luật gen_rules và bọc FP-Growth MLlib, test so khớp với MLlib | P4 | G0 | Chuẩn bị ngay; Hoàn tất: AD-DS-01 | [#87](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/87) |
 | [AD-DS-03](#ad-ds-03) | Viết hàm đọc dữ liệu thực nghiệm data.py và bộ đo measure.py có test local | P4 | G0 | Chuẩn bị ngay | [#88](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/88) |
-| [AD-DS-04](#ad-ds-04) | Dựng cụm Hadoop HDFS + YARN + Spark on YARN bằng Docker ở local | P3 | G0 | Chuẩn bị ngay | [#89](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/89) |
-| [AD-DS-05](#ad-ds-05) | Viết chương trình MapReduce Java ItemCount và PairCount kèm test MiniMRYarnCluster | P3 | G0 | Chuẩn bị ngay | [#90](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/90) |
-| [AD-DS-06](#ad-ds-06) | Viết đếm cặp Spark on YARN bản DataFrame và RDD, đối chiếu với MapReduce | P3 | G0 | Bắt đầu: AD-DS-04; Hoàn tất: AD-DS-05 | [#91](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/91) |
-| [AD-DS-07](#ad-ds-07) | Viết script tải dữ liệu export về máy và nạp lên HDFS local | P3 | G5 | Bắt đầu: AD-DS-04; Hoàn tất: AD-DE-21 | [#92](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/92) |
-| [AD-DS-08](#ad-ds-08) | Viết bench.py chạy lưới E6 và script upload kết quả lên ds/inbox | P3 | G5 | Bắt đầu: AD-DS-06 | [#93](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/93) |
+| [AD-DS-04](#ad-ds-04) | Dựng cụm Hadoop HDFS + YARN + Spark on YARN bằng Docker ở local | P4 | G0 | Chuẩn bị ngay | [#89](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/89) |
+| [AD-DS-05](#ad-ds-05) | Viết chương trình MapReduce Java ItemCount và PairCount kèm test MiniMRYarnCluster | P4 | G0 | Chuẩn bị ngay | [#90](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/90) |
+| [AD-DS-06](#ad-ds-06) | Viết đếm cặp Spark on YARN bản DataFrame và RDD, đối chiếu với MapReduce | P4 | G0 | Bắt đầu: AD-DS-04; Hoàn tất: AD-DS-05 | [#91](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/91) |
+| [AD-DS-07](#ad-ds-07) | Viết script tải dữ liệu export về máy và nạp lên HDFS local | P4 | G5 | Bắt đầu: AD-DS-04; Hoàn tất: AD-DE-21 | [#92](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/92) |
+| [AD-DS-08](#ad-ds-08) | Viết bench.py chạy lưới E6 và script upload kết quả lên ds/inbox | P4 | G5 | Bắt đầu: AD-DS-06 | [#93](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/93) |
 | [AD-DS-09](#ad-ds-09) | Định nghĩa lưới experiments.yml và viết plan_grid.py bung tổ hợp theo run_key | P4 | G5 | Chuẩn bị ngay | [#94](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/94) |
 | [AD-DS-10](#ad-ds-10) | Viết run_experiment.py chạy một tổ hợp, ghi ml.experiment_runs và MLflow | P4 | G5 | Bắt đầu: AD-DS-01, AD-DS-02, AD-DS-03, AD-DS-09 | [#95](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/95) |
 | [AD-DS-11](#ad-ds-11) | Khám phá dữ liệu ds_data v1 và chốt lưới MinSupport theo cấp item | P4 | G3 | Bắt đầu: AD-DE-21; Hoàn tất: AD-DS-09 | [#96](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/96) |
 | [AD-DS-12](#ad-ds-12) | Khai báo job ds-benchmark trong DAB và viết ingest_local.sql | P4 | G5 | Chuẩn bị ngay; Hoàn tất: AD-DS-08, AD-DS-10, AD-OPS-30, AD-OPS-22 | [#97](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/97) |
 | [AD-DS-13](#ad-ds-13) | Chạy spike DS-1 và thực nghiệm E1 kiểm đúng đắn trên dữ liệu thật | P4 | G5 | Bắt đầu: AD-DS-11, AD-DS-12 | [#98](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/98) |
 | [AD-DS-14](#ad-ds-14) | Chạy toàn bộ lưới E2–E5 trên Databricks | P4 | G5 | Bắt đầu: AD-DS-13 | [#99](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/99) |
-| [AD-DS-15](#ad-ds-15) | Chạy lưới E6 MapReduce và Spark on YARN ở local, nạp kết quả lên ml.experiment_runs | P3 | G5 | Bắt đầu: AD-DS-07, AD-DS-08; Hoàn tất: AD-DS-12 | [#100](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/100) |
-| [AD-DS-16](#ad-ds-16) | Cài AprioriMR lặp k ≤ 3 trên MapReduce và DApriori trên YARN (mở rộng) | P3 | G5 | Bắt đầu: AD-DS-15 | [#101](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/101) |
+| [AD-DS-15](#ad-ds-15) | Chạy lưới E6 MapReduce và Spark on YARN ở local, nạp kết quả lên ml.experiment_runs | P4 | G5 | Bắt đầu: AD-DS-07, AD-DS-08; Hoàn tất: AD-DS-12 | [#100](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/100) |
+| [AD-DS-16](#ad-ds-16) | Cài AprioriMR lặp k ≤ 3 trên MapReduce và DApriori trên YARN (mở rộng) | P4 | G5 | Bắt đầu: AD-DS-15 | [#101](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/101) |
 | [AD-DS-17](#ad-ds-17) | Dựng demo pipeline HDFS + Spark dựng giỏ prior từ CSV gốc (tùy chọn) | P4 | G5 | Bắt đầu: AD-DS-04; Hoàn tất: AD-DE-17 | [#102](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/102) |
 | [AD-DS-18](#ad-ds-18) | Viết đánh giá luật trên holdout evaluate_holdout.py và baseline phổ biến | P4 | G5 | Chuẩn bị ngay | [#103](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/103) |
 | [AD-DS-19](#ad-ds-19) | Viết model pyfunc BasketRules gợi ý món từ giỏ hàng kèm test | P4 | G5 | Chuẩn bị ngay; Hoàn tất: AD-DS-18 | [#104](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/104) |
@@ -36,7 +36,7 @@
 
 **Cài apriori_gen, DApriori và DATID trên RDD kèm test vét cạn**
 
-- Vai dự kiến: **P4 · BI/DS**
+- Vai dự kiến: **P4 · DS**
 - Cổng: **G0**
 - Issue: [#86](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/86)
 - Tài liệu: `docs/ds/00_tong_quan_ds.md §2, §8`, `docs/ds/02_thuat_toan_spark.md §1–3, §6.1`
@@ -71,7 +71,7 @@ Lõi thuật toán bám bài báo, viết bằng RDD. Làm và kiểm hoàn toà
 
 **Cài sinh luật gen_rules và bọc FP-Growth MLlib, test so khớp với MLlib**
 
-- Vai dự kiến: **P4 · BI/DS**
+- Vai dự kiến: **P4 · DS**
 - Cổng: **G0**
 - Issue: [#87](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/87)
 - Tài liệu: `docs/ds/02_thuat_toan_spark.md §4–6`
@@ -102,7 +102,7 @@ Sinh luật (support, confidence, lift) phân tán và baseline PFP của bài b
 
 **Viết hàm đọc dữ liệu thực nghiệm data.py và bộ đo measure.py có test local**
 
-- Vai dự kiến: **P4 · BI/DS**
+- Vai dự kiến: **P4 · DS**
 - Cổng: **G0**
 - Issue: [#88](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/88)
 - Tài liệu: `docs/ds/01_du_lieu_thuc_nghiem.md §1–2`, `docs/ds/04_thuc_nghiem_danh_gia.md §4`
@@ -134,7 +134,7 @@ Hai hàm dùng chung cho mọi lần chạy: lọc giao dịch theo grain/scale/
 
 **Dựng cụm Hadoop HDFS + YARN + Spark on YARN bằng Docker ở local**
 
-- Vai dự kiến: **P3 · DE stream**
+- Vai dự kiến: **P4 · DS**
 - Cổng: **G0**
 - Issue: [#89](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/89)
 - Tài liệu: `docs/ds/03_hadoop_mapreduce_local.md §1–2`
@@ -142,7 +142,7 @@ Hai hàm dùng chung cho mọi lần chạy: lọc giao dịch theo grain/scale/
 - **Hoàn tất còn cần:** Không có.
 - **Mở khóa:** [AD-DS-06](05_data_science.md#ad-ds-06) (bắt đầu), [AD-DS-07](05_data_science.md#ad-ds-07) (bắt đầu), [AD-DS-17](05_data_science.md#ad-ds-17) (bắt đầu)
 
-Cụm local thay HDFS/Hadoop của đề tài gốc (không có quota trên Azure). Là nền cho mọi phép so MapReduce và Spark ở E6. Phần Hadoop do P3 làm cùng P4 (docs/00 §7); thẻ giao cho P3, P4 nghiệm thu.
+Cụm local thay HDFS/Hadoop của đề tài gốc (không có quota trên Azure). Là nền cho mọi phép so MapReduce và Spark ở E6. Phần Hadoop do P4 làm (docs/00 §7).
 
 **Việc cần làm**
 
@@ -167,7 +167,7 @@ Cụm local thay HDFS/Hadoop của đề tài gốc (không có quota trên Azur
 
 **Viết chương trình MapReduce Java ItemCount và PairCount kèm test MiniMRYarnCluster**
 
-- Vai dự kiến: **P3 · DE stream**
+- Vai dự kiến: **P4 · DS**
 - Cổng: **G0**
 - Issue: [#90](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/90)
 - Tài liệu: `docs/ds/03_hadoop_mapreduce_local.md §4.1–4.3`
@@ -175,7 +175,7 @@ Cụm local thay HDFS/Hadoop của đề tài gốc (không có quota trên Azur
 - **Hoàn tất còn cần:** Không có.
 - **Mở khóa:** [AD-DS-06](05_data_science.md#ad-ds-06) (hoàn tất)
 
-Chương trình thống kê bằng Hadoop MapReduce của đề tài: hai pha đầu Apriori (k = 2), khóa cặp nén thành long. Build bằng image Maven, không cần cụm. Phần Hadoop do P3 làm cùng P4 (docs/00 §7); thẻ giao cho P3, P4 nghiệm thu.
+Chương trình thống kê bằng Hadoop MapReduce của đề tài: hai pha đầu Apriori (k = 2), khóa cặp nén thành long. Build bằng image Maven, không cần cụm. Phần Hadoop do P4 làm (docs/00 §7).
 
 **Việc cần làm**
 
@@ -199,7 +199,7 @@ Chương trình thống kê bằng Hadoop MapReduce của đề tài: hai pha đ
 
 **Viết đếm cặp Spark on YARN bản DataFrame và RDD, đối chiếu với MapReduce**
 
-- Vai dự kiến: **P3 · DE stream**
+- Vai dự kiến: **P4 · DS**
 - Cổng: **G0**
 - Issue: [#91](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/91)
 - Tài liệu: `docs/ds/03_hadoop_mapreduce_local.md §5`
@@ -207,7 +207,7 @@ Chương trình thống kê bằng Hadoop MapReduce của đề tài: hai pha đ
 - **Hoàn tất còn cần:** [AD-DS-05](05_data_science.md#ad-ds-05) [#90](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/90)
 - **Mở khóa:** [AD-DS-08](05_data_science.md#ad-ds-08) (bắt đầu)
 
-Hai bản Spark cùng logic với PairCount: DataFrame (thuần JVM, so ngang Java) và RDD Python (giống DApriori). Là điều kiện để E6 so công bằng. Phần Hadoop do P3 làm cùng P4 (docs/00 §7); thẻ giao cho P3, P4 nghiệm thu.
+Hai bản Spark cùng logic với PairCount: DataFrame (thuần JVM, so ngang Java) và RDD Python (giống DApriori). Là điều kiện để E6 so công bằng. Phần Hadoop do P4 làm (docs/00 §7).
 
 **Việc cần làm**
 
@@ -231,7 +231,7 @@ Hai bản Spark cùng logic với PairCount: DataFrame (thuần JVM, so ngang Ja
 
 **Viết script tải dữ liệu export về máy và nạp lên HDFS local**
 
-- Vai dự kiến: **P3 · DE stream**
+- Vai dự kiến: **P4 · DS**
 - Cổng: **G5**
 - Issue: [#92](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/92)
 - Tài liệu: `docs/ds/03_hadoop_mapreduce_local.md §3`, `docs/de/08_du_lieu_cho_ds.md §5`
@@ -239,7 +239,7 @@ Hai bản Spark cùng logic với PairCount: DataFrame (thuần JVM, so ngang Ja
 - **Hoàn tất còn cần:** [AD-DE-21](02_de_batch.md#ad-de-21) [#57](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/57)
 - **Mở khóa:** [AD-DS-15](05_data_science.md#ad-ds-15) (bắt đầu)
 
-Đưa đúng file txt của DE vào HDFS để Spark và MapReduce đọc cùng một input. Script viết được ngay, chỉ chạy thật khi DE đã xuất v1. Phần Hadoop do P3 làm cùng P4 (docs/00 §7); thẻ giao cho P3, P4 nghiệm thu.
+Đưa đúng file txt của DE vào HDFS để Spark và MapReduce đọc cùng một input. Script viết được ngay, chỉ chạy thật khi DE đã xuất v1. Phần Hadoop do P4 làm (docs/00 §7).
 
 **Việc cần làm**
 
@@ -263,7 +263,7 @@ Hai bản Spark cùng logic với PairCount: DataFrame (thuần JVM, so ngang Ja
 
 **Viết bench.py chạy lưới E6 và script upload kết quả lên ds/inbox**
 
-- Vai dự kiến: **P3 · DE stream**
+- Vai dự kiến: **P4 · DS**
 - Cổng: **G5**
 - Issue: [#93](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/93)
 - Tài liệu: `docs/ds/03_hadoop_mapreduce_local.md §6–7, §9`, `docs/ds/00_tong_quan_ds.md §6.2`
@@ -271,7 +271,7 @@ Hai bản Spark cùng logic với PairCount: DataFrame (thuần JVM, so ngang Ja
 - **Hoàn tất còn cần:** Không có.
 - **Mở khóa:** [AD-DS-12](05_data_science.md#ad-ds-12) (hoàn tất), [AD-DS-15](05_data_science.md#ad-ds-15) (bắt đầu)
 
-Bộ chạy đo E6 trên cụm local: 3 cài đặt × quy mô × core × 3 lần, đọc số đo từ JobHistory và Spark History. Kiểm được trên dữ liệu đồ chơi trước khi có dữ liệu thật. Phần Hadoop do P3 làm cùng P4 (docs/00 §7); thẻ giao cho P3, P4 nghiệm thu.
+Bộ chạy đo E6 trên cụm local: 3 cài đặt × quy mô × core × 3 lần, đọc số đo từ JobHistory và Spark History. Kiểm được trên dữ liệu đồ chơi trước khi có dữ liệu thật. Phần Hadoop do P4 làm (docs/00 §7).
 
 **Việc cần làm**
 
@@ -297,7 +297,7 @@ Bộ chạy đo E6 trên cụm local: 3 cài đặt × quy mô × core × 3 lầ
 
 **Định nghĩa lưới experiments.yml và viết plan_grid.py bung tổ hợp theo run_key**
 
-- Vai dự kiến: **P4 · BI/DS**
+- Vai dự kiến: **P4 · DS**
 - Cổng: **G5**
 - Issue: [#94](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/94)
 - Tài liệu: `docs/ds/04_thuc_nghiem_danh_gia.md §2–3, §5.1, §5.4, §6`, `docs/ds/00_tong_quan_ds.md §6.2`, `docs/ds/01_du_lieu_thuc_nghiem.md §4`
@@ -329,7 +329,7 @@ Task plan của job ds-benchmark: đọc lưới, bung tổ hợp, bỏ tổ h�
 
 **Viết run_experiment.py chạy một tổ hợp, ghi ml.experiment_runs và MLflow**
 
-- Vai dự kiến: **P4 · BI/DS**
+- Vai dự kiến: **P4 · DS**
 - Cổng: **G5**
 - Issue: [#95](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/95)
 - Tài liệu: `docs/ds/04_thuc_nghiem_danh_gia.md §4, §5.3–5.4, §6`, `docs/ds/05_mlflow_serving_bao_cao.md §1`, `docs/ds/02_thuat_toan_spark.md §6.2`
@@ -361,7 +361,7 @@ Mỗi vòng for_each của ds-benchmark gọi script này: chạy thuật toán,
 
 **Khám phá dữ liệu ds_data v1 và chốt lưới MinSupport theo cấp item**
 
-- Vai dự kiến: **P4 · BI/DS**
+- Vai dự kiến: **P4 · DS**
 - Cổng: **G3**
 - Issue: [#96](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/96)
 - Tài liệu: `docs/ds/01_du_lieu_thuc_nghiem.md §1, §3–5`, `docs/de/08_du_lieu_cho_ds.md §7`
@@ -394,7 +394,7 @@ Bước D2: đo kích thước giỏ và số item phổ biến theo MinSupport 
 
 **Khai báo job ds-benchmark trong DAB và viết ingest_local.sql**
 
-- Vai dự kiến: **P4 · BI/DS**
+- Vai dự kiến: **P4 · DS**
 - Cổng: **G5**
 - Issue: [#97](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/97)
 - Tài liệu: `docs/ds/04_thuc_nghiem_danh_gia.md §5.1–5.2`, `docs/ds/03_hadoop_mapreduce_local.md §7`, `docs/devops/05_databricks_platform.md (phần DS trong bundle)`
@@ -428,7 +428,7 @@ Job chạy lưới trên Databricks: plan → grid_c1 → grid_c2 → grid_c4 �
 
 **Chạy spike DS-1 và thực nghiệm E1 kiểm đúng đắn trên dữ liệu thật**
 
-- Vai dự kiến: **P4 · BI/DS**
+- Vai dự kiến: **P4 · DS**
 - Cổng: **G5**
 - Issue: [#98](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/98)
 - Tài liệu: `docs/ds/04_thuc_nghiem_danh_gia.md §2 (mốc DS-1)`, `docs/ds/02_thuat_toan_spark.md §6.2, §7`, `docs/ds/00_tong_quan_ds.md §5`
@@ -461,7 +461,7 @@ Mốc DS-1: một lần chạy mỗi thuật toán để có thời gian thật 
 
 **Chạy toàn bộ lưới E2–E5 trên Databricks**
 
-- Vai dự kiến: **P4 · BI/DS**
+- Vai dự kiến: **P4 · DS**
 - Cổng: **G5**
 - Issue: [#99](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/99)
 - Tài liệu: `docs/ds/04_thuc_nghiem_danh_gia.md §1–2, §5–6`
@@ -492,7 +492,7 @@ Mốc DS-2: số liệu theo MinSupport, quy mô, số item và số core cho 3 
 
 **Chạy lưới E6 MapReduce và Spark on YARN ở local, nạp kết quả lên ml.experiment_runs**
 
-- Vai dự kiến: **P3 · DE stream**
+- Vai dự kiến: **P4 · DS**
 - Cổng: **G5**
 - Issue: [#100](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/100)
 - Tài liệu: `docs/ds/03_hadoop_mapreduce_local.md §6–7, §9`, `docs/ds/04_thuc_nghiem_danh_gia.md §2`
@@ -500,7 +500,7 @@ Mốc DS-2: số liệu theo MinSupport, quy mô, số item và số core cho 3 
 - **Hoàn tất còn cần:** [AD-DS-12](05_data_science.md#ad-ds-12) [#97](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/97)
 - **Mở khóa:** [AD-DS-16](05_data_science.md#ad-ds-16) (bắt đầu), [AD-DS-22](05_data_science.md#ad-ds-22) (hoàn tất), [AD-DS-26](05_data_science.md#ad-ds-26) (bắt đầu)
 
-Mốc DS-3, chạy song song DS-2: đo thật MapReduce và Spark trên cùng cụm, phần bổ sung cho lập luận của bài báo. Kết quả vào Azure qua ds/inbox và task ingest_local. Phần Hadoop do P3 làm cùng P4 (docs/00 §7); thẻ giao cho P3, P4 nghiệm thu.
+Mốc DS-3, chạy song song DS-2: đo thật MapReduce và Spark trên cùng cụm, phần bổ sung cho lập luận của bài báo. Kết quả vào Azure qua ds/inbox và task ingest_local. Phần Hadoop do P4 làm (docs/00 §7).
 
 **Việc cần làm**
 
@@ -524,7 +524,7 @@ Mốc DS-3, chạy song song DS-2: đo thật MapReduce và Spark trên cùng c�
 
 **Cài AprioriMR lặp k ≤ 3 trên MapReduce và DApriori trên YARN (mở rộng)**
 
-- Vai dự kiến: **P3 · DE stream**
+- Vai dự kiến: **P4 · DS**
 - Cổng: **G5**
 - Issue: [#101](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/101)
 - Tài liệu: `docs/ds/03_hadoop_mapreduce_local.md §4.4`
@@ -532,7 +532,7 @@ Mốc DS-3, chạy song song DS-2: đo thật MapReduce và Spark trên cùng c�
 - **Hoàn tất còn cần:** Không có.
 - **Mở khóa:** Không có.
 
-Phần mở rộng, chỉ làm khi E6 cơ bản xong: đo đúng lập luận chính của bài báo là Hadoop ghi kết quả từng vòng xuống HDFS còn Spark giữ trong bộ nhớ. Phần Hadoop do P3 làm cùng P4 (docs/00 §7); thẻ giao cho P3, P4 nghiệm thu.
+Phần mở rộng, chỉ làm khi E6 cơ bản xong: đo đúng lập luận chính của bài báo là Hadoop ghi kết quả từng vòng xuống HDFS còn Spark giữ trong bộ nhớ. Phần Hadoop do P4 làm (docs/00 §7).
 
 **Việc cần làm**
 
@@ -555,7 +555,7 @@ Phần mở rộng, chỉ làm khi E6 cơ bản xong: đo đúng lập luận ch
 
 **Dựng demo pipeline HDFS + Spark dựng giỏ prior từ CSV gốc (tùy chọn)**
 
-- Vai dự kiến: **P4 · BI/DS**
+- Vai dự kiến: **P4 · DS**
 - Cổng: **G5**
 - Issue: [#102](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/102)
 - Tài liệu: `docs/ds/03_hadoop_mapreduce_local.md §8`
@@ -584,7 +584,7 @@ Demo đúng sản phẩm pipeline HDFS + Spark của đề tài gốc, không d�
 
 **Viết đánh giá luật trên holdout evaluate_holdout.py và baseline phổ biến**
 
-- Vai dự kiến: **P4 · BI/DS**
+- Vai dự kiến: **P4 · DS**
 - Cổng: **G5**
 - Issue: [#103](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/103)
 - Tài liệu: `docs/ds/04_thuc_nghiem_danh_gia.md §7`
@@ -614,7 +614,7 @@ E7: đo luật có dùng được để gợi ý không (HitRate, Precision, Rec
 
 **Viết model pyfunc BasketRules gợi ý món từ giỏ hàng kèm test**
 
-- Vai dự kiến: **P4 · BI/DS**
+- Vai dự kiến: **P4 · DS**
 - Cổng: **G5**
 - Issue: [#104](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/104)
 - Tài liệu: `docs/ds/05_mlflow_serving_bao_cao.md §2.2`
@@ -645,7 +645,7 @@ Model Serving không chạy được model Spark, nên luật champion được 
 
 **Chạy thực nghiệm E7 và đánh giá luật trên holdout val/test**
 
-- Vai dự kiến: **P4 · BI/DS**
+- Vai dự kiến: **P4 · DS**
 - Cổng: **G5**
 - Issue: [#105](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/105)
 - Tài liệu: `docs/ds/04_thuc_nghiem_danh_gia.md §2–3, §7`, `docs/ds/05_mlflow_serving_bao_cao.md §1`
@@ -675,7 +675,7 @@ Mốc DS-4 phần đánh giá: FP-Growth product 100% ở 3 MinSupp, lưu luật
 
 **Chọn champion, đăng ký model basket_rules vào Unity Catalog và khai báo job ds-champion**
 
-- Vai dự kiến: **P4 · BI/DS**
+- Vai dự kiến: **P4 · DS**
 - Cổng: **G5**
 - Issue: [#106](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/106)
 - Tài liệu: `docs/ds/05_mlflow_serving_bao_cao.md §2, §7`, `docs/devops/03_terraform_azure.md (ds/serving/)`
@@ -709,7 +709,7 @@ Bước D6: chọn cấu hình theo quy tắc ghi trước (coverage ≥ 0,5, Hi
 
 **Viết view gold cho DS: association_rules, recommendations, experiment_metrics, holdout_metrics**
 
-- Vai dự kiến: **P4 · BI/DS**
+- Vai dự kiến: **P4 · DS**
 - Cổng: **G5**
 - Issue: [#107](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/107)
 - Tài liệu: `docs/ds/05_mlflow_serving_bao_cao.md §4`, `docs/ds/00_tong_quan_ds.md §6.1`, `docs/ds/04_thuc_nghiem_danh_gia.md §8`
@@ -742,7 +742,7 @@ Bước D7: Power BI chỉ đọc gold; view chạy bằng quyền chủ view n�
 
 **Khai báo Model Serving endpoint instacart-basket-rules trong DAB và kiểm API**
 
-- Vai dự kiến: **P4 · BI/DS**
+- Vai dự kiến: **P4 · DS**
 - Cổng: **G5**
 - Issue: [#108](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/108)
 - Tài liệu: `docs/ds/05_mlflow_serving_bao_cao.md §3.1`, `docs/devops/05_databricks_platform.md (serving_ds.yml)`
@@ -773,7 +773,7 @@ Phương án A của API: endpoint serverless scale-to-zero phục vụ phiên b
 
 **Viết Azure Function recommend gọi endpoint, có phương án B tự tra luật**
 
-- Vai dự kiến: **P4 · BI/DS**
+- Vai dự kiến: **P4 · DS**
 - Cổng: **G5**
 - Issue: [#109](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/109)
 - Tài liệu: `docs/ds/05_mlflow_serving_bao_cao.md §3.2–3.3`, `docs/devops/04_github_actions_cicd.md §3.8`
@@ -806,7 +806,7 @@ Proxy FaaS cho web, dùng managed identity lấy token Entra, không giữ token
 
 **Làm Power BI trang 6 luật kết hợp và trang 7 thực nghiệm thuật toán**
 
-- Vai dự kiến: **P4 · BI/DS**
+- Vai dự kiến: **P4 · DS**
 - Cổng: **G5**
 - Issue: [#110](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/110)
 - Tài liệu: `docs/ds/05_mlflow_serving_bao_cao.md §5`, `docs/de/07_power_bi.md §4`, `docs/ds/04_thuc_nghiem_danh_gia.md §8`
@@ -837,7 +837,7 @@ Trực quan kết quả DS cho rubric mục 4: luật của champion và đườ
 
 **Phân tích kết quả thực nghiệm và viết phần DS của báo cáo, đối chiếu bài báo**
 
-- Vai dự kiến: **P4 · BI/DS**
+- Vai dự kiến: **P4 · DS**
 - Cổng: **G5**
 - Issue: [#111](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/111)
 - Tài liệu: `docs/ds/04_thuc_nghiem_danh_gia.md §8`, `docs/ds/00_tong_quan_ds.md §2`, `docs/ds/02_thuat_toan_spark.md §2, §5, §7`
@@ -869,7 +869,7 @@ Trực quan kết quả DS cho rubric mục 4: luật của champion và đườ
 
 **Đối chiếu checklist G5 và chốt bằng chứng phần DS**
 
-- Vai dự kiến: **P4 · BI/DS**
+- Vai dự kiến: **P4 · DS**
 - Cổng: **G5**
 - Issue: [#112](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/112)
 - Tài liệu: `docs/ds/05_mlflow_serving_bao_cao.md §6`, `docs/00_tong_quan_du_an.md (cổng G0–G5)`

@@ -283,7 +283,7 @@ SELECT * FROM instacart.ml.holdout_metrics;
 
 ## 5. Power BI: trang 6 và 7
 
-Chi tiết model và DAX nằm ở [de/07 §4](../de/07_power_bi.md) (P4 làm cả hai phần). Tóm tắt:
+Chi tiết model và DAX nằm ở [de/07 §4](../de/07_power_bi.md) (P3 dựng semantic model, P4 làm trang 6–7). Tóm tắt:
 
 | Trang | Visual chính | Tương tác |
 |---|---|---|

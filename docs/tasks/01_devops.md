@@ -701,7 +701,7 @@ Rubric 4 yêu cầu ràng buộc ai xem dữ liệu nào ở tầng dữ liệu.
 **Xong khi**
 
 - [ ] P2 (de) tạo được bảng trong bronze
-- [ ] P4 (bi) đọc bronze bị PERMISSION_DENIED, đọc gold được
+- [ ] P3 (bi) đọc bronze bị PERMISSION_DENIED, đọc gold được
 - [ ] DS đọc được ds_data, ghi được ml
 - [ ] Plan lần hai No changes
 
@@ -809,7 +809,7 @@ Notebook đọc bí mật qua scope kv; Power BI cần host và HTTP path của 
 
 **Dựng stack 20-stream (Event Hubs, SAS, secret) và nghiệm thu stream-toggle**
 
-- Vai dự kiến: **P3 · DE stream**
+- Vai dự kiến: **P3 · Stream/BI**
 - Cổng: **G2**
 - Issue: [#26](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/26)
 - Tài liệu: `docs/devops/03_terraform_azure.md §4`, `docs/devops/04_github_actions_cicd.md §3.5`
@@ -967,7 +967,7 @@ Checklist G4 cần bảng chi phí theo owner/stack và ảnh quota vCPU cho rub
 
 **Dựng workspace sandbox 90-sandbox cho DS ở Sub C**
 
-- Vai dự kiến: **P4 · BI/DS**
+- Vai dự kiến: **P4 · DS**
 - Cổng: **G3**
 - Issue: [#31](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/31)
 - Tài liệu: `docs/devops/03_terraform_azure.md §5`, `docs/ds/04_thuc_nghiem_danh_gia.md §5.2`

@@ -850,7 +850,7 @@ Power BI chỉ đọc bảng nhỏ đã tổng hợp: kpi_daily, kpi_by_dow_hour
 
 1. Thêm các MV vào gold.py theo de/05 §2.2–2.3
 2. product_360 có expect_or_fail one_row_per_product
-3. bi_user_access đọc landing_meta.bi_access_seed (P4 nhập tay, không commit email)
+3. bi_user_access đọc landing_meta.bi_access_seed (P3 nhập tay, không commit email)
 4. Chạy kiểm tổng items khớp fact
 
 **Đầu ra**
