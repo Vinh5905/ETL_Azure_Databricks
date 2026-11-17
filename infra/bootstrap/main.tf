@@ -8,13 +8,14 @@ locals {
   }
 
   # Subject của token OIDC mà GitHub phát cho từng loại job.
+  # Repo bật use_immutable_subject nên subject có kèm ID số: repo:<owner>@<id>/<repo>@<id>:…
   # Job có `environment: X` nhận subject `…:environment:X` (không phải `ref:…`), nên cần đủ các dòng.
   gh_subjects = {
-    main   = "repo:${var.github_repo}:ref:refs/heads/main"
-    pr     = "repo:${var.github_repo}:pull_request"
-    prod   = "repo:${var.github_repo}:environment:prod"
-    dev    = "repo:${var.github_repo}:environment:dev"
-    stream = "repo:${var.github_repo}:environment:stream" # stream-toggle chạy theo lịch, không cần reviewer
+    main   = "${var.github_sub_prefix}:ref:refs/heads/main"
+    pr     = "${var.github_sub_prefix}:pull_request"
+    prod   = "${var.github_sub_prefix}:environment:prod"
+    dev    = "${var.github_sub_prefix}:environment:dev"
+    stream = "${var.github_sub_prefix}:environment:stream" # stream-toggle chạy theo lịch, không cần reviewer
   }
 }
 
@@ -86,10 +87,9 @@ resource "azurerm_user_assigned_identity" "ci" {
 resource "azurerm_federated_identity_credential" "gh" {
   for_each = local.gh_subjects
 
-  name                = "github-${each.key}"
-  resource_group_name = azurerm_resource_group.tfstate.name
-  parent_id           = azurerm_user_assigned_identity.ci.id
-  issuer              = "https://token.actions.githubusercontent.com"
-  audience            = ["api://AzureADTokenExchange"]
-  subject             = each.value
+  name                      = "github-${each.key}"
+  user_assigned_identity_id = azurerm_user_assigned_identity.ci.id
+  issuer                    = "https://token.actions.githubusercontent.com"
+  audience                  = ["api://AzureADTokenExchange"]
+  subject                   = each.value
 }

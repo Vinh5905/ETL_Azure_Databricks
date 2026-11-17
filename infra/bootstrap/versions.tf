@@ -12,10 +12,9 @@ terraform {
     }
   }
 
-  # Lần apply đầu chạy với local state (chưa có storage để chứa state).
-  # Apply xong: bỏ comment dòng dưới rồi chạy
-  #   terraform init -backend-config=../backend.hcl -backend-config="key=bootstrap.tfstate" -migrate-state
-  # backend "azurerm" {}
+  # Lần apply đầu chạy với local state, sau đó đã chuyển lên blob (docs/devops/02 §3 bước 6).
+  # Máy mới chạy: terraform init -backend-config=../backend.hcl -backend-config="key=bootstrap.tfstate"
+  backend "azurerm" {}
 }
 
 provider "azurerm" {

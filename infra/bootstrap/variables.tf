@@ -13,13 +13,16 @@ variable "location" {
   }
 }
 
-variable "github_repo" {
-  description = "Repo GitHub dạng <owner>/<repo>, dùng làm subject cho federated credential."
+variable "github_sub_prefix" {
+  description = <<-EOT
+    Phần đầu subject trong token OIDC của GitHub, ví dụ "repo:<owner>@<owner_id>/<repo>@<repo_id>".
+    Lấy bằng: gh api repos/<owner>/<repo>/actions/oidc/customization/sub --jq .sub_claim_prefix
+  EOT
   type        = string
 
   validation {
-    condition     = can(regex("^[^/]+/[^/]+$", var.github_repo))
-    error_message = "github_repo phải có dạng <owner>/<repo>."
+    condition     = can(regex("^repo:[^/]+/[^/:]+$", var.github_sub_prefix))
+    error_message = "github_sub_prefix phải có dạng repo:<owner>[@id]/<repo>[@id], không có dấu : ở cuối."
   }
 }
 

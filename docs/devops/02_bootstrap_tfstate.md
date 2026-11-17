@@ -125,25 +125,31 @@ resource "azurerm_user_assigned_identity" "ci" {
 
 locals {
   gh_subjects = {
-    main = "repo:${var.github_repo}:ref:refs/heads/main"   # push lên main
-    pr   = "repo:${var.github_repo}:pull_request"          # plan trên PR
-    prod = "repo:${var.github_repo}:environment:prod"      # apply / deploy cần reviewer duyệt
-    dev  = "repo:${var.github_repo}:environment:dev"
+    main   = "${var.github_sub_prefix}:ref:refs/heads/main"   # push lên main
+    pr     = "${var.github_sub_prefix}:pull_request"          # plan trên PR
+    prod   = "${var.github_sub_prefix}:environment:prod"      # apply / deploy cần reviewer duyệt
+    dev    = "${var.github_sub_prefix}:environment:dev"
+    stream = "${var.github_sub_prefix}:environment:stream"    # stream-toggle chạy theo lịch
   }
 }
 
 resource "azurerm_federated_identity_credential" "gh" {
-  for_each            = local.gh_subjects
-  name                = "github-${each.key}"
-  resource_group_name = azurerm_resource_group.tfstate.name
-  parent_id           = azurerm_user_assigned_identity.ci.id
-  issuer              = "https://token.actions.githubusercontent.com"
-  audience            = ["api://AzureADTokenExchange"]
-  subject             = each.value
+  for_each                  = local.gh_subjects
+  name                      = "github-${each.key}"
+  user_assigned_identity_id = azurerm_user_assigned_identity.ci.id # azurerm 4.x: thay parent_id, bỏ resource_group_name
+  issuer                    = "https://token.actions.githubusercontent.com"
+  audience                  = ["api://AzureADTokenExchange"]
+  subject                   = each.value
 }
 ```
 
 > Chú ý: khi job GitHub khai báo `environment: prod`, *subject* của token là `…:environment:prod` (không phải `ref:refs/heads/main`). Vì vậy phải tạo đủ các subject như trên.
+
+> Chú ý: repo này bật `use_immutable_subject` (mặc định với repo mới của GitHub), nên subject có kèm ID số: `repo:<owner>@<owner_id>/<repo>@<repo_id>:…`. Nếu dùng dạng cũ `repo:<owner>/<repo>:…`, Entra báo `AADSTS700213: No matching federated identity record`. Lấy đúng prefix bằng:
+>
+> ```bash
+> gh api repos/<owner>/<repo>/actions/oidc/customization/sub --jq .sub_claim_prefix
+> ```
 
 ### Bước 5 · Phân quyền (`rbac.tf`)
 

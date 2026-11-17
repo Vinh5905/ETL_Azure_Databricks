@@ -1,8 +1,13 @@
 # Sao chép thành bootstrap.auto.tfvars (đã nằm trong .gitignore) rồi điền giá trị thật.
+# Subscription ID của Sub A: az account show --query id -o tsv
 subscription_id_a = "00000000-0000-0000-0000-000000000000"
-location          = "" # region chốt ở G0
-github_repo       = "<owner>/<repo>"
+location          = "eastasia" # chốt G0 (docs/devops/spike_results.md §3)
+# gh api repos/Vinh5905/ETL_Azure_Databricks/actions/oidc/customization/sub --jq .sub_claim_prefix
+github_sub_prefix = "repo:Vinh5905@139760800/ETL_Azure_Databricks@1361099081"
 
+# Object ID trong Entra của từng thành viên:
+#   của mình:        az ad signed-in-user show --query id -o tsv
+#   của người khác:  az ad user show --id <email trường> --query id -o tsv
 member_object_ids = {
   p1 = "00000000-0000-0000-0000-000000000001"
   p2 = "00000000-0000-0000-0000-000000000002"
