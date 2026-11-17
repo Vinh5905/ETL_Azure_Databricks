@@ -66,7 +66,7 @@ Nhóm tập trung vào **mục 4 (phân tích dữ liệu + trực quan dữ li�
 | P5 · Stack stream (Sub B) | Event Hubs, SAS vào Key Vault, workflow bật/tắt | 03, 04 | **G2: streaming sẵn sàng** | Simulator → Event Hubs → `bronze.order_events` |
 | P6 · Pipeline DE | ADF pipeline (stack orchestration), DAB jobs batch + streaming, kiểm tra DQ | 06 | **G3: silver đạt đối soát** | **DS bắt đầu** trên `silver.baskets`; BI nối thử gold dev |
 | P7 · Gold + Power BI | Gold, lớp serving, semantic model, 4 report, RLS, mobile, cập nhật real-time | 06 | **G4: dashboard đạt rubric** | Demo phần trực quan |
-| P8 · Hạ tầng DS | Container `ds`, schema `ds_data`, policy `instacart-ds-benchmark`, MLflow, serving endpoint, stack `50-serving` (Function), cụm Hadoop Docker ở máy local | 03, 05, [ds/](../ds/00_tong_quan_ds.md) | **G5** | Thực nghiệm DApriori / DATID / FP-Growth, MapReduce và Spark, API model, trang 6–7 |
+| P8 · Hạ tầng DS | Container `ds-data`, schema `ds_data`, policy `instacart-ds-benchmark`, MLflow, serving endpoint, stack `50-serving` (Function), cụm Hadoop Docker ở máy local | 03, 05, [ds/](../ds/00_tong_quan_ds.md) | **G5** | Thực nghiệm DApriori / DATID / FP-Growth, MapReduce và Spark, API model, trang 6–7 |
 
 **Hai điểm then chốt người dùng hỏi:**
 - **DE bắt đầu trên cloud ở G1.** Lúc này đã có ADLS, External Location và catalog `instacart`. Trước G1, DE vẫn viết và test code bằng PySpark local, vì code chạy được trên cả hai môi trường.

@@ -11,7 +11,7 @@
 | [AD-DS-05](#ad-ds-05) | Viết chương trình MapReduce Java ItemCount và PairCount kèm test MiniMRYarnCluster | P4 | G0 | Chuẩn bị ngay | [#90](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/90) |
 | [AD-DS-06](#ad-ds-06) | Viết đếm cặp Spark on YARN bản DataFrame và RDD, đối chiếu với MapReduce | P4 | G0 | Bắt đầu: AD-DS-04; Hoàn tất: AD-DS-05 | [#91](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/91) |
 | [AD-DS-07](#ad-ds-07) | Viết script tải dữ liệu export về máy và nạp lên HDFS local | P4 | G5 | Bắt đầu: AD-DS-04; Hoàn tất: AD-DE-21 | [#92](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/92) |
-| [AD-DS-08](#ad-ds-08) | Viết bench.py chạy lưới E6 và script upload kết quả lên ds/inbox | P4 | G5 | Bắt đầu: AD-DS-06 | [#93](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/93) |
+| [AD-DS-08](#ad-ds-08) | Viết bench.py chạy lưới E6 và script upload kết quả lên ds-data/inbox | P4 | G5 | Bắt đầu: AD-DS-06 | [#93](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/93) |
 | [AD-DS-09](#ad-ds-09) | Định nghĩa lưới experiments.yml và viết plan_grid.py bung tổ hợp theo run_key | P4 | G5 | Chuẩn bị ngay | [#94](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/94) |
 | [AD-DS-10](#ad-ds-10) | Viết run_experiment.py chạy một tổ hợp, ghi ml.experiment_runs và MLflow | P4 | G5 | Bắt đầu: AD-DS-01, AD-DS-02, AD-DS-03, AD-DS-09 | [#95](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/95) |
 | [AD-DS-11](#ad-ds-11) | Khám phá dữ liệu ds_data v1 và chốt lưới MinSupport theo cấp item | P4 | G3 | Bắt đầu: AD-DE-21; Hoàn tất: AD-DS-09 | [#96](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/96) |
@@ -261,7 +261,7 @@ Hai bản Spark cùng logic với PairCount: DataFrame (thuần JVM, so ngang Ja
 
 ### AD-DS-08
 
-**Viết bench.py chạy lưới E6 và script upload kết quả lên ds/inbox**
+**Viết bench.py chạy lưới E6 và script upload kết quả lên ds-data/inbox**
 
 - Vai dự kiến: **P4 · DS**
 - Cổng: **G5**
@@ -279,7 +279,7 @@ Bộ chạy đo E6 trên cụm local: 3 cài đặt × quy mô × core × 3 lầ
 2. Tính run_key sha1 đúng công thức docs/ds/00 §6.2, platform local_mapreduce / local_spark_yarn, bỏ run_key đã có trong e6.jsonl
 3. Đo wall_s; đọc job_s, peak_mem_mb, spill_mb, n_result qua REST JobHistory/Spark History và counter MapReduce
 4. Xóa thư mục đích trước mỗi lần; ghi dòng JSONL chỉ sau khi job xong; ghi machine
-5. Viết local/hadoop/scripts/upload_results.sh (AzCopy vào ds/inbox/local/e6_<stamp>.jsonl)
+5. Viết local/hadoop/scripts/upload_results.sh (AzCopy vào ds-data/inbox/local/e6_<stamp>.jsonl)
 6. Chạy thử bench.py với lưới thu nhỏ trên dữ liệu đồ chơi
 
 **Đầu ra**
@@ -500,7 +500,7 @@ Mốc DS-2: số liệu theo MinSupport, quy mô, số item và số core cho 3 
 - **Hoàn tất còn cần:** [AD-DS-12](05_data_science.md#ad-ds-12) [#97](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/97)
 - **Mở khóa:** [AD-DS-16](05_data_science.md#ad-ds-16) (bắt đầu), [AD-DS-22](05_data_science.md#ad-ds-22) (hoàn tất), [AD-DS-26](05_data_science.md#ad-ds-26) (bắt đầu)
 
-Mốc DS-3, chạy song song DS-2: đo thật MapReduce và Spark trên cùng cụm, phần bổ sung cho lập luận của bài báo. Kết quả vào Azure qua ds/inbox và task ingest_local. Phần Hadoop do P4 làm (docs/00 §7).
+Mốc DS-3, chạy song song DS-2: đo thật MapReduce và Spark trên cùng cụm, phần bổ sung cho lập luận của bài báo. Kết quả vào Azure qua ds-data/inbox và task ingest_local. Phần Hadoop do P4 làm (docs/00 §7).
 
 **Việc cần làm**
 
@@ -678,7 +678,7 @@ Mốc DS-4 phần đánh giá: FP-Growth product 100% ở 3 MinSupp, lưu luật
 - Vai dự kiến: **P4 · DS**
 - Cổng: **G5**
 - Issue: [#106](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/106)
-- Tài liệu: `docs/ds/05_mlflow_serving_bao_cao.md §2, §7`, `docs/devops/03_terraform_azure.md (ds/serving/)`
+- Tài liệu: `docs/ds/05_mlflow_serving_bao_cao.md §2, §7`, `docs/devops/03_terraform_azure.md (ds-data/serving/)`
 - **Bắt đầu sau:** [AD-DS-19](05_data_science.md#ad-ds-19) [#104](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/104), [AD-DS-20](05_data_science.md#ad-ds-20) [#105](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/105)
 - **Hoàn tất còn cần:** Không có.
 - **Mở khóa:** [AD-DS-22](05_data_science.md#ad-ds-22) (hoàn tất), [AD-DS-23](05_data_science.md#ad-ds-23) (bắt đầu), [AD-DS-24](05_data_science.md#ad-ds-24) (hoàn tất), [AD-DS-26](05_data_science.md#ad-ds-26) (hoàn tất)
@@ -689,7 +689,7 @@ Bước D6: chọn cấu hình theo quy tắc ghi trước (coverage ≥ 0,5, Hi
 
 1. Ghi quy tắc chọn §2.1 vào báo cáo trước khi xem kết quả
 2. Viết src/ml/champion.py: chọn cấu hình, xuất Parquet rules/items, register pyfunc vào instacart.ml.basket_rules, gán alias champion ở bước cuối, ghi ml.champion
-3. Xuất thêm 2 file Parquet vào container ds/serving/ cho phương án B của API
+3. Xuất thêm 2 file Parquet vào container ds-data/serving/ cho phương án B của API
 4. Chạy evaluate_holdout cho champion × test
 5. Thêm job ds_champion vào bundles/resources/jobs_ds.yml: evaluate_holdout → champion → publish_gold, chạy tay
 
@@ -697,7 +697,7 @@ Bước D6: chọn cấu hình theo quy tắc ghi trước (coverage ≥ 0,5, Hi
 
 - src/ml/champion.py, job ds_champion trong jobs_ds.yml
 - Model instacart.ml.basket_rules có alias @champion; bảng ml.champion
-- Parquet rules/items trong ds/serving/
+- Parquet rules/items trong ds-data/serving/
 
 **Xong khi**
 
@@ -781,13 +781,13 @@ Phương án A của API: endpoint serverless scale-to-zero phục vụ phiên b
 - **Hoàn tất còn cần:** [AD-DS-21](05_data_science.md#ad-ds-21) [#106](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/106), [AD-DS-23](05_data_science.md#ad-ds-23) [#108](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/108), [AD-OPS-31](01_devops.md#ad-ops-31) [#33](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/33)
 - **Mở khóa:** [AD-OPS-32](01_devops.md#ad-ops-32) (hoàn tất), [AD-DS-27](05_data_science.md#ad-ds-27) (hoàn tất)
 
-Proxy FaaS cho web, dùng managed identity lấy token Entra, không giữ token Databricks. Nếu Model Serving không dùng được thì Function tự chạy BasketRules từ Parquet trong ds/serving/.
+Proxy FaaS cho web, dùng managed identity lấy token Entra, không giữ token Databricks. Nếu Model Serving không dùng được thì Function tự chạy BasketRules từ Parquet trong ds-data/serving/.
 
 **Việc cần làm**
 
 1. Viết src/serving_func/function_app.py (route recommend, kiểm product_ids rỗng → 400, cắt tối đa 50 id)
 2. Viết src/serving_func/requirements.txt, host.json
-3. Thêm chế độ phương án B: đọc rules/items Parquet từ ds/serving bằng managed identity, gọi BasketRules._recommend
+3. Thêm chế độ phương án B: đọc rules/items Parquet từ ds-data/serving bằng managed identity, gọi BasketRules._recommend
 4. Viết test unit mock requests và credential cho cả 2 chế độ
 5. Sau khi deploy: gọi Function bằng function key (lưu Key Vault), chụp ảnh
 

@@ -89,11 +89,11 @@
 | Bước | Việc | Ai | Chạy ở đâu | Tài liệu |
 |---|---|---|---|---|
 | D0 | **Snapshot** `silver.baskets` vào `ds_data.baskets` với `data_version = 'v1'`, cố định cho mọi thực nghiệm | DE (P2) | Sub A, job `ds-prepare` | [de/08 §2](../de/08_du_lieu_cho_ds.md) |
-| D1 | Mã hóa item thành số nguyên, dựng giao dịch theo 3 cấp, tập holdout, **xuất file** txt ra container `ds` | DE (P2) | Sub A, job `ds-prepare` | [de/08 §3–5](../de/08_du_lieu_cho_ds.md) |
+| D1 | Mã hóa item thành số nguyên, dựng giao dịch theo 3 cấp, tập holdout, **xuất file** txt ra container `ds-data` | DE (P2) | Sub A, job `ds-prepare` | [de/08 §3–5](../de/08_du_lieu_cho_ds.md) |
 | D2 | Khám phá dữ liệu, chọn lưới MinSupport | DS (P4) | Databricks notebook | [01](01_du_lieu_thuc_nghiem.md) |
 | D3 | Khai phá: DApriori, DATID, FP-Growth, sinh luật; **kiểm tra đúng đắn** | DS | Databricks, job `ds-benchmark` | [02](02_thuat_toan_spark.md), [04](04_thuc_nghiem_danh_gia.md) |
 | D4 | Chạy lưới thực nghiệm E1–E5, E7 → `ml.experiment_runs`, MLflow | DS | Databricks | [04](04_thuc_nghiem_danh_gia.md) |
-| D5 | **MapReduce và Spark** trên Hadoop local (E6) → upload kết quả lên `ds/inbox/` | DS (P4) | Máy local, Docker | [03](03_hadoop_mapreduce_local.md) |
+| D5 | **MapReduce và Spark** trên Hadoop local (E6) → upload kết quả lên `ds-data/inbox/` | DS (P4) | Máy local, Docker | [03](03_hadoop_mapreduce_local.md) |
 | D6 | Chọn cấu hình champion, đóng gói model `pyfunc`, đăng ký UC, phục vụ qua API | DS + P1 | Databricks, Model Serving / Azure Functions | [05](05_mlflow_serving_bao_cao.md) |
 | D7 | Công bố view `gold.*` cho Power BI: luật, gợi ý, kết quả thực nghiệm | DS (P4: view, trang 6–7) + BI (P3: semantic model) | Serverless SQL warehouse | [05 §4](05_mlflow_serving_bao_cao.md), [de/07](../de/07_power_bi.md) |
 
@@ -153,7 +153,7 @@ Hệ quả:
 | P4 | Chủ trì toàn bộ DS: thuật toán, cụm Hadoop Docker + MapReduce Java (E6), thực nghiệm, MLflow, Power BI trang 6–7, báo cáo |
 | P2 | Job `ds-prepare` (D0–D1); review code PySpark của DS |
 | P3 | Chủ Power BI: mở rộng semantic model cho view DS (AD-BI-11) để P4 dựng trang 6–7 |
-| P1 | Hạ tầng: container `ds`, schema, policy, MLflow, serving endpoint, Azure Function ([devops/05](../devops/05_databricks_platform.md), [devops/03](../devops/03_terraform_azure.md)) |
+| P1 | Hạ tầng: container `ds-data`, schema, policy, MLflow, serving endpoint, Azure Function ([devops/05](../devops/05_databricks_platform.md), [devops/03](../devops/03_terraform_azure.md)) |
 
 ## 8. Cấu trúc code
 

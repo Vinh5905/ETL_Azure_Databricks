@@ -152,7 +152,7 @@ Hình 2 phóng to khối Databricks của hình 1. Nó cho biết:
 |---|---|---|
 | Nguồn | Zenodo CSV, Open Food Facts API, Azure SQL, simulator | Ngoài Azure / PaaS |
 | Thu thập | Azure Data Factory, Event Hubs (giao thức Kafka) | PaaS |
-| Lưu trữ | ADLS Gen2 (HNS) + Delta Lake; container `landing`, `bronze`, `silver`, `gold`, `checkpoints`, `mlflow`, `ds` | PaaS |
+| Lưu trữ | ADLS Gen2 (HNS) + Delta Lake; container `landing`, `bronze`, `silver`, `gold`, `checkpoints`, `mlflow`, `ds-data` | PaaS |
 | Xử lý | Azure Databricks: Lakeflow Declarative Pipelines (PySpark + Spark SQL), Lakeflow Jobs | PaaS (VM cluster tính là IaaS) |
 | Quản trị | Unity Catalog (catalog `instacart`), Key Vault, Access Connector, Entra ID, Budget | PaaS / SaaS |
 | Phục vụ | Serverless SQL warehouse, Model Serving, Azure Function | PaaS / FaaS |
@@ -236,7 +236,7 @@ Hình 2 phóng to khối Databricks của hình 1. Nó cho biết:
    - Đánh số item theo tần suất.
    - Dựng giao dịch ở 3 cấp: product, aisle, department.
    - Tách tập holdout.
-   - Xuất file txt ra container `ds` cho Hadoop.
+   - Xuất file txt ra container `ds-data` cho Hadoop.
 2. **D2:** khám phá dữ liệu, chọn lưới MinSupport cho từng cấp.
 3. **D3–D4 (job `ds-benchmark`):**
    - Chạy DApriori, DATID (RDD, đúng cấu trúc bài báo) và FP-Growth (MLlib), rồi sinh luật.
@@ -245,12 +245,12 @@ Hình 2 phóng to khối Databricks của hình 1. Nó cho biết:
 4. **D5 (máy local):**
    - Cụm Docker Hadoop HDFS + YARN.
    - MapReduce Java so với Spark on YARN trên cùng file (E6).
-   - Kết quả nộp qua `ds/inbox`.
+   - Kết quả nộp qua `ds-data/inbox`.
 5. **D6 (job `ds-champion`):**
    - Đánh giá trên holdout (E7: HitRate, Precision, Recall@10, so với baseline phổ biến).
    - Chọn champion.
    - Đóng gói luật thành model `pyfunc` `basket_rules@champion`.
-   - Phục vụ qua Model Serving và Azure Function. Phương án B: Function tự đọc luật từ `ds/serving`.
+   - Phục vụ qua Model Serving và Azure Function. Phương án B: Function tự đọc luật từ `ds-data/serving`.
 6. **D7:** view `gold.association_rules`, `recommendations`, `experiment_metrics`, `holdout_metrics` cho Power BI.
 
 ### 4.5 BI: dashboard đạt rubric mục 4

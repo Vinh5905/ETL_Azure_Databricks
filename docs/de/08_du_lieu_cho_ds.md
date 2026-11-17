@@ -183,7 +183,7 @@ with open(f"{VOL}/{v}/_manifest.json", "w") as f:
     json.dump(manifest, f, indent=2)
 ```
 
-- Volume `ds_data.exports` trỏ tới `abfss://ds@<lake>.dfs.core.windows.net/exports`. Đường dẫn `/Volumes/…/exports/v1/product/scale=10/` tương ứng với blob `ds/exports/v1/product/scale=10/`, nơi AzCopy ở máy local tải về ([ds/03 §3](../ds/03_hadoop_mapreduce_local.md)).
+- Volume `ds_data.exports` trỏ tới `abfss://ds-data@<lake>.dfs.core.windows.net/exports`. Đường dẫn `/Volumes/…/exports/v1/product/scale=10/` tương ứng với blob `ds-data/exports/v1/product/scale=10/`, nơi AzCopy ở máy local tải về ([ds/03 §3](../ds/03_hadoop_mapreduce_local.md)).
 - `mode("overwrite")` trên đường dẫn tất định: chạy lại thì thay đúng thư mục đó bằng nội dung y hệt, vì `transactions` của một phiên bản không đổi.
 - Volume hỗ trợ ghi file bằng `open()` của Python (FUSE), nên manifest không cần `dbutils`.
 

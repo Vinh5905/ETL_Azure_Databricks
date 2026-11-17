@@ -1,14 +1,14 @@
 # 03 · Hadoop HDFS + MapReduce ở máy local, so với Spark trên cùng cụm
 
 **Đầu vào:**
-- File txt giao dịch DE xuất ra ở `ds/exports/v1/product/scale=<pct>/` ([de/08 §5](../de/08_du_lieu_cho_ds.md)).
+- File txt giao dịch DE xuất ra ở `ds-data/exports/v1/product/scale=<pct>/` ([de/08 §5](../de/08_du_lieu_cho_ds.md)).
 - Docker Desktop cấp cho VM của Docker **≥ 8 CPU, ≥ 16 GB RAM**.
 - Azure CLI và AzCopy trên máy, tài khoản đã có quyền *Storage Blob Data Contributor* trên storage `lake` ([devops/03 §3.8](../devops/03_terraform_azure.md)).
 
 **Đầu ra:**
 - Cụm Hadoop 3.3.6 trong Docker: HDFS (1 NameNode, 2 DataNode) + YARN + JobHistory, cùng Spark 3.5 chạy trên YARN.
 - Chương trình MapReduce Java: `ItemCount`, `PairCount`.
-- Kết quả thực nghiệm **E6** dạng JSONL, đã upload vào `ds/inbox/` và nạp vào `ml.experiment_runs`.
+- Kết quả thực nghiệm **E6** dạng JSONL, đã upload vào `ds-data/inbox/` và nạp vào `ml.experiment_runs`.
 
 **Xong khi:**
 - `PairCount` (MapReduce), `pair_count_rdd.py` và `pair_count_df.py` (Spark) cho **cùng tập cặp phổ biến**.
@@ -59,10 +59,10 @@ local/hadoop/
 ├── spark-defaults.conf      # chép vào /opt/spark/conf lúc build
 ├── entrypoint.sh            # format NameNode lần đầu, rồi chạy daemon theo vai
 └── scripts/
-    ├── fetch_exports.sh     # AzCopy: ds/exports → ./data/ds (máy host)
+    ├── fetch_exports.sh     # AzCopy: ds-data/exports → ./data/ds (máy host)
     ├── load_hdfs.sh         # put lên HDFS với block 8 MB, tạo bản 200%
     ├── bench.py             # chạy lưới E6, ghi results/*.jsonl
-    └── upload_results.sh    # AzCopy: results → ds/inbox/local/
+    └── upload_results.sh    # AzCopy: results → ds-data/inbox/local/
 ```
 
 Dữ liệu tải về đặt ở `data/ds/` tại gốc repo. Thư mục `/data/` đã nằm trong `.gitignore`.
@@ -275,10 +275,10 @@ set -euo pipefail
 : "${LAKE_ACCOUNT:?đặt LAKE_ACCOUNT = tên storage account lake (output của 10-core)}"
 export AZCOPY_AUTO_LOGIN_TYPE=AZCLI                       # dùng phiên az login, không cần key/SAS
 for s in 10 25 50 100; do
-  azcopy copy "https://${LAKE_ACCOUNT}.blob.core.windows.net/ds/exports/v1/product/scale=${s}/*.txt" \
+  azcopy copy "https://${LAKE_ACCOUNT}.blob.core.windows.net/ds-data/exports/v1/product/scale=${s}/*.txt" \
               "data/ds/v1/product/scale=${s}/" --recursive=false
 done
-azcopy copy "https://${LAKE_ACCOUNT}.blob.core.windows.net/ds/exports/v1/_manifest.json" "data/ds/v1/"
+azcopy copy "https://${LAKE_ACCOUNT}.blob.core.windows.net/ds-data/exports/v1/_manifest.json" "data/ds/v1/"
 ```
 
 ```bash
@@ -729,7 +729,7 @@ set -euo pipefail
 export AZCOPY_AUTO_LOGIN_TYPE=AZCLI
 STAMP=$(date -u +%Y%m%dT%H%M%SZ)
 azcopy copy local/hadoop/results/e6.jsonl \
-  "https://${LAKE_ACCOUNT}.blob.core.windows.net/ds/inbox/local/e6_${STAMP}.jsonl"
+  "https://${LAKE_ACCOUNT}.blob.core.windows.net/ds-data/inbox/local/e6_${STAMP}.jsonl"
 ```
 
 Task `ingest_local` của job `ds-benchmark` ([04 §5](04_thuc_nghiem_danh_gia.md)) nạp file này vào `ml.experiment_runs` theo hai bước:
@@ -753,5 +753,5 @@ Mục này chỉ để demo đúng sản phẩm "pipeline xử lý dữ liệu l
 | Một job MapReduce lỗi (OOM, container bị kill) | Chạy lại `bench.py` | Thư mục đích bị xóa trước mỗi lần; dòng kết quả chỉ được ghi **sau khi** job xong |
 | `bench.py` dừng giữa lưới (tắt máy) | Chạy lại `bench.py` | Bỏ qua `run_key` đã có trong `e6.jsonl` |
 | Upload kết quả hai lần | Không cần làm gì | `COPY INTO` bỏ file đã nạp; `MERGE ON run_key` |
-| Volume HDFS hỏng | `docker compose down -v` rồi dựng lại, chạy lại mục 3 | HDFS local chỉ là bản sao; nguồn sự thật là `ds/exports` trên ADLS |
+| Volume HDFS hỏng | `docker compose down -v` rồi dựng lại, chạy lại mục 3 | HDFS local chỉ là bản sao; nguồn sự thật là `ds-data/exports` trên ADLS |
 | Đổi máy giữa chừng | Chạy **lại toàn bộ** E6 trên máy mới, đổi `MACHINE.name` | Mọi số liệu E6 phải đến từ cùng một máy. Cột `machine` cho phép lọc |

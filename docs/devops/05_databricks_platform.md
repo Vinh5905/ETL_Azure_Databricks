@@ -117,7 +117,7 @@ resource "databricks_storage_credential" "lake" {
 }
 
 resource "databricks_external_location" "layer" {
-  for_each        = toset(["landing", "bronze", "silver", "gold", "checkpoints", "mlflow", "ds"])
+  for_each        = toset(["landing", "bronze", "silver", "gold", "checkpoints", "mlflow", "ds-data"])
   name            = "el-${each.key}"
   url             = "abfss://${each.key}@${local.core.lake_account_name}.dfs.core.windows.net/"
   credential_name = databricks_storage_credential.lake.name
@@ -150,7 +150,7 @@ locals {
     silver            = "silver"
     gold              = "gold"
     ml                = "mlflow"       # model registry, bảng kết quả thực nghiệm (docs/ds)
-    ds_data           = "ds"           # dữ liệu thực nghiệm DE chuẩn bị cho DS (de/08)
+    ds_data           = "ds-data"      # dữ liệu thực nghiệm DE chuẩn bị cho DS (de/08)
     instacart_sandbox = "silver"       # dữ liệu tổng hợp để thử tải (is_synthetic)
     ops               = "gold"         # benchmark_results, streaming_latency, dq_results
   }
@@ -176,23 +176,23 @@ resource "databricks_volume" "checkpoints" {        # checkpoint của streaming
   volume_type      = "EXTERNAL"
   storage_location = databricks_external_location.layer["checkpoints"].url
 }
-resource "databricks_volume" "ds_exports" {         # file txt cho Hadoop local (de/08 §5) → blob ds/exports/
+resource "databricks_volume" "ds_exports" {         # file txt cho Hadoop local (de/08 §5) → blob ds-data/exports/
   name             = "exports"
   catalog_name     = databricks_catalog.instacart.name
   schema_name      = databricks_schema.s["ds_data"].name
   volume_type      = "EXTERNAL"
-  storage_location = "${databricks_external_location.layer["ds"].url}exports"
+  storage_location = "${databricks_external_location.layer["ds-data"].url}exports"
 }
-resource "databricks_volume" "ml_inbox" {           # kết quả benchmark local upload lên (ds/03 §7) → blob ds/inbox/
+resource "databricks_volume" "ml_inbox" {           # kết quả benchmark local upload lên (ds/03 §7) → blob ds-data/inbox/
   name             = "inbox"
   catalog_name     = databricks_catalog.instacart.name
   schema_name      = databricks_schema.s["ml"].name
   volume_type      = "EXTERNAL"
-  storage_location = "${databricks_external_location.layer["ds"].url}inbox"
+  storage_location = "${databricks_external_location.layer["ds-data"].url}inbox"
 }
 ```
 
-Đường dẫn của hai volume (`ds/exports`, `ds/inbox`) và `storage_root` của schema `ds_data` (`ds/ds_data`) **không chồng nhau**. Unity Catalog từ chối volume ngoài nằm trong vùng lưu trữ của một schema hay bảng.
+Đường dẫn của hai volume (`ds-data/exports`, `ds-data/inbox`) và `storage_root` của schema `ds_data` (`ds-data/ds_data`) **không chồng nhau**. Unity Catalog từ chối volume ngoài nằm trong vùng lưu trữ của một schema hay bảng.
 
 ### Bước 5 · Phân quyền Unity Catalog (đặc quyền tối thiểu)
 

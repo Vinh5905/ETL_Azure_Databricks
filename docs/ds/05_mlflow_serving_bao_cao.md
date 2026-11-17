@@ -219,7 +219,7 @@ def recommend(req: func.HttpRequest) -> func.HttpResponse:
 ### 3.3 Phương án B (khi Model Serving không dùng được)
 
 Function **tự chạy model**:
-- Lúc khởi động, đọc 2 file Parquet của champion (`rules`, `items`) từ container `ds/serving/` bằng managed identity (role *Storage Blob Data Reader* chỉ trên container `ds`).
+- Lúc khởi động, đọc 2 file Parquet của champion (`rules`, `items`) từ container `ds-data/serving/` bằng managed identity (role *Storage Blob Data Reader* chỉ trên container `ds-data`).
 - Gọi thẳng `BasketRules._recommend`.
 
 Cách này vẫn có API thật và vẫn là FaaS, chỉ mất phần "model serving trong Databricks". Ghi rõ lựa chọn vào báo cáo.

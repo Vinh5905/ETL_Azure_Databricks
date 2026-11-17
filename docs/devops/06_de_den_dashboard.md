@@ -216,7 +216,7 @@ Kế hoạch chi tiết nằm ở [docs/ds](../ds/00_tong_quan_ds.md). Hạ tầ
 
 | Thành phần | Ở đâu | Khi nào |
 |---|---|---|
-| Container `ds` (exports, inbox, serving) | [03 bước 3.2](03_terraform_azure.md) | Cùng `10-core` (không tốn thêm tiền) |
+| Container `ds-data` (exports, inbox, serving) | [03 bước 3.2](03_terraform_azure.md) | Cùng `10-core` (không tốn thêm tiền) |
 | Danh tính `id-func-recommend` | [03 bước 3.4](03_terraform_azure.md) | Cùng `10-core` |
 | Schema `ds_data`, volume `ds_data.exports`, `ml.inbox`, quyền | [05 bước 3–5](05_databricks_platform.md) | Cùng `30-databricks` |
 | Policy `instacart-ds-benchmark` (cho chọn `local[n]`) | [05 bước 6](05_databricks_platform.md) | Trước G3 |

@@ -1576,7 +1576,7 @@
     },
     {
       "id": "AD-DS-08",
-      "title": "Viết bench.py chạy lưới E6 và script upload kết quả lên ds/inbox",
+      "title": "Viết bench.py chạy lưới E6 và script upload kết quả lên ds-data/inbox",
       "role": "P4",
       "gate": "G5",
       "label": "ds",
@@ -1800,7 +1800,7 @@
       "label": "ds",
       "docs": [
         "docs/ds/05_mlflow_serving_bao_cao.md §2, §7",
-        "docs/devops/03_terraform_azure.md (ds/serving/)"
+        "docs/devops/03_terraform_azure.md (ds-data/serving/)"
       ],
       "start": [
         "AD-DS-19",
