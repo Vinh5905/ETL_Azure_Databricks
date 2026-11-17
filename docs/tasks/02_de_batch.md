@@ -285,7 +285,7 @@ Bước 1 của luồng: 6 file Instacart vào landing/instacart/<bảng>/releas
 
 1. Kiểm số dòng bản Zenodo bằng wc -l, cập nhật expected_rows nếu khác Kaggle
 2. Thiết kế pipeline trong ADF Studio: ForEach, Get Metadata _SUCCESS, Copy vào _staging, kiểm rowsCopied, Copy Binary, Delete, ghi _SUCCESS
-3. Xử lý file nén (ZipDeflate) theo kết quả spike
+3. Khai mapping cột tường minh cho từng bảng (không có thì ADF không trả rowsCopied) và retry cho activity Copy, theo de/01 §2. CSV Zenodo không nén nên không cần ZipDeflate
 4. Export activities JSON vào adf/pipelines/pl_ingest_instacart.json, mở PR
 5. Chạy một lần sau khi P1 publish
 

@@ -34,7 +34,7 @@ resource "databricks_cluster_policy" "pipeline_single_node" {
   name = "instacart-pipeline-single-node"
   definition = jsonencode({
     "cluster_type"      = { type = "fixed", value = "dlt" }
-    "node_type_id"      = { type = "fixed", value = "Standard_DS3_v2" }
+    "node_type_id"      = { type = "fixed", value = "Standard_D4ds_v4" }
     "num_workers"       = { type = "fixed", value = 0 }
     "custom_tags.owner" = { type = "unlimited", isOptional = false }
   })

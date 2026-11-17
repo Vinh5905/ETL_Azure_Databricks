@@ -40,7 +40,7 @@
 | E7 | FP-Growth + đánh giá | product | 100 | — | 0,001; 0,002; 0,005 | 4 | 1 | 9 |
 
 **Ngân sách Databricks** (ước lượng, **đo lại ở mốc DS-1**):
-- Khoảng 250 lần chạy, trung bình 3 phút mỗi lần, cộng thời gian khởi động cluster: khoảng 15–20 giờ máy DS3_v2.
+- Khoảng 250 lần chạy, trung bình 3 phút mỗi lần, cộng thời gian khởi động cluster: khoảng 15–20 giờ máy `Standard_D4ds_v4`.
 - Chi phí VM cộng DBU cỡ 0,4 USD/giờ, tức khoảng 6–8 USD. Cập nhật lại bằng giá của region đã chốt.
 - Mỗi lần chạy có **timeout 30 phút**. Lần chạy vượt timeout ghi `status = 'timeout'`, và **vẫn là một điểm dữ liệu**: nó chứng minh giới hạn của thuật toán, giống các lần chạy hàng giờ trong bài báo.
 
@@ -235,16 +235,20 @@ resources:
       job_clusters:
         - job_cluster_key: c1
           new_cluster:
-            policy_id: ${var.ds_policy_id}
-            apply_policy_default_values: true
+            policy_id: ${var.ds_policy_id}      # khai đủ trường fixed, không dùng apply_policy_default_values (devops/05 §3 bước 6)
+            spark_version: 15.4.x-scala2.12
+            node_type_id: ${var.node_type_id}
+            num_workers: 0
+            data_security_mode: SINGLE_USER
             spark_conf:
+              spark.databricks.cluster.profile: singleNode
               spark.master: "local[1]"
               spark.sql.shuffle.partitions: "16"      # cố định giữa 3 cluster để so được theo số core
               spark.default.parallelism: "16"
               spark.sql.adaptive.enabled: "false"
             spark_env_vars:
               PYTHONPATH: ${workspace.file_path}/src
-            custom_tags: { owner: p4 }
+            custom_tags: { ResourceClass: SingleNode, owner: p4 }
         # c2, c4: giống c1, chỉ khác spark.master = local[2] / local[4]
 ```
 

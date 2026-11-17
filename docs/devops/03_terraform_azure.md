@@ -235,7 +235,7 @@ resource "azurerm_user_assigned_identity" "func" {
 
 ### Bước 3.5 · Databricks workspace (Premium)
 
-**Vì sao Premium:** Unity Catalog, phân quyền bảng/cột, SQL warehouse và secret scope dựa trên Key Vault đều cần Premium. Trial 14 ngày miễn DBU.
+**Vì sao Premium:** Unity Catalog, phân quyền bảng/cột, SQL warehouse và secret scope dựa trên Key Vault đều cần Premium. SKU `premium` **không** có trial: DBU tính vào credit ngay từ ngày đầu (spike 3.4). Chỉ SKU `trial` mới có 14 ngày miễn DBU, sau đó phải đổi sang `premium`; nhóm không dùng vì chưa thử đổi SKU tại chỗ.
 
 **Vì sao không bật VNet injection / Secure Cluster Connectivity + NAT:** NAT Gateway và public IP tốn tiền, đồng thời tăng rủi ro gặp lỗi quota trên Students. Đồ án không yêu cầu cô lập mạng.
 
@@ -279,6 +279,12 @@ module "sql" {
   administrator_login          = "sqladmin"
   administrator_login_password = random_password.sql.result
   databases = { retail = { name = "retail_db", sku_name = "GP_S_Gen5_2" } }
+  # Chốt G0: SQL auth (cho seed job và ls_sql_retail) + Entra admin (cho người đăng nhập tay).
+  # Không bật azuread_authentication_only. Tên tham số lấy theo README của version AVM đã pin.
+  azuread_administrator = {
+    login_username = var.sql_entra_admin_login      # tên hiển thị, ví dụ nhóm Entra của nhóm dự án
+    object_id      = var.sql_entra_admin_object_id  # qua TF_VAR_*, không commit
+  }
   # free offer: kiểm tra module / azurerm_mssql_database có thuộc tính dạng use_free_limit,
   # free_limit_exhaustion_behavior = "AutoPause". Nếu chưa có thì bật free offer bằng az CLI rồi import.
   enable_telemetry = false
@@ -305,6 +311,8 @@ resource "azurerm_key_vault_secret" "sql_pw" {
   key_vault_id = module.kv.resource_id
 }
 ```
+
+**Vì sao giữ mật khẩu SQL (chốt G0):** spike 3.5 dựng server chỉ Entra ID (`--enable-ad-only-auth`) và chạy được. Nhưng job `seed_retail_db` trên Databricks kết nối bằng `pymssql` + mật khẩu, mà lấy token Entra từ cluster thì cần thêm service principal có secret hoặc service credential của UC (chưa thử). Vì vậy server bật **cả hai**: login `sqladmin` với mật khẩu trong Key Vault cho seed job và `ls_sql_retail`, Entra admin cho thành viên đăng nhập tay (`sqlcmd --authentication-method ActiveDirectoryAzCli`). Lần đầu lệnh này có thể hỏng vì lấy token chậm; chạy `az account get-access-token` trước rồi thử lại.
 
 Script seed sinh dữ liệu giá/khuyến mãi (có seed cố định) **không** nằm trong Terraform. Nó là job DE chạy một lần (tài liệu 06), để Terraform chỉ quản lý hạ tầng.
 

@@ -64,7 +64,7 @@ az vm list-usage --location <region> -o table | grep -Ei "total regional|DSv2|DS
 
 - **Mong đợi:** biết chính xác tổng vCPU của region và vCPU theo họ máy. Theo diễn đàn, con số thường gặp là 4. Tài khoản Students **không xin tăng quota được**.
 - **Hệ quả cho thiết kế:**
-  - Một cluster single-node `Standard_DS3_v2` (4 vCPU) chiếm hết quota.
+  - Một cluster single-node 4 vCPU (thiết kế ban đầu là `Standard_DS3_v2`, G0 chốt `Standard_D4ds_v4`) chiếm hết quota.
   - Không chạy song song batch và streaming trên Sub A, nên streaming phải chạy theo kiểu lô (`availableNow`) xen kẽ với batch.
   - SQL warehouse **classic** (máy chạy trong subscription của mình) không khởi động được.
 
@@ -130,7 +130,7 @@ Tạo tay **một** workspace Premium ở region đã chốt (Portal, mất kho�
 | Cách CI đăng nhập | UAMI + OIDC (mặc định) / chỉ check tĩnh | 3.3 |
 | Unity Catalog | External location (mặc định) / managed storage | 3.4 |
 | Lớp serving cho Power BI | Serverless warehouse (mặc định) / gold → Azure SQL / `DeltaLake.Table` | 3.4, 3.6 |
-| Compute | Single-node DS3_v2 (mặc định) / máy khác cùng 4 vCPU | 3.2, 3.4 |
+| Compute | Single-node DS3_v2 (mặc định) / máy khác cùng 4 vCPU (G0 chốt `Standard_D4ds_v4`, xem [spike_results §3](spike_results.md#3-quyết-định-g0)) | 3.2, 3.4 |
 | Pipeline DE | LDP Advanced classic single-node (mặc định) / LDP serverless / LDP Pro | 3.4 |
 | Nguồn SQL | CDC theo LSN (mặc định) / watermark `updated_at` + soft delete | 3.5 |
 | Nơi chạy job DS | Sub C sandbox nếu cùng region với Sub A (mặc định) / Sub A ngoài giờ batch | 3.1, 3.4 |

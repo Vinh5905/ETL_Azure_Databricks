@@ -282,7 +282,7 @@ dbutils.fs.rm(f"{BASE}/{run}", recurse=True)          # dọn dữ liệu thử
 ```
 
 - Đường dẫn `delta.` cho phép `OPTIMIZE ... ZORDER BY` trên bảng không đăng ký trong catalog. Muốn thử liquid clustering thì ghi thành bảng trong `instacart_sandbox` với `CLUSTER BY (product_id)`.
-- Chạy task **3 lần** (mỗi lần một `run_id`), báo cáo lấy trung vị theo định dạng. Ghi cấu hình máy (`Standard_DS3_v2`, runtime) vào báo cáo.
+- Chạy task **3 lần** (mỗi lần một `run_id`), báo cáo lấy trung vị theo định dạng. Ghi cấu hình máy (`Standard_D4ds_v4`, runtime) vào báo cáo.
 - `size_mb` chỉ đếm file ở thư mục gốc. Với Delta, file dữ liệu nằm ngay ở gốc nên đếm đúng; CSV và Parquet của Spark cũng vậy.
 
 ## 6. Phục vụ Power BI

@@ -55,7 +55,12 @@ Tham số pipeline `expected_rows` dùng để kiểm số dòng **trước khi 
 ```
 
 - Copy DelimitedText đếm số dòng **dữ liệu**, không tính header. Số trên lấy theo bản Kaggle; nếu bản Zenodo khác thì sửa tham số sau khi kiểm bằng `wc -l` ([data_dictionary](../data/data_dictionary.md)).
-- Nếu Zenodo chỉ cung cấp file nén thì làm theo spike 3.5: đặt `compression` của dataset nguồn là `ZipDeflate` hoặc `TarGZip`. Nếu ADF không giải nén được thì tải nguyên file nén vào `_staging` rồi giải nén bằng task Python trên Databricks.
+
+**Nguồn và cấu hình Copy (kết quả spike 3.5, [spike_results](../devops/spike_results.md)):**
+- **URL:** record Zenodo [2654444](https://zenodo.org/records/2654444) có đủ 6 file CSV **không nén**. Dataset HTTP dùng đường dẫn tương đối `api/records/2654444/files/<t>.csv/content` trên `ls_zenodo` (base URL `https://zenodo.org/`). Không cần `ZipDeflate`.
+- **Phải khai mapping cột tường minh.** Copy DelimitedText → DelimitedText cùng định dạng mà không có mapping thì ADF chép nguyên file và **không trả `rowsCopied`**, làm bước kiểm số dòng ở trên không chạy được. Mỗi bảng khai `translator` kiểu `TabularTranslator` có `mappings` liệt kê đủ cột theo [data_dictionary](../data/data_dictionary.md). Lần spike đạt có kèm `quoteAllText = true` ở sink và chưa tách riêng yếu tố nào quyết định, nên giữ cả hai.
+- **Retry trên activity Copy:** Zenodo có lúc trả HTTP 503 khi bảo trì (gặp sáng 2026-11-17). Đặt `policy.retry = 3`, `retryIntervalInSeconds = 300`. Copy ghi vào `_staging`, nên chạy lại không làm bẩn landing.
+- **Chưa kiểm:** thời gian copy `order_products__prior.csv` (khoảng 578 MB). Đặt `policy.timeout` của activity này rộng (ví dụ `0.02:00:00`) và ghi thời gian thật vào báo cáo.
 
 ## 3. Azure SQL: CDC thật theo LSN (`pl_ingest_retail_db`)
 

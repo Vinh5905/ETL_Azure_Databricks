@@ -22,6 +22,9 @@ variables:
     description: Cluster policy single-node (tạo ở 30-databricks), tra theo tên
     lookup:
       cluster_policy: instacart-single-node
+  node_type_id:
+    description: Máy của job cluster, phải trùng giá trị fixed trong policy (docs/devops/05 §3 bước 6)
+    default: Standard_D4ds_v4
   ci_sp_id:
     description: application_id của SP CI (= client id của UAMI id-github-ci). CI đặt qua BUNDLE_VAR_ci_sp_id.
     default: ""

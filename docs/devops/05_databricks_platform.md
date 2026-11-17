@@ -88,7 +88,13 @@ resource "databricks_service_principal" "func" {
 |---|---|
 | Có account admin | Provider `databricks.account` tạo `de_team`, `ds_team`, `bi_readers` và gán vào workspace |
 | Workspace bật *automatic identity management* (nhóm Entra tự đồng bộ) | Tạo 3 nhóm Entra (nếu tenant cho phép), rồi tham chiếu theo tên |
-| Không có hai điều trên (**mặc định an toàn**) | GRANT trực tiếp cho **từng user** (email trường) bằng `for_each` trên một map vai trò → danh sách người |
+| Workspace admin tạo account group từ workspace (**chốt G0**, spike 3.4 đạt) | Tạo `de_team`, `ds_team`, `bi_readers` bằng API SCIM account gọi qua workspace (`/api/2.0/account/scim/v2/Groups`) hoặc UI "Add new group to account and workspace". Không cần account admin. GRANT theo tên nhóm |
+| Không có ba điều trên (**dự phòng**) | GRANT trực tiếp cho **từng user** (email trường) bằng `for_each` trên một map vai trò → danh sách người |
+
+**Chốt ở G0 (spike 3.4):**
+- Dùng account group do workspace admin tạo. Sub A không có automatic identity management, nên không tham chiếu được nhóm Entra.
+- Resource Terraform nào tạo được account group bằng provider cấp workspace thì kiểm ở AD-OPS-18/20. Nếu không khai được bằng Terraform thì tạo nhóm một lần bằng API ở trên, còn Terraform chỉ quản lý thành viên và GRANT. Nếu cả cách này cũng hỏng thì GRANT theo từng user.
+- **Cấp quyền rõ cho từng principal** (nhóm thành viên, SP CI, SP của Function), không dựa vào nhóm `admins` của workspace. Lúc spike, notebook serverless của P1 báo `PERMISSION_DENIED` trên catalog dù nhóm `admins` là owner; cấp trực tiếp mới chạy được.
 
 ```hcl
 variable "roles" {          # khai báo trong *.auto.tfvars / GitHub Variable, không commit email
@@ -240,7 +246,7 @@ resource "databricks_cluster_policy" "single_node" {
   name = "instacart-single-node"
   definition = jsonencode({
     "spark_version"           = { type = "fixed", value = "15.4.x-scala2.12" }   # LTS, chốt ở spike
-    "node_type_id"            = { type = "fixed", value = "Standard_DS3_v2" }
+    "node_type_id"            = { type = "fixed", value = "Standard_D4ds_v4" }   # Sub A không mua được DS3_v2 (spike 3.4)
     "num_workers"             = { type = "fixed", value = 0 }
     "spark_conf.spark.databricks.cluster.profile" = { type = "fixed", value = "singleNode" }
     "spark_conf.spark.master"                     = { type = "fixed", value = "local[*]" }
@@ -264,7 +270,15 @@ resource "databricks_permissions" "policy_use" {
 
 Chặn tạo cluster tự do: tắt quyền *Unrestricted cluster creation* của nhóm `users` (`databricks_entitlements`), để mọi người buộc phải dùng policy.
 
+**Job cluster dùng policy thế nào (kết quả spike 3.4):**
+- Job cluster **không** đặt `apply_policy_default_values: true`. Policy có `autotermination_minutes`, mà job cluster gặp trường này qua giá trị mặc định thì báo "Automated clusters do not support autotermination". Job cluster tự tắt khi job xong, nên không cần trường này.
+- Vì không lấy mặc định từ policy, job cluster phải **tự khai đủ** các trường `fixed`: `spark_version`, `node_type_id`, `num_workers: 0`, `data_security_mode: SINGLE_USER`, `spark_conf` (`spark.databricks.cluster.profile`, `spark.master`), `custom_tags.ResourceClass`. Khai sai thì policy từ chối lúc tạo cluster, nên vẫn không lách được.
+- Spike cho thấy workspace không tự chọn access mode: cluster nào (job hay tương tác) cũng phải khai `data_security_mode = SINGLE_USER`.
+- Mẫu khai báo ở [bundles/AGENTS.md](../../bundles/AGENTS.md) và [de/06 §2](../de/06_van_hanh_chay_lai.md). `node_type_id` lấy từ biến bundle `${var.node_type_id}` để chỉ sửa một chỗ khi đổi máy.
+
 Pipeline Lakeflow (LDP) dùng cluster riêng nên cần thêm policy loại `dlt` (`instacart-pipeline-single-node`, `num_workers = 0`), code ở [de/02 §2.1](../de/02_bronze_ldp.md).
+
+Mọi pipeline LDP classic phải đặt `pipelines.clusterShutdown.delay: 60s` trong `configuration`. Spike 3.4: pipeline ở chế độ development giữ cluster sống khoảng 2 giờ sau khi update xong, chiếm hết 4 vCPU và làm job khác lỗi `AZURE_QUOTA_EXCEEDED`.
 
 **Policy cho thực nghiệm DS** (`instacart-ds-benchmark`): cùng máy, cùng runtime với `instacart-single-node`, chỉ khác là cho chọn `spark.master` trong `local[1]` / `local[2]` / `local[4]`. Đo speedup theo số core (E5, [ds/04](../ds/04_thuc_nghiem_danh_gia.md)) cần điều này, mà policy chung lại khóa cứng `local[*]`.
 
@@ -273,7 +287,7 @@ resource "databricks_cluster_policy" "ds_benchmark" {
   name = "instacart-ds-benchmark"
   definition = jsonencode({
     "spark_version"           = { type = "fixed", value = "15.4.x-scala2.12" }
-    "node_type_id"            = { type = "fixed", value = "Standard_DS3_v2" }   # cố định máy để số đo so được
+    "node_type_id"            = { type = "fixed", value = "Standard_D4ds_v4" }  # cố định máy để số đo so được
     "num_workers"             = { type = "fixed", value = 0 }
     "spark_conf.spark.databricks.cluster.profile" = { type = "fixed", value = "singleNode" }
     "spark_conf.spark.master" = { type = "allowlist", values = ["local[1]", "local[2]", "local[4]", "local[*]"],

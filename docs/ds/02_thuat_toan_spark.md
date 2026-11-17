@@ -315,7 +315,7 @@ Kết quả so khớp ghi vào `ml.experiment_runs` (`experiment = 'E1'`, cột 
 | Rủi ro | Dấu hiệu | Cách xử lý |
 |---|---|---|
 | PySpark RDD chậm vì mỗi bản ghi đi qua worker Python | DApriori ở 100% product mất > 30 phút | Chạy lưới product ở 25%, chỉ vài điểm ở 100%. Ghi rõ trong báo cáo: Python RDD chậm hơn Scala, đúng như khác biệt ngôn ngữ của các bài cài đặt Apriori |
-| Broadcast ứng viên quá lớn | OOM ở driver hoặc worker khi n(C₂) vượt vài triệu | Nâng MinSupp tối thiểu ([01 §3](01_du_lieu_thuc_nghiem.md)). **Không** tăng RAM bằng máy to hơn, vì policy cố định DS3_v2 |
+| Broadcast ứng viên quá lớn | OOM ở driver hoặc worker khi n(C₂) vượt vài triệu | Nâng MinSupp tối thiểu ([01 §3](01_du_lieu_thuc_nghiem.md)). **Không** tăng RAM bằng máy to hơn, vì policy cố định `Standard_D4ds_v4` (4 vCPU, 16 GB) |
 | Bùng nổ tổ hợp ở giỏ dài | Một task chạy rất lâu (skew) trong pha k = 3 | Đã có lọc `bc_items`; nếu vẫn chậm thì ghi số liệu này làm bằng chứng cho lập luận về giới hạn k |
 | Exhaustive ở cấp department | Số tập phổ biến lên hàng chục nghìn khi MinSupp = 0,05 | Đây là **kết quả cần có** (tái hiện đường hàm mũ của bài báo). Timeout ghi `status = 'timeout'`, không coi là lỗi |
 

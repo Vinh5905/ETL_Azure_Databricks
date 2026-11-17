@@ -110,10 +110,10 @@ Mỗi PR cần ít nhất 1 người khác duyệt. PR đụng `infra/**` bắt 
 
 | Rủi ro | Ảnh hưởng | Phương án |
 |---|---|---|
-| Quota vCPU của Students rất thấp, không xin tăng được | Cluster batch, streaming và SQL warehouse classic không chạy song song được | Single-node DS3_v2 (4 vCPU); streaming chạy kiểu `availableNow` theo lô; dùng warehouse **serverless**; thí nghiệm DS chạy ở Sub C |
+| Quota vCPU của Students rất thấp, không xin tăng được | Cluster batch, streaming và SQL warehouse classic không chạy song song được | Single-node `Standard_D4ds_v4` (4 vCPU, chốt ở G0 vì Sub A không mua được DS3_v2); streaming chạy kiểu `availableNow` theo lô; dùng warehouse **serverless**; thí nghiệm DS chạy ở Sub C |
 | Policy chỉ cho phép một số region | Databricks / Event Hubs / SQL free offer không có ở region được phép | Spike chọn region giao nhau; Sub B có thể đặt ở region khác (đây cũng là thí nghiệm 3.3) |
 | Không có quyền admin Unity Catalog (metastore) | Không tạo được storage credential / external location | Dùng managed storage của catalog mặc định |
 | Power BI Pro: auto page refresh tối thiểu 30 phút | "Real-time" không đạt nếu chỉ dựa vào DirectQuery | Thêm **push semantic model** (tile cập nhật trong vài giây) cho KPI streaming |
-| Hết credit $100 | Mất tài nguyên giữa chừng | Budget alert, hủy stream mỗi đêm; hạ tầng dựng lại được bằng code ở Sub C/D |
+| Hết credit $100 | Mất tài nguyên giữa chừng | Budget alert, hủy stream mỗi đêm; hạ tầng dựng lại được bằng code ở Sub C/D. Workspace SKU `premium` không có trial nên DBU tính từ ngày đầu (spike 3.4): ưu tiên serverless ngắn hạn, cluster tự tắt, pipeline dev đặt `pipelines.clusterShutdown.delay` ngắn |
 | Lưới thực nghiệm DS chạy quá lâu trên 4 vCPU (PySpark RDD chậm) | Không kịp đủ số liệu cho báo cáo | Spike DS-1 đo trước rồi mới chốt lưới; timeout 30 phút / lần chạy, ghi `timeout` thay vì bỏ ([ds/04 §2](../ds/04_thuc_nghiem_danh_gia.md)) |
 | Model Serving / Function không tạo được trên Students | Thiếu "API model" | Phương án B: Function tự tra luật từ file Parquet của champion ([ds/05 §3.3](../ds/05_mlflow_serving_bao_cao.md)) |

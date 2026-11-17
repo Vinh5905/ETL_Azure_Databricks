@@ -35,7 +35,7 @@
 | `azurerm_data_factory_linked_service_azure_sql_database` | `ls_sql_retail` | Mật khẩu lấy từ Key Vault qua `ls_kv` |
 | `azurerm_data_factory_linked_service_key_vault` | `ls_kv` | |
 | `azurerm_data_factory_linked_service_web` / HTTP | `ls_zenodo`, `ls_off_api` | Anonymous |
-| `azurerm_data_factory_linked_service_azure_databricks` | `ls_dbx` | `msi_work_space_resource_id` (MSI), dùng job cluster hoặc existing cluster theo policy |
+| `azurerm_data_factory_linked_service_azure_databricks` | `ls_dbx` | `msi_work_space_resource_id` (MSI): managed identity của ADF cần role `Contributor` trên workspace. Pipeline dùng activity **Databricks Job** gọi job theo ID; spike 3.5 tạo linked service bằng ARM không khai cluster mà vẫn chạy được. Resource `azurerm_*` có bắt buộc `existing_cluster_id` / `new_cluster_config` hay không thì kiểm ở AD-OPS-25 |
 | `azurerm_data_factory_dataset_*` | Dataset CSV / Parquet / JSON / SQL | Tham số hóa `ingest_date` |
 | `azurerm_data_factory_pipeline` | Pipeline | `activities_json = file("${path.module}/../../../adf/pipelines/x.json")` |
 | `azurerm_data_factory_trigger_schedule` | Trigger | `activated = var.triggers_on` (mặc định `false` ở dev để không tốn tiền) |

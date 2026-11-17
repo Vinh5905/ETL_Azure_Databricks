@@ -68,10 +68,16 @@ resources:
             parameters: ["--adf-run-id", "{{job.parameters.adf_run_id}}"]
       job_clusters:
         - job_cluster_key: sn
-          new_cluster:
+          new_cluster:                          # khai đủ trường fixed của policy, không dùng apply_policy_default_values (devops/05 §3 bước 6)
             policy_id: ${var.policy_id}
-            apply_policy_default_values: true
-            custom_tags: { owner: p2 }
+            spark_version: 15.4.x-scala2.12
+            node_type_id: ${var.node_type_id}
+            num_workers: 0
+            data_security_mode: SINGLE_USER
+            spark_conf:
+              spark.databricks.cluster.profile: singleNode
+              spark.master: "local[*]"
+            custom_tags: { ResourceClass: SingleNode, owner: p2 }
 ```
 
 **Vì sao các task sau pipeline là `sql_task` trên serverless warehouse:**

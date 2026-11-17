@@ -432,7 +432,8 @@ retail_db là nguồn CDC cho product_prices và promotions. Mật khẩu chỉ 
 2. Bật free offer (use_free_limit, AutoPause); nếu provider chưa hỗ trợ thì bật bằng az CLI rồi import
 3. Firewall allow-azure và member_ips (biến không default, giá trị qua *.auto.tfvars / GitHub Variable)
 4. azurerm_key_vault_secret sql-admin-password
-5. Thêm output sql_server_fqdn; đánh dấu [x] 3.6
+5. Thêm Entra admin cho server (không bật azuread_authentication_only) để thành viên đăng nhập tay bằng Entra; chốt G0: SQL auth + Entra admin
+6. Thêm output sql_server_fqdn; đánh dấu [x] 3.6
 
 **Đầu ra**
 
@@ -721,7 +722,7 @@ Quota 4 vCPU buộc cưỡng chế single-node và tự tắt; policy cố đị
 
 **Việc cần làm**
 
-1. databricks_cluster_policy instacart-single-node (DS3_v2, DBR 15.4, local[*], autoterminate ≤ 20, tag owner bắt buộc)
+1. databricks_cluster_policy instacart-single-node (Standard_D4ds_v4, DBR 15.4, local[*], SINGLE_USER, autoterminate ≤ 20, tag owner bắt buộc); job cluster không dùng apply_policy_default_values (05 §3 bước 6)
 2. Policy loại dlt instacart-pipeline-single-node theo de/02 §2.1
 3. Policy instacart-ds-benchmark cho chọn local[1]/[2]/[4]/[*]
 4. databricks_permissions CAN_USE cho thành viên và SP CI (ds-benchmark: vai ds + SP CI)
