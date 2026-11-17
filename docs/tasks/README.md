@@ -42,10 +42,14 @@ Ghi chú:
 - Script bỏ qua comment của bot (ví dụ comment plan của `tf-plan`) và comment của chính tác giả PR.
 - PR bị đóng mà không merge thì thẻ quay về In Progress.
 
-Field `Waiting on` ghi các task liên quan chưa Done:
-- `Start:` là các task đang chặn.
-- `Finish:` là các task cần cho gate hoàn tất.
-- `None` là không còn chờ task nào.
+Hai field phụ thuộc trên thẻ dùng chung nhãn với phần Quy ước ở trên:
+- `Waiting on`: các task liên quan **chưa Done**, do script cập nhật. Task Done thì tự rơi khỏi danh sách.
+  - `Bắt đầu:` là các task đang chặn, còn task ở đây thì thẻ là Blocked.
+  - `Hoàn tất:` là các task cần cho gate hoàn tất. Thẻ vẫn Ready, làm được trước, chỉ chờ để nghiệm thu bản cuối.
+  - `Không` là không còn chờ task nào.
+- `Unblocks`: các task nhận đầu ra của task này, ghi `(bắt đầu)` hoặc `(hoàn tất)` theo loại gate. Dùng để ưu tiên task đang chặn nhiều người.
+
+Danh sách phụ thuộc đầy đủ (kể cả task đã Done) nằm ở bảng tổng bên dưới, ở từng file task và ở quan hệ **Blocked by** trên issue.
 
 Workflow `sync-task-board` tự chạy `scripts/sync_task_board.py --apply` để cập nhật `Status` và `Waiting on` cho cả board. Workflow chạy khi:
 - Issue bị đóng hoặc mở lại.

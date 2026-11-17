@@ -157,10 +157,10 @@ def main() -> None:
 
         parts = []
         if wait_start:
-            parts.append("Start: " + ", ".join(wait_start))
+            parts.append("Bắt đầu: " + ", ".join(wait_start))
         if wait_finish:
-            parts.append("Finish: " + ", ".join(wait_finish))
-        want_wait = ("; ".join(parts) or "None") if task else item.get(WAITING_FIELD)
+            parts.append("Hoàn tất: " + ", ".join(wait_finish))
+        want_wait = ("; ".join(parts) or "Không") if task else item.get(WAITING_FIELD)
 
         label = task["id"] if task else f"#{number}"
         if want == "Ready" and task:
