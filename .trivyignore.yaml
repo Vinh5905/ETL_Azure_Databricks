@@ -1,0 +1,9 @@
+# Ngoại lệ trivy có lý do, đọc bởi job trivy của pr-checks (TRIVY_IGNOREFILE).
+# Chỉ thêm ngoại lệ khi không sửa được; ngoại lệ trong stack thì ưu tiên ghi `#trivy:ignore:<id>` ngay tại resource.
+misconfigurations:
+  - id: AZU-0012
+    paths:
+      - "bootstrap/main.tf"
+    statement: >-
+      Storage account chứa Terraform state phải mở mạng mặc định vì runner GitHub-hosted
+      không có IP cố định. Đã tắt shared key, truy cập chỉ qua Entra ID (OIDC) và RBAC.

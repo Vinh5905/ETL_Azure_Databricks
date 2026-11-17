@@ -55,7 +55,7 @@ tests/        # pytest: unit test hàm transform với pyspark local
 
 **Branch protection cho `main`:**
 - Bắt buộc PR, bắt buộc 1 approve, bắt buộc review của code owner.
-- Các status check bắt buộc: `pr-checks / terraform`, `pr-checks / python`, `pr-checks / bundle`.
+- Các status check bắt buộc: `pr-checks / terraform`, `pr-checks / trivy`, `pr-checks / python`, `pr-checks / java`, `pr-checks / bundle`. Job `cost` không bắt buộc.
 - Không cho force-push, không cho xóa nhánh.
 - Bật "Require branches to be up to date" để plan luôn chạy trên code mới nhất.
 
@@ -84,11 +84,12 @@ repos:
 
 | Job | Bước | Công cụ |
 |---|---|---|
-| `terraform` | fmt -check · `init -backend=false` · validate cho từng stack · tflint (ruleset azurerm) · trivy config | `hashicorp/setup-terraform@v3`, `terraform-linters/setup-tflint`, `aquasecurity/trivy-action` |
+| `terraform` | fmt -check · `init -backend=false` · validate cho từng stack · tflint (ruleset azurerm) | `hashicorp/setup-terraform@v3`, `terraform-linters/setup-tflint` |
+| `trivy` | `trivy config` trên `infra/`, **chặn merge** khi có lỗi HIGH/CRITICAL. Ngoại lệ phải có lý do: `#trivy:ignore:<id>` ngay tại resource, hoặc `.trivyignore.yaml` ở gốc repo cho thư mục không sửa được (`bootstrap`) | `aquasecurity/trivy-action` |
 | `python` | `uv sync` · `ruff check` · `pytest -q` (pyspark local, dữ liệu nhỏ trong `tests/fixtures/`; gồm test thuật toán DS ở `tests/ml/`) | `astral-sh/setup-uv` |
-| `java` (chỉ khi PR đụng `src/mapreduce/**`) | `mvn -B verify`: build jar MapReduce và chạy test trên `MiniMRYarnCluster` ([ds/03 §4.3](../ds/03_hadoop_mapreduce_local.md)) | `actions/setup-java` (cache Maven) |
+| `java` (luôn chạy để làm check bắt buộc; chỉ build khi PR đụng `src/mapreduce/**`) | `mvn -B verify`: build jar MapReduce và chạy test trên `MiniMRYarnCluster` ([ds/03 §4.3](../ds/03_hadoop_mapreduce_local.md)) | `dorny/paths-filter`, `actions/setup-java` (cache Maven) |
 | `bundle` | `databricks bundle validate -t dev` (chỉ kiểm tra cú pháp, không cần đăng nhập nếu không đọc biến từ workspace) | `databricks/setup-cli` |
-| `cost` (tùy chọn) | `infracost diff` → comment chi phí ước tính tăng/giảm | `infracost/actions/setup` (cần API key miễn phí lưu trong Secrets) |
+| `cost` (không bắt buộc; chỉ PR đụng `infra/**`) | `infracost breakdown` trên nhánh gốc, `infracost diff` trên PR → comment chi phí ước tính tăng/giảm (cập nhật một comment). Chỉ đọc HCL, không đăng nhập Azure. Thiếu secret (vd. PR từ fork) thì bỏ qua | `infracost/actions/setup` (cần API key miễn phí lưu trong Secrets) |
 
 ```yaml
 name: pr-checks
@@ -296,7 +297,7 @@ Chỉ làm khi đã dựng stack `50-serving` ([03 §5.1](03_terraform_azure.md)
 | `TF_VAR_MEMBER_OBJECT_IDS` (JSON, map vai → object ID) | Variable, map vào `TF_VAR_member_object_ids` | Stack `10-core` (bước 3.6, 3.8), `30-databricks` |
 | `TF_VAR_MEMBER_IPS` (JSON, map vai → IP public) | Variable, map vào `TF_VAR_member_ips` | Stack `10-core` (firewall Azure SQL, bước 3.6) |
 | `TF_VAR_MEMBER_EMAILS` (JSON, map vai → email) | **Secret**, map vào `TF_VAR_member_emails` | Stack `10-core` (action group nhận cảnh báo budget, bước 3.9). Secret vì repo public và Variable hiện rõ trong log |
-| `INFRACOST_API_KEY` | **Secret** | `pr-checks / cost` |
+| `INFRACOST_API_KEY` | **Secret** | `pr-checks / cost`. Token của service account trên Infracost Cloud (dashboard → Org settings → Service accounts → Create, đặt hạn dùng có giới hạn). Token chỉ hiện một lần; đặt bằng `gh secret set INFRACOST_API_KEY` rồi dán vào |
 
 Không có client secret, PAT hay connection string nào nằm trong GitHub. Mọi bí mật lúc chạy đều nằm trong Key Vault.
 

@@ -1,6 +1,6 @@
 # Kiểm tra tĩnh trên mọi PR (docs/devops/04, mục 3.1).
-# Status check bắt buộc trong branch protection: terraform, python, bundle
-# (cùng title, commits, body của pr-lint).
+# Status check bắt buộc trong branch protection: terraform, trivy, python, java, bundle
+# (cùng title, commits, body của pr-lint). `cost` không bắt buộc.
 name: pr-checks
 
 on:
@@ -62,16 +62,19 @@ jobs:
           test "${{ needs.terraform-dir.result }}" = "success"
 
   trivy:
-    # Chưa chặn merge (exit-code 0): xem kết quả trong log, sửa dần theo từng bước của 10-core.
+    # Chặn merge khi có lỗi HIGH/CRITICAL. Ngoại lệ có lý do: `#trivy:ignore:<id>` tại resource,
+    # hoặc .trivyignore.yaml ở gốc repo (cho thư mục không sửa được như bootstrap).
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: aquasecurity/trivy-action@v0.36.0
+        env:
+          TRIVY_IGNOREFILE: .trivyignore.yaml
         with:
           scan-type: config
           scan-ref: infra
           severity: HIGH,CRITICAL
-          exit-code: "0"
+          exit-code: "1"
 
   python:
     runs-on: ubuntu-latest
@@ -86,6 +89,67 @@ jobs:
       - run: uv run ruff check .
       - run: uv run ruff format --check .
       - run: uv run pytest -q
+
+  java:
+    # Luôn chạy để làm check bắt buộc; chỉ build Maven khi PR đụng src/mapreduce/** (docs/ds/03 §4.3).
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v3
+        id: changed
+        with:
+          filters: |
+            mr:
+              - "src/mapreduce/**"
+      - name: Bỏ qua khi không đụng MapReduce
+        if: steps.changed.outputs.mr != 'true'
+        run: echo "::notice::PR không đụng src/mapreduce/**, bỏ qua mvn verify."
+      - uses: actions/setup-java@v4
+        if: steps.changed.outputs.mr == 'true'
+        with:
+          distribution: temurin
+          java-version: "11"
+          cache: maven
+      - run: mvn -B verify
+        if: steps.changed.outputs.mr == 'true'
+        working-directory: src/mapreduce
+
+  cost:
+    # Infracost: comment chi phí ước tính tăng/giảm lên PR đụng infra/** (bằng chứng chi phí, rubric 5.4).
+    # Chỉ đọc HCL, không đăng nhập Azure. Không bắt buộc; thiếu secret (vd. PR từ fork) thì bỏ qua.
+    runs-on: ubuntu-latest
+    env:
+      INFRACOST_API_KEY: ${{ secrets.INFRACOST_API_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v3
+        id: changed
+        with:
+          filters: |
+            infra:
+              - "infra/**"
+      - name: Bỏ qua khi không cần
+        if: steps.changed.outputs.infra != 'true' || env.INFRACOST_API_KEY == ''
+        run: echo "::notice::PR không đụng infra/** hoặc chưa có secret INFRACOST_API_KEY, bỏ qua Infracost."
+      - uses: infracost/actions/setup@v3
+        if: steps.changed.outputs.infra == 'true' && env.INFRACOST_API_KEY != ''
+        with:
+          api-key: ${{ secrets.INFRACOST_API_KEY }}
+      - name: Chi phí của nhánh gốc
+        if: steps.changed.outputs.infra == 'true' && env.INFRACOST_API_KEY != ''
+        run: |
+          git fetch --depth=1 origin "${{ github.event.pull_request.base.sha }}"
+          git worktree add /tmp/base "${{ github.event.pull_request.base.sha }}"
+          infracost breakdown --path=/tmp/base/infra --format=json --out-file=/tmp/base.json
+      - name: Chênh lệch và comment lên PR
+        if: steps.changed.outputs.infra == 'true' && env.INFRACOST_API_KEY != ''
+        run: |
+          infracost diff --path=infra --compare-to=/tmp/base.json --format=json --out-file=/tmp/diff.json
+          infracost comment github --path=/tmp/diff.json \
+            --repo="${{ github.repository }}" \
+            --pull-request="${{ github.event.pull_request.number }}" \
+            --github-token="${{ github.token }}" \
+            --behavior=update
 
   bundle:
     # `bundle validate` cần workspace (lookup cluster policy theo tên).
