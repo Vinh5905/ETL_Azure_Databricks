@@ -8,3 +8,15 @@ output "location" {
 output "rg_name" {
   value = azurerm_resource_group.core.name
 }
+
+output "lake_account_name" {
+  value = module.lake.name
+}
+
+output "lake_account_id" {
+  value = module.lake.resource_id
+}
+
+output "lake_dfs_endpoint" {
+  value = "abfss://{container}@${module.lake.name}.dfs.core.windows.net"
+}

@@ -1,10 +1,14 @@
 terraform {
-  required_version = "~> 1.9"
+  required_version = "~> 1.10"
 
   required_providers {
     azurerm = {
       source  = "hashicorp/azurerm"
       version = "~> 4.0"
+    }
+    azapi = {
+      source  = "Azure/azapi"
+      version = "~> 2.12"
     }
   }
 
@@ -23,4 +27,9 @@ provider "azurerm" {
   }
   subscription_id     = var.subscription_id_a
   storage_use_azuread = true
+}
+
+# azapi dùng cho module AVM storage. Đăng nhập theo cùng nguồn với azurerm (az login hoặc ARM_* trong CI).
+provider "azapi" {
+  subscription_id = var.subscription_id_a
 }

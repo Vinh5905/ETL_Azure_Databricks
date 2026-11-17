@@ -113,7 +113,7 @@ Mỗi bước là **một PR nhỏ**, `plan` sạch rồi mới làm bước k�
 
 ```hcl
 terraform {
-  required_version = "~> 1.9"
+  required_version = "~> 1.10"
   required_providers {
     azurerm = { source = "hashicorp/azurerm", version = "~> 4.0" }
   }
@@ -140,46 +140,53 @@ resource "azurerm_resource_group" "core" {
 **Vì sao:** đây là nơi lưu mọi tầng dữ liệu. Bật HNS (hierarchical namespace) để có thư mục thật, ACL và hiệu năng tốt cho Spark/Delta. Mỗi tầng một container để phân quyền theo container trong Unity Catalog.
 
 ```hcl
-module "lake" {
+# infra/modules/lakehouse_storage/main.tf (rút gọn): wrapper quanh AVM storage 0.11.0, chỉ dùng provider azapi
+module "this" {
   source  = "Azure/avm-res-storage-storageaccount/azurerm"
-  version = "x.y.z"
-  name                      = module.nt.names.storage_account.name_unique
-  resource_group_name       = azurerm_resource_group.core.name
-  location                  = var.location
-  account_kind              = "StorageV2"
-  account_replication_type  = "LRS"
-  is_hns_enabled            = true
-  shared_access_key_enabled = false          # chỉ dùng Entra ID / managed identity
-  containers = { for c in ["landing","bronze","silver","gold","checkpoints","mlflow","ds"] :
-                 c => { name = c } }
-  enable_telemetry = false
-  tags             = module.nt.tags
-}
-
-resource "azurerm_storage_management_policy" "lake" {      # rubric 3.4: tối ưu lưu trữ
-  storage_account_id = module.lake.resource_id
-  rule {
-    name    = "landing-to-cool"
-    enabled = true
-    filters {
-      blob_types   = ["blockBlob"]
-      prefix_match = ["landing/"]
-    }
-    actions {
-      base_blob {
-        tier_to_cool_after_days_since_modification_greater_than = 30
-      }
+  version = "0.11.0"                         # cần Terraform >= 1.10
+  name             = var.name
+  parent_id        = var.resource_group_id   # AVM 0.11 nhận ID của RG, không nhận tên
+  location         = var.location
+  account_kind     = "StorageV2"
+  account_sku_name = "Standard_LRS"          # mặc định của AVM là Standard_ZRS
+  is_hns_enabled   = true
+  shared_access_key_enabled       = false    # chỉ dùng Entra ID / managed identity
+  default_to_oauth_authentication = true
+  public_network_access_enabled   = true     # mặc định AVM tắt public network; dự án không dùng private endpoint
+  network_rules = { default_action = "Allow", bypass = ["AzureServices"] }
+  containers = { for c in var.containers : c => { name = c } }   # 7 container, xem dưới
+  storage_management_policy_rule = {         # rubric 3.4: tối ưu lưu trữ
+    landing_to_cool = {
+      name    = "landing-to-cool"
+      enabled = true
+      filters = { blob_types = ["blockBlob"], prefix_match = ["landing/"] }
+      actions = { base_blob = { tier_to_cool_after_days_since_modification_greater_than = 30 } }
     }
   }
+  enable_telemetry = false
+  tags             = var.tags
+}
+
+# infra/stacks/10-core/main.tf
+module "lake" {
+  source            = "../../modules/lakehouse_storage"
+  name              = module.nt.names.storage_account.name_unique
+  resource_group_id = azurerm_resource_group.core.id
+  location          = azurerm_resource_group.core.location
+  tags              = module.nt.tags
 }
 ```
 
+Lifecycle rule khai báo qua biến `storage_management_policy_rule` của AVM, không dùng `azurerm_storage_management_policy` riêng, để cả storage account chỉ đi qua một provider (`azapi`).
+
+7 container: `landing`, `bronze`, `silver`, `gold`, `checkpoints`, `mlflow`, `ds-data`. Container của DS tên `ds-data`, không phải `ds`, vì Azure bắt tên container dài 3–63 ký tự.
+
 **Kiểm tra:** `az storage fs list --account-name <st> --auth-mode login` thấy đủ 7 container.
 
-Container `ds` dành cho phần Data Science ([docs/ds](../ds/00_tong_quan_ds.md)):
-- `ds/exports/`: DE xuất file txt cho cụm Hadoop local.
-- `ds/inbox/`: kết quả benchmark từ máy local upload lên.
-- `ds/serving/`: luật của model champion, dùng cho phương án B của API.
+Container `ds-data` dành cho phần Data Science ([docs/ds](../ds/00_tong_quan_ds.md)):
+- `ds-data/exports/`: DE xuất file txt cho cụm Hadoop local.
+- `ds-data/inbox/`: kết quả benchmark từ máy local upload lên.
+- `ds-data/serving/`: luật của model champion, dùng cho phương án B của API.
 
 Các thành viên tải/upload bằng AzCopy với quyền *Storage Blob Data Contributor* đã cấp ở bước 3.8, không cần SAS hay key.
 
@@ -415,6 +422,7 @@ resource "azurerm_consumption_budget_subscription" "a" {
 output "location"                 { value = var.location }
 output "rg_name"                  { value = azurerm_resource_group.core.name }
 output "lake_account_name"        { value = module.lake.name }
+output "lake_account_id"          { value = module.lake.resource_id }
 output "lake_dfs_endpoint"        { value = "abfss://{container}@${module.lake.name}.dfs.core.windows.net" }
 output "key_vault_id"             { value = module.kv.resource_id }
 output "key_vault_uri"            { value = module.kv.uri }
@@ -542,7 +550,7 @@ Stack này **chỉ cần dựng ở G3**, khi DS bắt đầu.
 | Storage account nhỏ cho Function | Chỉ chứa gói code; truy cập bằng danh tính, tắt shared key |
 | Function App **Flex Consumption** (Linux, Python 3.11) | Trả theo lần gọi, về 0 khi rảnh. Gói *Linux Consumption* cũ đã được Microsoft thông báo ngừng, nên không chọn |
 | Gán `id-func-recommend` cho Function | App setting `AZURE_CLIENT_ID` = client ID của danh tính |
-| Role *Storage Blob Data Reader* trên **container** `ds` (không phải cả account) | Chỉ cần cho phương án B: Function tự đọc luật từ `ds/serving/` |
+| Role *Storage Blob Data Reader* trên **container** `ds-data` (không phải cả account) | Chỉ cần cho phương án B: Function tự đọc luật từ `ds-data/serving/` |
 
 ```hcl
 # infra/stacks/50-serving/main.tf  (minh họa; kiểm tên tham số theo đúng version provider azurerm đã pin)

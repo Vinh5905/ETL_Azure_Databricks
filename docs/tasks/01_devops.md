@@ -388,20 +388,24 @@ Quyền Contributor trên Sub B và biến AZURE_SUBSCRIPTION_B chuyển sang [A
 - **Hoàn tất còn cần:** Không có.
 - **Mở khóa:** [AD-OPS-10](01_devops.md#ad-ops-10) (bắt đầu)
 
-ADLS là nơi lưu mọi tầng dữ liệu và container ds cho phần DS. Lifecycle là bằng chứng rubric 3.4.
+ADLS là nơi lưu mọi tầng dữ liệu và container ds-data cho phần DS. Lifecycle là bằng chứng rubric 3.4.
 
 **Việc cần làm**
 
 1. Apply bước 3.1 (RG rg-instacart-core) lần đầu từ máy P1
 2. Viết module lakehouse_storage (wrapper AVM storage, pin version, enable_telemetry = false) hoặc gọi AVM trực tiếp
-3. Tạo 7 container landing, bronze, silver, gold, checkpoints, mlflow, ds; HNS bật, shared key tắt
-4. Thêm azurerm_storage_management_policy landing-to-cool sau 30 ngày
+3. Tạo 7 container landing, bronze, silver, gold, checkpoints, mlflow, ds-data; HNS bật, shared key tắt
+4. Thêm lifecycle rule landing-to-cool sau 30 ngày (biến storage_management_policy_rule của AVM)
 5. Sửa checklist main.tf từ '6 container' thành 7 và đánh dấu [x] 3.2
+
+Container của DS tên `ds-data` vì Azure bắt tên container dài ít nhất 3 ký tự. AVM storage từ 0.7 cần Terraform >= 1.10, nên CI chuyển sang `1.16.x` trong cùng PR.
+
+Workflow `tf-apply` đang tắt (`gh workflow disable`) tới [AD-OPS-17](01_devops.md#ad-ops-17). Trong lúc dựng 10-core, P1 apply từ máy; merge PR hạ tầng không kích hoạt apply.
 
 **Đầu ra**
 
 - infra/modules/lakehouse_storage/*.tf
-- infra/stacks/10-core: module lake, storage management policy
+- infra/stacks/10-core: module lake (gồm lifecycle rule)
 - Storage account ADLS trên Sub A
 
 **Xong khi**
@@ -654,11 +658,12 @@ Từ đây mọi thay đổi hạ tầng chỉ đi qua PR → tf-plan → merge 
 
 **Việc cần làm**
 
-1. Mở PR thêm tag ci_test = '1' vào 10-core
-2. Kiểm pr-checks xanh, tf-plan comment đúng '1 to change'
-3. P1 approve, merge; duyệt tf-apply trong environment prod
-4. Sửa workflow nếu thiếu TF_VAR_* (member_object_ids, member_ips, member_emails)
-5. PR gỡ tag ci_test
+1. Bật lại workflow tf-apply: `gh workflow enable tf-apply.yml` (đã tắt từ AD-OPS-09 để P1 apply 10-core từ máy trong lúc dựng)
+2. Mở PR thêm tag ci_test = '1' vào 10-core
+3. Kiểm pr-checks xanh, tf-plan comment đúng '1 to change'
+4. P1 approve, merge; duyệt tf-apply trong environment prod
+5. Sửa workflow nếu thiếu TF_VAR_* (member_object_ids, member_ips, member_emails)
+6. PR gỡ tag ci_test
 
 **Đầu ra**
 
@@ -1111,7 +1116,7 @@ Function là thành phần FaaS (rubric 1.4) để demo gọi API không giữ t
 1. Thêm output lake_account_id, func_identity_principal_id vào 10-core
 2. Thêm Website Contributor vào ci_assignable_role_ids của bootstrap, P1 apply tay
 3. Tạo infra/stacks/50-serving: storage gói code tắt shared key, service plan FC1, azurerm_function_app_flex_consumption gắn id-func-recommend
-4. Role Storage Blob Data Reader trên container ds (phương án B), Website Contributor cho UAMI CI
+4. Role Storage Blob Data Reader trên container ds-data (phương án B), Website Contributor cho UAMI CI
 5. Thêm 50-serving vào matrix pr-checks, filter tf-plan, chuỗi tf-apply, envs/50-serving.tfvars
 6. Không được Flex thì dùng Y1 + azurerm_linux_function_app, ghi lý do
 
