@@ -10,6 +10,10 @@ terraform {
       source  = "Azure/azapi"
       version = "~> 2.12"
     }
+    random = {
+      source  = "hashicorp/random"
+      version = "~> 3.6"
+    }
   }
 
   # Phần còn lại lấy từ infra/backend.hcl:
@@ -29,7 +33,7 @@ provider "azurerm" {
   storage_use_azuread = true
 }
 
-# azapi dùng cho module AVM storage, Key Vault và Databricks workspace. Đăng nhập theo cùng nguồn với azurerm (az login hoặc ARM_* trong CI).
+# azapi dùng cho module AVM storage, Key Vault, Databricks workspace và DB retail_db (free offer). Đăng nhập theo cùng nguồn với azurerm (az login hoặc ARM_* trong CI).
 provider "azapi" {
   subscription_id = var.subscription_id_a
 }

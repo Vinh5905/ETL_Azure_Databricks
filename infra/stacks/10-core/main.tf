@@ -6,7 +6,7 @@
 # [x] 3.3  Key Vault (RBAC mode)
 # [x] 3.4  Access Connector + Storage Blob Data Contributor trên ADLS
 # [x] 3.5  Databricks workspace Premium
-# [ ] 3.6  Azure SQL (free offer) + firewall + secret mật khẩu
+# [x] 3.6  Azure SQL (free offer) + firewall + secret mật khẩu
 # [ ] 3.7  Data Factory + managed identity + quyền
 # [ ] 3.8  RBAC cho 4 thành viên
 # [ ] 3.9  Action group + budget 25/50/75/90%
@@ -105,6 +105,116 @@ module "dbw" {
 
   enable_telemetry = false
   tags             = module.nt.tags
+}
+
+# Bước 3.6: Azure SQL retail_db, nguồn CDC cho product_prices và promotions (docs/devops/03, bước 3.6).
+
+# Hai dòng "Key Vault Secrets Officer" trong bảng quyền bước 3.8 được làm sớm ở đây:
+# P1 cần quyền này để apply ghi secret sql-admin-password, CI cần nó để plan đọc lại secret.
+# Quyền của 4 thành viên (Secrets User) vẫn để bước 3.8.
+data "terraform_remote_state" "bootstrap" {
+  backend = "azurerm"
+  config = {
+    resource_group_name  = "rg-tfstate"
+    storage_account_name = var.tfstate_account
+    container_name       = "tfstate"
+    key                  = "bootstrap.tfstate"
+    use_azuread_auth     = true
+  }
+}
+
+resource "azurerm_role_assignment" "kv_officer" {
+  for_each = {
+    p1 = { principal_id = var.member_object_ids["p1"], principal_type = "User" }
+    ci = { principal_id = data.terraform_remote_state.bootstrap.outputs.ci_principal_id, principal_type = "ServicePrincipal" }
+  }
+
+  scope                = module.kv.resource_id
+  role_definition_name = "Key Vault Secrets Officer"
+  principal_id         = each.value.principal_id
+  principal_type       = each.value.principal_type
+}
+
+# Mật khẩu login sqladmin. Ký tự đặc biệt giới hạn ở nhóm an toàn cho connection string
+# (ADF linked service, pymssql), tránh ; { } = ' ".
+resource "random_password" "sql" {
+  length           = 32
+  special          = true
+  override_special = "-_.!#*"
+  min_lower        = 2
+  min_upper        = 2
+  min_numeric      = 2
+  min_special      = 2
+}
+
+module "sql" {
+  source  = "Azure/avm-res-sql-server/azurerm"
+  version = "0.2.1"
+
+  name                = module.nt.names.mssql_server.name_unique
+  resource_group_name = azurerm_resource_group.core.name
+  location            = azurerm_resource_group.core.location
+  server_version      = "12.0"
+
+  # Chốt G0: SQL auth cho seed job (pymssql) và linked service ls_sql_retail,
+  # cộng Entra admin cho người đăng nhập tay. Không bật Entra-only.
+  administrator_login          = "sqladmin"
+  administrator_login_password = random_password.sql.result
+  azuread_administrator = {
+    azuread_authentication_only = false
+    login_username              = "p1-entra-admin" # chỉ là tên hiển thị; Azure xác thực theo object_id
+    object_id                   = var.member_object_ids["p1"]
+  }
+
+  # Mặc định của AVM là tắt public network. Dự án không dùng private endpoint,
+  # nên mở mạng và chặn bằng firewall: dịch vụ Azure (ADF, Databricks) + IP thành viên.
+  public_network_access_enabled = true
+  firewall_rules = merge(
+    {
+      allow-azure = { start_ip_address = "0.0.0.0", end_ip_address = "0.0.0.0" }
+    },
+    { for k, ip in var.member_ips : "member-${k}" => { start_ip_address = ip, end_ip_address = ip } },
+  )
+
+  enable_telemetry = false
+  tags             = module.nt.tags
+}
+
+# Không dùng administrator_login_password_key_vault_configuration của AVM: count của secret trong
+# module phụ thuộc mật khẩu (chưa biết lúc plan) nên plan lỗi "Invalid count argument".
+resource "azurerm_key_vault_secret" "sql_pw" {
+  name         = "sql-admin-password"
+  value        = random_password.sql.result
+  key_vault_id = module.kv.resource_id
+  content_type = "password của login sqladmin trên ${module.sql.resource_name}"
+
+  # Role Secrets Officer phải có trước khi ghi secret.
+  depends_on = [azurerm_role_assignment.kv_officer]
+}
+
+# DB tạo bằng azapi vì azurerm 4.x và AVM 0.2.1 chưa có thuộc tính free offer (useFreeLimit).
+# Free offer: serverless GP_S_Gen5_2 (GP_S_Gen5, 2 vCore), 100.000 vCore-giây và 32 GB mỗi tháng, hết hạn mức thì tự pause.
+# Mỗi subscription chỉ có 1 DB free offer (spike 3.5).
+resource "azapi_resource" "retail_db" {
+  type      = "Microsoft.Sql/servers/databases@2023-08-01"
+  name      = "retail_db"
+  parent_id = module.sql.resource_id
+  location  = azurerm_resource_group.core.location
+  tags      = module.nt.tags
+
+  body = {
+    # Azure lưu tên SKU là GP_S_Gen5, số vCore nằm ở capacity. Ghi GP_S_Gen5_2 thì lần plan sau luôn đòi đổi.
+    sku = {
+      name     = "GP_S_Gen5"
+      tier     = "GeneralPurpose"
+      family   = "Gen5"
+      capacity = 2
+    }
+    properties = {
+      useFreeLimit                = true
+      freeLimitExhaustionBehavior = "AutoPause"
+    }
+  }
 }
 
 # Danh tính cho Azure Function gợi ý (G5). Tạo sẵn ở đây (không tốn tiền) để 30-databricks

@@ -288,52 +288,77 @@ Lưu ý khi dùng AVM 0.6.0:
 **Vì sao:** đề bài 08 yêu cầu nhiều nguồn, nhiều định dạng. Bảng giá và khuyến mãi tự sinh nằm trong một CSDL quan hệ thật, để ADF copy tăng dần theo watermark. Dùng **free offer** (serverless GP, tự pause khi hết hạn mức) để gần như không tốn tiền.
 
 ```hcl
+# Quyền ghi secret: hai dòng "Secrets Officer" của bảng bước 3.8 làm sớm ở đây.
+resource "azurerm_role_assignment" "kv_officer" {
+  for_each = {
+    p1 = { principal_id = var.member_object_ids["p1"], principal_type = "User" }
+    ci = { principal_id = data.terraform_remote_state.bootstrap.outputs.ci_principal_id, principal_type = "ServicePrincipal" }
+  }
+  scope                = module.kv.resource_id
+  role_definition_name = "Key Vault Secrets Officer"
+  principal_id         = each.value.principal_id
+  principal_type       = each.value.principal_type
+}
+
 resource "random_password" "sql" {
-  length  = 24
-  special = true
+  length           = 32
+  special          = true
+  override_special = "-_.!#*" # an toàn cho connection string ADF / pymssql
 }
 
 module "sql" {
   source  = "Azure/avm-res-sql-server/azurerm"
-  version = "x.y.z"
-  name                         = module.nt.names.mssql_server.name_unique
-  resource_group_name          = azurerm_resource_group.core.name
-  location                     = var.location
+  version = "0.2.1"
+  name                = module.nt.names.mssql_server.name_unique
+  resource_group_name = azurerm_resource_group.core.name
+  location            = azurerm_resource_group.core.location
+  server_version      = "12.0"
+  # Chốt G0: SQL auth (cho seed job và ls_sql_retail) + Entra admin (cho người đăng nhập tay).
   administrator_login          = "sqladmin"
   administrator_login_password = random_password.sql.result
-  databases = { retail = { name = "retail_db", sku_name = "GP_S_Gen5_2" } }
-  # Chốt G0: SQL auth (cho seed job và ls_sql_retail) + Entra admin (cho người đăng nhập tay).
-  # Không bật azuread_authentication_only. Tên tham số lấy theo README của version AVM đã pin.
   azuread_administrator = {
-    login_username = var.sql_entra_admin_login      # tên hiển thị, ví dụ nhóm Entra của nhóm dự án
-    object_id      = var.sql_entra_admin_object_id  # qua TF_VAR_*, không commit
+    azuread_authentication_only = false
+    login_username              = "p1-entra-admin"            # chỉ là tên hiển thị
+    object_id                   = var.member_object_ids["p1"] # qua TF_VAR_*, không commit
   }
-  # free offer: kiểm tra module / azurerm_mssql_database có thuộc tính dạng use_free_limit,
-  # free_limit_exhaustion_behavior = "AutoPause". Nếu chưa có thì bật free offer bằng az CLI rồi import.
+  public_network_access_enabled = true # mặc định của AVM là false
+  firewall_rules = merge(
+    { allow-azure = { start_ip_address = "0.0.0.0", end_ip_address = "0.0.0.0" } }, # ADF, Databricks
+    { for k, ip in var.member_ips : "member-${k}" => { start_ip_address = ip, end_ip_address = ip } },
+  )
   enable_telemetry = false
-  tags = module.nt.tags
-}
-
-resource "azurerm_mssql_firewall_rule" "azure" {           # cho ADF / Databricks (dịch vụ Azure)
-  name             = "allow-azure"
-  server_id        = module.sql.resource_id
-  start_ip_address = "0.0.0.0"
-  end_ip_address   = "0.0.0.0"
-}
-resource "azurerm_mssql_firewall_rule" "members" {          # IP của 4 thành viên để chạy seed
-  for_each = var.member_ips
-  name             = "member-${each.key}"
-  server_id        = module.sql.resource_id
-  start_ip_address = each.value
-  end_ip_address   = each.value
+  tags             = module.nt.tags
 }
 
 resource "azurerm_key_vault_secret" "sql_pw" {
   name         = "sql-admin-password"
   value        = random_password.sql.result
   key_vault_id = module.kv.resource_id
+  depends_on   = [azurerm_role_assignment.kv_officer]
+}
+
+# azurerm 4.x và AVM 0.2.1 chưa có thuộc tính free offer, nên DB tạo bằng azapi.
+resource "azapi_resource" "retail_db" {
+  type      = "Microsoft.Sql/servers/databases@2023-08-01"
+  name      = "retail_db"
+  parent_id = module.sql.resource_id
+  location  = azurerm_resource_group.core.location
+  body = {
+    sku        = { name = "GP_S_Gen5", tier = "GeneralPurpose", family = "Gen5", capacity = 2 } # = GP_S_Gen5_2
+    properties = { useFreeLimit = true, freeLimitExhaustionBehavior = "AutoPause" }
+  }
 }
 ```
+
+Ghi chú khi làm thật (AD-OPS-12):
+- **Free offer:** cả `azurerm_mssql_database` (azurerm 4.81) lẫn AVM `avm-res-sql-server` 0.2.1 đều chưa có `use_free_limit`. Vì vậy DB dùng `azapi_resource` với `useFreeLimit` và `freeLimitExhaustionBehavior = "AutoPause"`, không phải bật bằng az CLI rồi import. Mỗi subscription chỉ có **một** DB free offer.
+- **Tên SKU:** trong body của azapi phải ghi `GP_S_Gen5` và `capacity = 2`. Azure lưu tên SKU theo dạng này; nếu ghi `GP_S_Gen5_2` thì plan lần hai luôn báo 1 to change.
+- **Quyền Key Vault:** tới bước này chưa ai có quyền data-plane trên Key Vault, kể cả Owner subscription. Nên hai role *Key Vault Secrets Officer* trong bảng bước 3.8 (P1 và UAMI CI) được tạo luôn ở đây. P1 cần role để apply ghi secret, CI cần role để `plan` đọc lại secret. Role mới có thể mất vài phút mới có hiệu lực: nếu lần apply đầu báo 403 khi ghi secret thì chờ rồi apply lại.
+- **UAMI CI** lấy từ output `ci_principal_id` của `bootstrap` qua `terraform_remote_state`. Tên storage account state (`tfstate_account`) nằm trong `infra/envs/10-core.tfvars`.
+- **Biến mới:** `member_object_ids` (cần key `p1`) và `member_ips`. Cả hai không có `default`. Ở máy local đặt trong `terraform.auto.tfvars`. Trong CI dùng GitHub Variable `TF_VAR_MEMBER_OBJECT_IDS`, `TF_VAR_MEMBER_IPS` (JSON, xem [04 §4](04_github_actions_cicd.md)).
+- **Entra admin** là P1. Thành viên khác đăng nhập bằng Entra thì P1 tạo user trong DB: `CREATE USER [<upn>] FROM EXTERNAL PROVIDER`.
+- **Secret tự khai báo:** không dùng `administrator_login_password_key_vault_configuration` của AVM. Biến `count` của secret trong module phụ thuộc vào mật khẩu, mà lúc plan mật khẩu chưa có giá trị, nên plan báo `Invalid count argument`.
+- Output `sql_server_fqdn` được ghép từ tên server, vì output `resource` của AVM bị đánh dấu sensitive.
 
 **Vì sao giữ mật khẩu SQL (chốt G0):** spike 3.5 dựng server chỉ Entra ID (`--enable-ad-only-auth`) và chạy được. Nhưng job `seed_retail_db` trên Databricks kết nối bằng `pymssql` + mật khẩu, mà lấy token Entra từ cluster thì cần thêm service principal có secret hoặc service credential của UC (chưa thử). Vì vậy server bật **cả hai**: login `sqladmin` với mật khẩu trong Key Vault cho seed job và `ls_sql_retail`, Entra admin cho thành viên đăng nhập tay (`sqlcmd --authentication-method ActiveDirectoryAzCli`). Lần đầu lệnh này có thể hỏng vì lấy token chậm; chạy `az account get-access-token` trước rồi thử lại.
 
@@ -446,7 +471,7 @@ output "access_connector_id"      { value = azurerm_databricks_access_connector.
 output "databricks_workspace_url" { value = module.dbw.databricks_workspace_url }
 output "databricks_workspace_id"  { value = module.dbw.resource_id }
 output "adf_id"                   { value = module.adf.resource_id }
-output "sql_server_fqdn"          { value = module.sql.resource.fully_qualified_domain_name }
+output "sql_server_fqdn"          { value = "${module.sql.resource_name}.database.windows.net" }
 output "func_identity_id"         { value = azurerm_user_assigned_identity.func.id }
 output "func_identity_client_id"  { value = azurerm_user_assigned_identity.func.client_id }
 ```

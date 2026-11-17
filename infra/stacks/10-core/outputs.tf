@@ -51,3 +51,13 @@ output "func_identity_id" {
 output "func_identity_client_id" {
   value = azurerm_user_assigned_identity.func.client_id
 }
+
+# FQDN của Azure SQL, dùng cho linked service ls_sql_retail (40-orchestration) và seed job.
+# Ghép từ tên server vì output resource của AVM bị đánh dấu sensitive.
+output "sql_server_fqdn" {
+  value = "${module.sql.resource_name}.database.windows.net"
+}
+
+output "sql_database_name" {
+  value = azapi_resource.retail_db.name
+}

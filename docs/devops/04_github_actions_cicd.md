@@ -281,7 +281,8 @@ Chỉ làm khi đã dựng stack `50-serving` ([03 §5.1](03_terraform_azure.md)
 | `AZURE_SUBSCRIPTION_A`, `AZURE_SUBSCRIPTION_B` | Variable | Terraform, `stream-toggle` |
 | `TFSTATE_ACCOUNT` | Variable | `backend.hcl` / remote state |
 | `DATABRICKS_HOST` | Variable | `de-deploy` |
-| `TF_VAR_member_object_ids` (JSON) | Variable | Stack `10-core`, `30-databricks` |
+| `TF_VAR_MEMBER_OBJECT_IDS` (JSON, map vai → object ID) | Variable, map vào `TF_VAR_member_object_ids` | Stack `10-core` (bước 3.6, 3.8), `30-databricks` |
+| `TF_VAR_MEMBER_IPS` (JSON, map vai → IP public) | Variable, map vào `TF_VAR_member_ips` | Stack `10-core` (firewall Azure SQL, bước 3.6) |
 | `INFRACOST_API_KEY` | **Secret** | `pr-checks / cost` |
 
 Không có client secret, PAT hay connection string nào nằm trong GitHub. Mọi bí mật lúc chạy đều nằm trong Key Vault.
