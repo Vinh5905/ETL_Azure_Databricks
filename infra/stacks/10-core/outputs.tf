@@ -75,3 +75,8 @@ output "adf_name" {
 output "adf_principal_id" {
   value = module.adf.resource.identity[0].principal_id
 }
+
+# Action group của nhóm: stack khác (vd. alert stream, 50-serving) gắn cảnh báo vào đây.
+output "action_group_id" {
+  value = azurerm_monitor_action_group.team.id
+}

@@ -295,6 +295,7 @@ Chỉ làm khi đã dựng stack `50-serving` ([03 §5.1](03_terraform_azure.md)
 | `DATABRICKS_HOST` | Variable | `de-deploy` |
 | `TF_VAR_MEMBER_OBJECT_IDS` (JSON, map vai → object ID) | Variable, map vào `TF_VAR_member_object_ids` | Stack `10-core` (bước 3.6, 3.8), `30-databricks` |
 | `TF_VAR_MEMBER_IPS` (JSON, map vai → IP public) | Variable, map vào `TF_VAR_member_ips` | Stack `10-core` (firewall Azure SQL, bước 3.6) |
+| `TF_VAR_MEMBER_EMAILS` (JSON, map vai → email) | **Secret**, map vào `TF_VAR_member_emails` | Stack `10-core` (action group nhận cảnh báo budget, bước 3.9). Secret vì repo public và Variable hiện rõ trong log |
 | `INFRACOST_API_KEY` | **Secret** | `pr-checks / cost` |
 
 Không có client secret, PAT hay connection string nào nằm trong GitHub. Mọi bí mật lúc chạy đều nằm trong Key Vault.

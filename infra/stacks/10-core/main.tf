@@ -8,8 +8,8 @@
 # [x] 3.5  Databricks workspace Premium
 # [x] 3.6  Azure SQL (free offer) + firewall + secret mật khẩu
 # [x] 3.7  Data Factory + managed identity + quyền
-# [ ] 3.8  RBAC cho 4 thành viên
-# [ ] 3.9  Action group + budget 25/50/75/90%
+# [x] 3.8  RBAC cho 4 thành viên
+# [x] 3.9  Action group + budget 25/50/75/90%
 
 module "nt" {
   source = "../../modules/naming_tags"
@@ -256,4 +256,72 @@ resource "azurerm_user_assigned_identity" "func" {
   resource_group_name = azurerm_resource_group.core.name
   location            = azurerm_resource_group.core.location
   tags                = module.nt.tags
+}
+
+# Bước 3.8: quyền Azure của 4 thành viên theo bảng ở docs/devops/03, bước 3.8.
+# Đánh đổi đã chấp nhận: Contributor trên RG core cho phép xóa tài nguyên trong RG và biến
+# người đó thành workspace admin Databricks (giống ADF ở bước 3.7). Nhóm 4 người tin nhau,
+# kỷ luật chi phí dựa vào policy cluster và budget, không dựa vào RBAC.
+# Hai dòng Secrets Officer (P1, CI) đã làm ở bước 3.6 (azurerm_role_assignment.kv_officer).
+# Quyền bên trong Databricks cấp bằng Unity Catalog ở stack 30-databricks, không qua Azure RBAC.
+locals {
+  member_roles = merge([for m, oid in var.member_object_ids : {
+    # Xem tài nguyên và chi phí của cả subscription.
+    "${m}-sub" = { scope = "/subscriptions/${var.subscription_id_a}", role = "Reader", oid = oid }
+    "${m}-rg"  = { scope = azurerm_resource_group.core.id, role = "Contributor", oid = oid }
+    # Duyệt và upload dữ liệu bằng Storage Explorer / AzCopy, không cần SAS hay key.
+    "${m}-lake" = { scope = module.lake.resource_id, role = "Storage Blob Data Contributor", oid = oid }
+    "${m}-kv"   = { scope = module.kv.resource_id, role = "Key Vault Secrets User", oid = oid }
+  }]...)
+}
+
+resource "azurerm_role_assignment" "members" {
+  for_each = local.member_roles
+
+  scope                = each.value.scope
+  role_definition_name = each.value.role
+  principal_id         = each.value.oid
+  principal_type       = "User"
+}
+
+# Bước 3.9: budget gửi email cho cả nhóm trước khi hết credit. Budget chỉ cảnh báo, không dừng tài nguyên.
+# Credit Students 100 USD dùng chung cả năm, nên budget tính lũy kế theo năm (Annually).
+# Budget theo tháng sẽ đặt lại về 0 mỗi tháng và không bao giờ chạm ngưỡng 50–90%.
+resource "azurerm_monitor_action_group" "team" {
+  name                = "ag-instacart-team"
+  resource_group_name = azurerm_resource_group.core.name
+  short_name          = "instacart"
+  tags                = module.nt.tags
+
+  # Email là giá trị sensitive nên không dùng làm for_each được; lặp theo tên vai (không bí mật).
+  dynamic "email_receiver" {
+    for_each = nonsensitive(toset(keys(var.member_emails)))
+    content {
+      name                    = email_receiver.value
+      email_address           = var.member_emails[email_receiver.value]
+      use_common_alert_schema = true
+    }
+  }
+}
+
+resource "azurerm_consumption_budget_subscription" "a" {
+  name            = "budget-sub-a"
+  subscription_id = "/subscriptions/${var.subscription_id_a}"
+  amount          = 100
+  time_grain      = "Annually"
+
+  time_period {
+    # Ngày đầu tháng, nằm trong kỳ năm hiện tại. Đổi giá trị này là tạo lại budget.
+    start_date = "2026-11-01T00:00:00Z"
+  }
+
+  dynamic "notification" {
+    for_each = toset([25, 50, 75, 90])
+    content {
+      threshold      = notification.value
+      operator       = "GreaterThanOrEqualTo"
+      threshold_type = "Actual"
+      contact_groups = [azurerm_monitor_action_group.team.id]
+    }
+  }
 }

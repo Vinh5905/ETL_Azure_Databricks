@@ -37,3 +37,14 @@ variable "member_ips" {
     error_message = "Mỗi giá trị trong member_ips phải là một địa chỉ IPv4."
   }
 }
+
+variable "member_emails" {
+  description = "Map tên vai → email nhận cảnh báo budget (bước 3.9). Local: terraform.auto.tfvars; CI: GitHub Secret TF_VAR_MEMBER_EMAILS (JSON). Repo public nên không để ở Variable."
+  type        = map(string)
+  sensitive   = true
+
+  validation {
+    condition     = alltrue([for e in values(var.member_emails) : can(regex("^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$", e))])
+    error_message = "Mỗi giá trị trong member_emails phải là một địa chỉ email."
+  }
+}

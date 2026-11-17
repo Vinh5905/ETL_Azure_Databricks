@@ -422,7 +422,7 @@ Lệnh phải in đủ 3 role. Mở factory trong ADF Studio (Portal → Data fa
 
 ### Bước 3.8 · RBAC cho 4 thành viên
 
-**Vì sao:** rubric 5.4 yêu cầu "các thành viên cùng làm trên một resource". Quyền được cấp **theo vai trò**, đủ để làm việc nhưng không đủ để xóa nền tảng.
+**Vì sao:** rubric 5.4 yêu cầu "các thành viên cùng làm trên một resource". Quyền được cấp **theo vai trò**, đủ để cả nhóm cùng làm trên RG core.
 
 | Thành viên | Scope | Role |
 |---|---|---|
@@ -435,19 +435,30 @@ Lệnh phải in đủ 3 role. Mở factory trong ADF Studio (Portal → Data fa
 
 ```hcl
 locals {
-  member_roles = flatten([for m, oid in var.member_object_ids : [
-    { k = "${m}-rg",   scope = azurerm_resource_group.core.id, role = "Contributor",                   oid = oid },
-    { k = "${m}-lake", scope = module.lake.resource_id,        role = "Storage Blob Data Contributor", oid = oid },
-    { k = "${m}-kv",   scope = module.kv.resource_id,          role = "Key Vault Secrets User",        oid = oid },
-  ]])
+  member_roles = merge([for m, oid in var.member_object_ids : {
+    "${m}-sub"  = { scope = "/subscriptions/${var.subscription_id_a}", role = "Reader", oid = oid }
+    "${m}-rg"   = { scope = azurerm_resource_group.core.id, role = "Contributor", oid = oid }
+    "${m}-lake" = { scope = module.lake.resource_id, role = "Storage Blob Data Contributor", oid = oid }
+    "${m}-kv"   = { scope = module.kv.resource_id, role = "Key Vault Secrets User", oid = oid }
+  }]...)
 }
+
 resource "azurerm_role_assignment" "members" {
-  for_each             = { for r in local.member_roles : r.k => r }
+  for_each = local.member_roles
+
   scope                = each.value.scope
   role_definition_name = each.value.role
   principal_id         = each.value.oid
+  principal_type       = "User"
 }
 ```
+
+**Lưu ý:**
+- Hai dòng *Key Vault Secrets Officer* (P1, UAMI CI) đã làm từ bước 3.6 (`azurerm_role_assignment.kv_officer`), bước này không tạo lại.
+- Cả 4 role (Reader, Contributor, Storage Blob Data Contributor, Key Vault Secrets User) đều nằm trong `ci_assignable_role_ids` của bootstrap, và role *RBAC Administrator* của CI có scope cả Sub A, nên CI gán được cả role Reader ở mức subscription.
+- `member_object_ids` phải có đủ `p1`–`p4`, cả trong `terraform.auto.tfvars` ở máy lẫn GitHub Variable `TF_VAR_MEMBER_OBJECT_IDS`. Thiếu key nào thì người đó không có role, và plan ở máy với plan trên CI sẽ lệch nhau.
+- **Đánh đổi của Contributor trên RG:** thành viên xóa được tài nguyên trong RG (kể cả Key Vault, vì `purge_protection_enabled = false`), sửa được action group, và tự thành **workspace admin** Databricks nên đi vòng được policy cluster. Nhóm chấp nhận vì 4 người cùng chịu trách nhiệm; nếu cần chặn xóa thì P1 tự đặt `CanNotDelete` lock cho RG (CI là Contributor nên không tạo lock được).
+- P1 là Owner của Sub A nên các role của P1 ở bảng trên là thừa. Vẫn gán để bảng quyền đúng như thiết kế và không phụ thuộc vào việc ai là Owner.
 
 Quyền **bên trong Databricks** (ai đọc/ghi schema nào) được cấp bằng Unity Catalog ở tài liệu 05, không cấp bằng Azure RBAC.
 
@@ -460,22 +471,31 @@ resource "azurerm_monitor_action_group" "team" {
   name                = "ag-instacart-team"
   resource_group_name = azurerm_resource_group.core.name
   short_name          = "instacart"
+  tags                = module.nt.tags
+
+  # Email là giá trị sensitive nên không dùng làm for_each được; lặp theo tên vai (không bí mật).
   dynamic "email_receiver" {
-    for_each = var.member_emails            # đặt trong *.auto.tfvars (gitignore)
+    for_each = nonsensitive(toset(keys(var.member_emails)))
     content {
-      name          = email_receiver.key
-      email_address = email_receiver.value
+      name                    = email_receiver.value
+      email_address           = var.member_emails[email_receiver.value]
+      use_common_alert_schema = true
     }
   }
 }
+
 resource "azurerm_consumption_budget_subscription" "a" {
   name            = "budget-sub-a"
   subscription_id = "/subscriptions/${var.subscription_id_a}"
   amount          = 100
-  time_grain      = "Monthly"
-  time_period { start_date = "2026-11-01T00:00:00Z" }
+  time_grain      = "Annually" # credit 100 USD dùng cả năm, tính lũy kế
+
+  time_period {
+    start_date = "2026-11-01T00:00:00Z" # ngày đầu tháng, trong kỳ năm hiện tại
+  }
+
   dynamic "notification" {
-    for_each = [25, 50, 75, 90]
+    for_each = toset([25, 50, 75, 90])
     content {
       threshold      = notification.value
       operator       = "GreaterThanOrEqualTo"
@@ -485,6 +505,17 @@ resource "azurerm_consumption_budget_subscription" "a" {
   }
 }
 ```
+
+**Vì sao `Annually`:** budget `Monthly` đặt lại về 0 mỗi tháng. Tiêu 30 USD/tháng thì chỉ ngưỡng 25% báo, trong khi credit hết sau khoảng 3 tháng. Budget theo năm cộng dồn nên 4 ngưỡng tương ứng 25/50/75/90 USD đã tiêu. Chi phí trước `start_date` (giai đoạn spike) không được tính vào.
+
+**Biến `member_emails`:** map vai → email, ví dụ `{ p1 = "…", p2 = "…", p3 = "…", p4 = "…" }`.
+- Khai báo `sensitive = true`, nên plan in `(sensitive value)` thay cho email. Repo public và `tf-plan` đăng plan lên PR, nên email không được lộ ra ở đó.
+- Ở máy: thêm vào `infra/stacks/10-core/terraform.auto.tfvars` (đã gitignore).
+- Trên CI: GitHub **Secret** `TF_VAR_MEMBER_EMAILS` (JSON), không dùng Variable vì Variable hiện rõ trong log. Lệnh tạo: `gh secret set TF_VAR_MEMBER_EMAILS --body '{"p1":"…","p2":"…","p3":"…","p4":"…"}'`.
+
+**Kiểm tra sau apply:**
+- Portal → *Monitor* → *Alerts* → *Action groups* → `ag-instacart-team` → *Test action group*, chọn loại *Email*. Cả 4 người phải nhận được email.
+- Portal → *Cost Management* → *Budgets*: có `budget-sub-a`, 100 USD, 4 ngưỡng 25/50/75/90%.
 
 > Budget chỉ **cảnh báo**, không tự dừng tài nguyên. Biện pháp chặn chi phí thật sự là auto-terminate của cluster (tài liệu 05) và workflow tự hủy stream mỗi đêm (tài liệu 04).
 
@@ -507,6 +538,7 @@ output "adf_principal_id"         { value = module.adf.resource.identity[0].prin
 output "sql_server_fqdn"          { value = "${module.sql.resource_name}.database.windows.net" }
 output "func_identity_id"         { value = azurerm_user_assigned_identity.func.id }
 output "func_identity_client_id"  { value = azurerm_user_assigned_identity.func.client_id }
+output "action_group_id"          { value = azurerm_monitor_action_group.team.id }
 ```
 
 **Checklist `10-core`:**
