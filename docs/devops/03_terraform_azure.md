@@ -256,19 +256,28 @@ resource "azurerm_user_assigned_identity" "func" {
 ```hcl
 module "dbw" {
   source  = "Azure/avm-res-databricks-workspace/azurerm"
-  version = "x.y.z"
-  name                = "dbw-instacart"
-  resource_group_name = azurerm_resource_group.core.name
-  location            = var.location
-  sku                 = "premium"
+  version = "0.6.0"
+  name                        = "dbw-instacart"
+  resource_group_name         = azurerm_resource_group.core.name
+  location                    = azurerm_resource_group.core.location
+  sku                         = "premium"
   managed_resource_group_name = "rg-instacart-dbw-managed"
-  custom_parameters   = { no_public_ip = false }   # khớp kết quả spike
-  enable_telemetry    = false
-  tags                = module.nt.tags
+  custom_parameters = {
+    no_public_ip             = false          # khớp kết quả spike: không NAT gateway
+    storage_account_sku_name = "Standard_LRS" # DBFS root; mặc định AVM là Standard_GRS
+  }
+  enable_telemetry = false
+  tags             = module.nt.tags
 }
-output "databricks_workspace_url" { value = module.dbw.workspace_url }
+output "databricks_workspace_url" { value = module.dbw.databricks_workspace_url }
 output "databricks_workspace_id"  { value = module.dbw.resource_id }
 ```
+
+Lưu ý khi dùng AVM 0.6.0:
+- Module tạo workspace bằng `azapi`, cần Terraform `>= 1.11`.
+- Output `databricks_workspace_id` của AVM là **ID số** trong Databricks. Provider `databricks` ở `30-databricks` cần **resource ID trên Azure** (`azure_workspace_resource_id`), nên output của stack lấy `module.dbw.resource_id`.
+- Không đặt `default_catalog`: spike 3.4 cho thấy metastore `eastasia` tự gán và workspace có sẵn catalog cùng tên.
+- Không truyền `access_connector_id`: biến đó chỉ dùng khi bật firewall cho storage mặc định. Access Connector cho UC đã có ở bước 3.4.
 
 **Kiểm tra:** mở `https://<workspace_url>`, thấy catalog mặc định (UC tự gán) nếu spike 3.4 đạt.
 
@@ -434,7 +443,7 @@ output "lake_dfs_endpoint"        { value = "abfss://{container}@${module.lake.n
 output "key_vault_id"             { value = module.kv.resource_id }
 output "key_vault_uri"            { value = module.kv.uri }
 output "access_connector_id"      { value = azurerm_databricks_access_connector.uc.id }
-output "databricks_workspace_url" { value = module.dbw.workspace_url }
+output "databricks_workspace_url" { value = module.dbw.databricks_workspace_url }
 output "databricks_workspace_id"  { value = module.dbw.resource_id }
 output "adf_id"                   { value = module.adf.resource_id }
 output "sql_server_fqdn"          { value = module.sql.resource.fully_qualified_domain_name }

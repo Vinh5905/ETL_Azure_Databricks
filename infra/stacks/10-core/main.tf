@@ -5,7 +5,7 @@
 # [x] 3.2  ADLS Gen2 (HNS) + 7 container + lifecycle landing → cool
 # [x] 3.3  Key Vault (RBAC mode)
 # [x] 3.4  Access Connector + Storage Blob Data Contributor trên ADLS
-# [ ] 3.5  Databricks workspace Premium
+# [x] 3.5  Databricks workspace Premium
 # [ ] 3.6  Azure SQL (free offer) + firewall + secret mật khẩu
 # [ ] 3.7  Data Factory + managed identity + quyền
 # [ ] 3.8  RBAC cho 4 thành viên
@@ -81,6 +81,30 @@ resource "azurerm_role_assignment" "uc_lake" {
   role_definition_name = "Storage Blob Data Contributor"
   principal_id         = azurerm_databricks_access_connector.uc.identity[0].principal_id
   principal_type       = "ServicePrincipal"
+}
+
+# Bước 3.5: workspace Premium (Unity Catalog, SQL warehouse serverless, secret scope Key Vault đều cần).
+# Không VNet injection. Bên trong workspace (catalog, nhóm, policy) do stack 30-databricks lo.
+module "dbw" {
+  source  = "Azure/avm-res-databricks-workspace/azurerm"
+  version = "0.6.0"
+
+  name                        = "dbw-instacart"
+  resource_group_name         = azurerm_resource_group.core.name
+  location                    = azurerm_resource_group.core.location
+  sku                         = "premium" # không có trial: DBU tính vào credit từ ngày đầu (spike 3.4)
+  managed_resource_group_name = "rg-instacart-dbw-managed"
+
+  custom_parameters = {
+    # Spike 3.4: workspace tạo bằng ARM mặc định bật no_public_ip, Azure tự dựng NAT gateway
+    # + public IP trong managed RG và tính tiền theo giờ. Tắt để không có NAT.
+    no_public_ip = false
+    # Storage DBFS root trong managed RG. Mặc định của AVM là Standard_GRS; LRS đủ cho đồ án và rẻ hơn.
+    storage_account_sku_name = "Standard_LRS"
+  }
+
+  enable_telemetry = false
+  tags             = module.nt.tags
 }
 
 # Danh tính cho Azure Function gợi ý (G5). Tạo sẵn ở đây (không tốn tiền) để 30-databricks

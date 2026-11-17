@@ -33,6 +33,17 @@ output "access_connector_id" {
   value = azurerm_databricks_access_connector.uc.id
 }
 
+# URL dạng adb-<id>.<n>.azuredatabricks.net, provider databricks của 30-databricks dùng làm host.
+output "databricks_workspace_url" {
+  value = module.dbw.databricks_workspace_url
+}
+
+# Resource ID trên Azure (không phải workspace ID số), dùng cho azure_workspace_resource_id
+# của provider databricks và cho role assignment của ADF ở bước 3.7.
+output "databricks_workspace_id" {
+  value = module.dbw.resource_id
+}
+
 output "func_identity_id" {
   value = azurerm_user_assigned_identity.func.id
 }

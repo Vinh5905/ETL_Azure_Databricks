@@ -29,7 +29,7 @@ provider "azurerm" {
   storage_use_azuread = true
 }
 
-# azapi dùng cho module AVM storage và Key Vault. Đăng nhập theo cùng nguồn với azurerm (az login hoặc ARM_* trong CI).
+# azapi dùng cho module AVM storage, Key Vault và Databricks workspace. Đăng nhập theo cùng nguồn với azurerm (az login hoặc ARM_* trong CI).
 provider "azapi" {
   subscription_id = var.subscription_id_a
 }
