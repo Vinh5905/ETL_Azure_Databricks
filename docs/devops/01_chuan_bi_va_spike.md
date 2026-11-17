@@ -90,7 +90,7 @@ Tạo tay **một** workspace Premium ở region đã chốt (Portal, mất kho�
 | Tạo storage credential từ Access Connector | Catalog → External data → Credentials → Create | Thành công | Dùng managed storage của catalog workspace, không có external location (ghi vào tài liệu 05) |
 | Serverless SQL warehouse | SQL Warehouses → Create → kiểu Serverless | Tạo và chạy được `SELECT 1` | Lớp serving dự phòng (tài liệu 06, mục 4) |
 | Serverless jobs / notebook | Chạy notebook với compute "Serverless" | Chạy được | Không sao; dùng job cluster single-node |
-| Cluster single-node DS3_v2 | Tạo cluster, Runtime 15.4 LTS | Khởi động trong khoảng 5 phút | Thử `Standard_D4ds_v5` / `Standard_F4s_v2` |
+| Cluster single-node DS3_v2 | Tạo cluster, Runtime 15.4 LTS | Khởi động trong khoảng 5 phút | Thử máy 4 vCPU khác mà region có bán **và** họ máy có quota (`az vm list-skus` + `az vm list-usage`), ví dụ `Standard_D4ds_v4` / `Standard_D4s_v4`. Sub A không bán `DS3_v2` ở eastasia, còn họ v5 có quota 0 |
 | Thời hạn trial Premium (14 ngày, miễn DBU) | Xem banner trên workspace | Ghi lại ngày hết hạn | Lên kế hoạch DBU sau trial vào budget |
 | Pipeline Lakeflow edition **Advanced** chạy single-node | Tạo pipeline thử, `num_workers: 0`, 1 bảng Auto Loader + 1 `AUTO CDC` + 1 expectation | Update xong, trong quota 4 vCPU | Edition Pro (bỏ expectations, dùng bảng quarantine thủ công); hoặc serverless pipeline nếu có |
 | Serverless pipeline | Tạo pipeline với *Serverless* | Chạy được | Classic như trên; MV tính lại toàn bộ thay vì tăng dần |
