@@ -162,8 +162,8 @@ Tách từ AD-OPS-03 để AD-OPS-03 đóng được với phần Sub A. Region 
 
 1. Chủ Sub B, C, D chạy lệnh policy region ở 01 §3.1 trên subscription của mình, gửi danh sách region được phép
 2. Chốt region Event Hubs cho Sub B, khác region Sub A (`eastasia`); ứng viên `japaneast` hoặc `koreacentral`
-3. P3 gán Contributor trên Sub B cho principal của UAMI thử (P1 gửi ID riêng, không ghi vào issue hay file commit)
-4. Gỡ quyền vừa gán sau khi thử xong
+3. P3 gán Contributor trên Sub B cho principal của `id-github-ci` bằng lệnh ở 02 §3 bước 5 (P1 gửi ID riêng, không ghi vào issue hay file commit). Giữ quyền này, CI cần nó để apply `20-stream`
+4. P1 đặt GitHub Variable AZURE_SUBSCRIPTION_B
 5. Cập nhật dòng 3.1 và dòng "Gán role chéo subscription (Sub B → UAMI)" trong spike_results.md
 
 **Đầu ra**
@@ -175,6 +175,8 @@ Tách từ AD-OPS-03 để AD-OPS-03 đóng được với phần Sub A. Region 
 - [ ] Dòng 3.1 có kết quả của Sub B, C, D
 - [ ] Dòng gán role chéo ghi Đạt hoặc Không đạt kèm phương án dự phòng
 - [ ] Có region Sub B khác Sub A
+- [ ] `az role assignment list --assignee <uami> --scope /subscriptions/<subB>` có Contributor
+- [ ] GitHub Variable AZURE_SUBSCRIPTION_B đã đặt
 
 ### AD-OPS-04
 
@@ -356,14 +358,14 @@ Mọi stack cần state chung có khóa và CI cần đăng nhập Azure không 
 2. P1 apply bootstrap bằng local state, ghi output tfstate_account và ci_client_id
 3. Thêm backend azurerm, migrate state lên key bootstrap.tfstate, xóa state local
 4. Điền storage_account_name thật vào infra/backend.hcl
-5. Nhờ P3 gán Contributor Sub B cho principal của id-github-ci bằng lệnh ở 02 §3 bước 5
-6. Đặt GitHub Variables AZURE_CLIENT_ID, AZURE_TENANT_ID, AZURE_SUBSCRIPTION_A, AZURE_SUBSCRIPTION_B, TFSTATE_ACCOUNT, TF_VAR_member_object_ids
-7. Chạy workflow whoami, một thành viên khác chạy smoke init, rồi xóa .github/workflows/whoami.yml
+5. Đặt GitHub Variables AZURE_CLIENT_ID, AZURE_TENANT_ID, AZURE_SUBSCRIPTION_A, TFSTATE_ACCOUNT, TF_VAR_member_object_ids
+6. Chạy workflow whoami, rồi xóa .github/workflows/whoami.yml
+
+Quyền Contributor trên Sub B và biến AZURE_SUBSCRIPTION_B chuyển sang [AD-OPS-03b](01_devops.md#ad-ops-03b). Phép thử thành viên khác P1 đọc được state chuyển sang [AD-OPS-29](01_devops.md#ad-ops-29), lúc P4 init `sandbox-p4.tfstate` từ máy mình.
 
 **Đầu ra**
 
 - rg-tfstate, sttfstate<sfx>, container tfstate, lock-tfstate, UAMI id-github-ci trên Sub A
-- Role Contributor của id-github-ci trên Sub B
 - infra/backend.hcl có tên storage thật
 - GitHub Variables đủ theo 04 §4
 - PR xóa whoami.yml
@@ -372,9 +374,7 @@ Mọi stack cần state chung có khóa và CI cần đăng nhập Azure không 
 
 - [ ] Blob bootstrap.tfstate có trong container tfstate
 - [ ] Workflow whoami in đúng Sub A
-- [ ] Thành viên khác P1 chạy `terraform init -backend-config=../backend.hcl -backend-config="key=smoke.tfstate"` thành công
 - [ ] Portal báo shared key của sttfstate bị tắt
-- [ ] `az role assignment list --assignee <uami> --scope /subscriptions/<subB>` có Contributor
 
 ### AD-OPS-09
 
@@ -1056,6 +1056,7 @@ Quota tính theo subscription nên thực nghiệm DS chạy ở Sub C để kh�
 
 **Xong khi**
 
+- [ ] `terraform init -backend-config=../../backend.hcl` với key `sandbox-p4.tfstate` chạy được từ máy P4 (chuyển từ AD-OPS-08: thành viên khác P1 đọc ghi được state)
 - [ ] Mở được workspace sandbox
 - [ ] Cùng region: `SELECT count(*) FROM instacart.ds_data.transactions` chạy được từ sandbox
 - [ ] Plan lần hai No changes
