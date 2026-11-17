@@ -26,20 +26,36 @@ Mỗi task là một issue trên GitHub và một thẻ trên GitHub Project [ET
 
 ## Trạng thái trên Project
 
-`Status` là tiến độ: Todo → In Progress → Review → Needs Update → Done.
+Mỗi thẻ chỉ có một field tiến độ là `Status`, gồm 6 cột. Chỉ có In Progress là kéo tay. Các cột còn lại do script tự đặt theo phụ thuộc và PR:
 
-`Input status` đi theo từng cột:
-
-| Input status | Cột | Nghĩa |
+| Status | Nghĩa | Ai đổi |
 |---|---|---|
-| Sẵn sàng | Todo | Mọi task ở gate bắt đầu đã Done, bắt tay làm được |
-| Chờ đầu vào | Todo | Còn task ở gate bắt đầu chưa Done |
-| Đang thực hiện | In Progress | Người được giao đang làm |
-| Chờ kiểm tra | Review | Đã bàn giao đầu ra, chờ nghiệm thu |
-| Cần cập nhật | Needs Update | Phải sửa theo kết quả kiểm tra |
-| Đã hoàn thành | Done | Đã nghiệm thu, đầu ra dùng được cho task sau |
+| Blocked | Còn task ở gate bắt đầu chưa Done | Script |
+| Ready | Mọi task ở gate bắt đầu đã Done, nhận làm được ngay | Script |
+| In Progress | Người được giao đang làm, chưa mở PR hoặc PR còn là draft | Người làm kéo thẻ khi bắt đầu; script đặt khi có PR draft |
+| Review | PR đã mở và chờ review, hoặc đã push commit mới sau góp ý, hoặc đã approve chờ merge | Script |
+| Needs Update | Reviewer đã comment hoặc yêu cầu sửa trên PR, sau đó chưa có commit mới | Script |
+| Done | PR merge, issue đóng dạng completed | Script (và workflow có sẵn của Project) |
 
-Field `Còn chờ` ghi các task liên quan chưa Done (`Bắt đầu:` đang chặn, `Nên nhận:` cần cho gate hoàn tất). Workflow `sync-task-board` tự chạy `scripts/sync_task_board.py --apply` khi đóng hoặc mở lại issue và cứ 30 phút một lần, để cập nhật `Input status` và `Còn chờ` cho cả board. Issue đã đóng (completed) được tính là Done. Workflow cần secret `PROJECT_TOKEN` (PAT classic chỉ cần scope `project`, vì repo public; chuyển repo sang private thì thêm `repo`). Muốn thấy ngay thì chạy tay `python3 scripts/sync_task_board.py --apply` hoặc bấm *Run workflow*.
+Ghi chú:
+- PR phải ghi `Closes #<issue>` thì script mới nhận ra PR đó thuộc task nào.
+- Script bỏ qua comment của bot (ví dụ comment plan của `tf-plan`) và comment của chính tác giả PR.
+- PR bị đóng mà không merge thì thẻ quay về In Progress.
+
+Field `Waiting on` ghi các task liên quan chưa Done:
+- `Start:` là các task đang chặn.
+- `Finish:` là các task cần cho gate hoàn tất.
+- `None` là không còn chờ task nào.
+
+Workflow `sync-task-board` tự chạy `scripts/sync_task_board.py --apply` để cập nhật `Status` và `Waiting on` cho cả board. Workflow chạy khi:
+- Issue bị đóng hoặc mở lại.
+- PR được mở, push commit, chuyển draft, hoặc bị đóng.
+- Có review hoặc comment mới.
+- Cứ 30 phút một lần.
+
+Workflow cần secret `PROJECT_TOKEN`: PAT classic, chỉ cần scope `project` vì repo public. Nếu chuyển repo sang private thì thêm scope `repo`.
+
+Muốn thấy kết quả ngay thì chạy tay `python3 scripts/sync_task_board.py --apply`, hoặc bấm *Run workflow*.
 
 ## Bảng tổng
 

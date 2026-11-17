@@ -86,7 +86,7 @@ Quyền duyệt PR theo `.github/CODEOWNERS`.
 | Merge vào `main` | `tf-apply` và `de-deploy` prod, chờ duyệt ở environment `prod` |
 | Mỗi đêm | `stream-toggle` tắt Event Hubs |
 | Hằng tuần | `drift-check` |
-| Đóng/mở lại issue, mỗi 30 phút | `sync-task-board` (đồng bộ board phân việc) |
+| Sự kiện issue, PR, review; mỗi 30 phút | `sync-task-board` (đồng bộ Status và Waiting on của board phân việc) |
 
 **Trạng thái hiện tại: repo mới có khung**
 - Các `main.tf` trong `infra/stacks/*` có checklist `[x]/[ ]` theo từng bước của tài liệu.
