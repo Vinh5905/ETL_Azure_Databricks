@@ -10,6 +10,7 @@
 # [x] 3.7  Data Factory + managed identity + quyền
 # [x] 3.8  RBAC cho 4 thành viên
 # [x] 3.9  Action group + budget 25/50/75/90%
+# [x] 3.10 Output cho stack sau (outputs.tf) + nghiệm thu checklist 10-core
 
 module "nt" {
   source = "../../modules/naming_tags"
@@ -219,6 +220,9 @@ resource "azapi_resource" "retail_db" {
 
 # Bước 3.7: Data Factory chỉ gồm factory + system-assigned identity + quyền.
 # Linked service, dataset, pipeline, trigger nằm ở stack 40-orchestration vì đổi thường xuyên.
+# Ngoại lệ trivy AZU-0035: giữ public network vì dự án không dùng private endpoint; tắt đi thì
+# không mở được ADF Studio. Azure IR vẫn chạy bình thường, quyền đi qua RBAC + managed identity.
+#trivy:ignore:AZU-0035
 module "adf" {
   source  = "Azure/avm-res-datafactory-factory/azurerm"
   version = "0.3.0"

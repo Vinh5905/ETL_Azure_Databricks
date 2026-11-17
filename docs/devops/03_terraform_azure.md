@@ -522,7 +522,7 @@ resource "azurerm_consumption_budget_subscription" "a" {
 ### Bước 3.10 · Output của `10-core`
 
 ```hcl
-output "location"                 { value = var.location }
+output "location"                 { value = azurerm_resource_group.core.location }
 output "rg_name"                  { value = azurerm_resource_group.core.name }
 output "lake_account_name"        { value = module.lake.name }
 output "lake_account_id"          { value = module.lake.resource_id }
@@ -536,8 +536,10 @@ output "adf_id"                   { value = module.adf.resource_id }
 output "adf_name"                 { value = module.adf.name }
 output "adf_principal_id"         { value = module.adf.resource.identity[0].principal_id }
 output "sql_server_fqdn"          { value = "${module.sql.resource_name}.database.windows.net" }
+output "sql_database_name"        { value = azapi_resource.retail_db.name }
 output "func_identity_id"         { value = azurerm_user_assigned_identity.func.id }
 output "func_identity_client_id"  { value = azurerm_user_assigned_identity.func.client_id }
+output "func_identity_principal_id" { value = azurerm_user_assigned_identity.func.principal_id }
 output "action_group_id"          { value = azurerm_monitor_action_group.team.id }
 ```
 
@@ -701,7 +703,7 @@ resource "azurerm_role_assignment" "func_ds_reader" {          # phương án B
 }
 ```
 
-- `local.core` đọc từ `terraform_remote_state` của `10-core`. Cần thêm output `lake_account_id` và `func_identity_principal_id` vào `10-core` khi làm stack này.
+- `local.core` đọc từ `terraform_remote_state` của `10-core`. Output `lake_account_id` và `func_identity_principal_id` đã có từ bước 3.10.
 - **Spike:** Flex Consumption có ở region đã chốt và subscription Students có cho tạo hay không ([01 §3.5](01_chuan_bi_va_spike.md)). Không được thì dùng gói Consumption cũ (`sku_name = "Y1"`, resource `azurerm_linux_function_app`), và ghi lý do vào báo cáo.
 - Code Function deploy bằng workflow `func-deploy` ([04 §3.8](04_github_actions_cicd.md)), không đi qua Terraform.
 

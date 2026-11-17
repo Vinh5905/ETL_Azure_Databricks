@@ -1,5 +1,5 @@
 # Các stack sau đọc output qua terraform_remote_state (key = core.tfstate).
-# Thêm dần theo docs/devops/03, bước 3.10.
+# Danh sách đầy đủ ở docs/devops/03, bước 3.10.
 
 output "location" {
   value = azurerm_resource_group.core.location
@@ -50,6 +50,11 @@ output "func_identity_id" {
 
 output "func_identity_client_id" {
   value = azurerm_user_assigned_identity.func.client_id
+}
+
+# Principal ID của UAMI Function, để 50-serving cấp role đọc container ds (phương án B ở mục 5).
+output "func_identity_principal_id" {
+  value = azurerm_user_assigned_identity.func.principal_id
 }
 
 # FQDN của Azure SQL, dùng cho linked service ls_sql_retail (40-orchestration) và seed job.
