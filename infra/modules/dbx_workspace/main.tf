@@ -2,7 +2,7 @@
 # Dùng cho workspace sandbox của DS (stack 90-sandbox). Workspace chính ở 10-core dùng module AVM.
 
 terraform {
-  required_version = "~> 1.9"
+  required_version = "~> 1.10"
 
   required_providers {
     azurerm = {

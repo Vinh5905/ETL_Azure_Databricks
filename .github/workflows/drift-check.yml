@@ -39,7 +39,7 @@ jobs:
           subscription-id: ${{ vars.AZURE_SUBSCRIPTION_A }}
       - uses: hashicorp/setup-terraform@v3
         with:
-          terraform_version: "1.9.x"
+          terraform_version: "1.16.x"
           terraform_wrapper: false
       - run: >-
           terraform init -input=false

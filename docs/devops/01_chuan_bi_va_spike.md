@@ -13,7 +13,7 @@
 | Công cụ | Phiên bản gợi ý | Dùng để | Cài trên macOS |
 |---|---|---|---|
 | Azure CLI | mới nhất | Đăng nhập, kiểm tra policy/quota, backend Terraform | `brew install azure-cli` |
-| Terraform | `~> 1.9` (pin trong `required_version`) | IaC | `brew install hashicorp/tap/terraform` |
+| Terraform | `>= 1.10`, CI dùng `1.16.x` (`required_version = "~> 1.10"`; AVM storage từ 0.7 cần 1.10) | IaC | `brew install hashicorp/tap/terraform` |
 | TFLint + ruleset azurerm | mới nhất | Lint Terraform | Homebrew core đã bỏ `tflint`. Tải từ GitHub release: `gh release download -R terraform-linters/tflint -p 'tflint_darwin_arm64.zip' -p checksums.txt`, kiểm `shasum -a 256 -c`, giải nén vào `~/.local/bin`. Sau đó chạy `tflint --init` |
 | Trivy (hoặc Checkov) | mới nhất | Quét cấu hình sai về bảo mật | `brew install trivy` |
 | Databricks CLI (bản mới, có `bundle`) | `>= 0.230` | Databricks Asset Bundles, kiểm tra workspace | `brew tap databricks/tap && brew install databricks` |
@@ -21,7 +21,7 @@
 | pre-commit | mới nhất | Chạy fmt/lint trước khi commit | `uv tool install pre-commit --python 3.11` rồi `pre-commit install` trong repo. Bản `brew install pre-commit` chạy trên Python 3.15 của Homebrew và có thể lỗi `pyexpat` khi tạo virtualenv |
 | Python 3.11 + uv | 3.11 (khớp Databricks Runtime) | Code PySpark, test | `brew install uv && uv python install 3.11` |
 | Docker Desktop | mới nhất; máy chạy benchmark DS cấp cho Docker ≥ 8 CPU, ≥ 16 GB RAM | Spark/Kafka local; cụm Hadoop HDFS + YARN cho MapReduce ([ds/03](../ds/03_hadoop_mapreduce_local.md)) | — |
-| AzCopy | 10.x | Tải file thực nghiệm từ container `ds`, upload kết quả benchmark (đăng nhập bằng `az login`) | `brew install azcopy` |
+| AzCopy | 10.x | Tải file thực nghiệm từ container `ds-data`, upload kết quả benchmark (đăng nhập bằng `az login`) | `brew install azcopy` |
 | Power BI Desktop | mới nhất | Làm report (chỉ chạy Windows: máy Windows của P3 (BI) hoặc P4 (trang 6–7), hoặc VM) | Microsoft Store |
 | Infracost | mới nhất | Ước tính chi phí trên PR (tùy chọn) | `brew install infracost` |
 
