@@ -22,6 +22,19 @@ variables:
     description: Cluster policy single-node (tạo ở 30-databricks), tra theo tên
     lookup:
       cluster_policy: instacart-single-node
+  ds_policy_id:
+    description: Cluster policy single-node dành riêng cho benchmark DS
+    lookup:
+      cluster_policy: instacart-ds-benchmark
+  warehouse_id:
+    description: SQL warehouse của dự án
+    lookup:
+      warehouse: wh-instacart-bi
+  func_sp_application_id:
+    description: Client ID của managed identity Function; truyền qua BUNDLE_VAR_func_sp_application_id khi triển khai endpoint
+  champion_version:
+    description: Phiên bản model đã đăng ký trong Unity Catalog
+    default: "1"
   node_type_id:
     description: Máy của job cluster, phải trùng giá trị fixed trong policy (docs/devops/05 §3 bước 6)
     default: Standard_D4ds_v4

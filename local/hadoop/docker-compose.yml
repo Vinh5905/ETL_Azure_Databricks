@@ -1,0 +1,57 @@
+x-hadoop: &hadoop
+  build: .
+  image: instacart-hadoop:3.3.6
+  restart: unless-stopped
+
+services:
+  namenode:
+    <<: *hadoop
+    command: namenode
+    hostname: namenode
+    ports: ["9870:9870"]
+    volumes: ["nn:/hadoop/nn"]
+  datanode1:
+    <<: *hadoop
+    command: datanode
+    hostname: datanode1
+    volumes: ["dn1:/hadoop/dn"]
+  datanode2:
+    <<: *hadoop
+    command: datanode
+    hostname: datanode2
+    volumes: ["dn2:/hadoop/dn"]
+  resourcemanager:
+    <<: *hadoop
+    command: resourcemanager
+    hostname: resourcemanager
+    ports: ["8088:8088"]
+  nodemanager:
+    <<: *hadoop
+    command: nodemanager
+    hostname: nodemanager
+    deploy:
+      resources:
+        limits: { cpus: "8", memory: 14g }
+  historyserver:
+    <<: *hadoop
+    command: historyserver
+    hostname: historyserver
+    ports: ["19888:19888"]
+  sparkhistory:
+    <<: *hadoop
+    command: sparkhistory
+    hostname: sparkhistory
+    ports: ["18080:18080"]
+  client:
+    <<: *hadoop
+    command: client
+    hostname: client
+    working_dir: /work
+    volumes:
+      - ../../data/ds:/data/ds:ro
+      - ../../src/mapreduce/target:/work/jars:ro
+      - ../../src/ml/local:/work/spark:ro
+      - ./scripts:/work/scripts:ro
+      - ./results:/work/results
+
+volumes: { nn: {}, dn1: {}, dn2: {} }

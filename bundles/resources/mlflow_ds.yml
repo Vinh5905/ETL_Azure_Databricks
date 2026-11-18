@@ -1,0 +1,4 @@
+resources:
+  experiments:
+    instacart_ds:
+      name: /Shared/instacart-ds

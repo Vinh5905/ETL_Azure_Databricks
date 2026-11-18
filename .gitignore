@@ -26,6 +26,7 @@ __pycache__/
 *.egg-info/
 dist/
 build/
+target/
 spark-warehouse/
 metastore_db/
 derby.log
@@ -37,6 +38,7 @@ powerbi/**/.pbi/cache.abf
 
 # --- Dữ liệu local ---
 /data/
+local/hadoop/results/*.jsonl
 *.zip
 *.csv
 !tests/fixtures/**/*.csv
