@@ -17,3 +17,12 @@ output "linked_service_names" {
 output "dataset_names" {
   value = sort(keys(azapi_resource.dataset))
 }
+
+output "pipeline_names" {
+  value = sort(concat(keys(azapi_resource.pipeline_tier0), keys(azapi_resource.pipeline_tier1), keys(azapi_resource.pipeline_tier2)))
+
+  precondition {
+    condition     = length(local.pipeline_unplaced) == 0
+    error_message = "Không xếp được tầng cho pipeline (tên => pipeline nó gọi): ${jsonencode({ for n in local.pipeline_unplaced : n => local.pipeline_refs[n] })}. Nguyên nhân có thể: gọi pl_ingest_off/pl_master, gọi pipeline không có trong adf/pipelines, tự gọi hoặc gọi vòng, lồng quá 3 tầng, hoặc tên không theo quy ước pl_[A-Za-z0-9_]."
+  }
+}

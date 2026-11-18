@@ -11,29 +11,32 @@ JSON được dựng theo API và đã kiểm model SDK. Terraform phụ trách 
 | File | Nội dung | Cách dùng |
 |---|---|---|
 | `instacart_sources.json` | Zenodo record 2654444, release 2017, 6 bảng, header/count/MD5 | Nguồn dựng mapping và tham số; checksum dùng đối chiếu nguồn local |
-| `pipelines/pl_ingest_instacart.json` | **Mảng activities** pipeline cha | `activities_json = file(...)` |
-| `pipelines/pl_ingest_instacart_table.json` | Mảng activities pipeline con | Tạo resource con trước cha |
+| `pipelines/pl_ingest_instacart.json` | **Mảng activities** pipeline cha | Gửi nguyên làm `properties.activities` |
+| `pipelines/pl_ingest_instacart_table.json` | Mảng activities pipeline con | Stack tự tạo con trước cha theo `referenceName` `pl_*` |
 | `pipeline_settings/<pipeline>.json` | `concurrency` và `parameters` mặc định | P1 phải nạp cùng activities, không bỏ qua |
 | `datasets/*.json` | 3 định nghĩa dataset với linked service theo tên | Hợp đồng cho AD-OPS-25; chưa tạo resource Terraform trong PR này |
 | `assets/_SUCCESS` | Template 0 byte | P1 đưa đúng file vào `landing/ops/_SUCCESS` trước lần chạy đầu |
 
-`azurerm_data_factory_pipeline.parameters` là `map(string)`. Vì vậy `tables_json`, `expected_rows`,
-`translators_json` là **String chứa JSON**, đọc bằng `json()` trong ADF; không đổi thành object/array
-khi dùng provider này. Pipeline con nhận `table_name`, `expected_rows`, `translator_json` cũng là String.
+Stack `40-orchestration` khai mọi tham số pipeline là **String** (`settings.parameters` là map chuỗi).
+Vì vậy `tables_json`, `expected_rows`, `translators_json` là **String chứa JSON**, đọc bằng `json()` trong ADF;
+không đổi thành object/array. Pipeline con nhận `table_name`, `expected_rows`, `translator_json` cũng là String.
 Cha chọn object translator của từng bảng, gửi cả `type`, `mappings`, `typeConversion` sang con;
 Copy đặt Expression **trên toàn bộ `translator`**, theo mẫu parameterize mapping của Microsoft.
 Không đặt Expression riêng trong mảng `mappings`.
 
-Với từng pipeline, P1 đọc `pipeline_settings/<name>.json` và gán:
+Stack `40-orchestration` (AD-OPS-25b) nạp mọi `pipelines/*.json` trừ `pl_ingest_off`, `pl_master` bằng
+`azapi_resource` và gửi:
 
-- `parameters = jsondecode(file(...)).parameters`
-- `concurrency = jsondecode(file(...)).concurrency` (**1** cho cả cha và con)
-- `activities_json = file(.../pipelines/<name>.json)`
-- `depends_on` cho linked service/dataset, và pipeline cha phụ thuộc resource pipeline con.
+- `properties.activities` = nguyên mảng trong `pipelines/<name>.json`
+- `properties.concurrency` = `concurrency` trong `pipeline_settings/<name>.json` (**1** cho cả cha và con)
+- `properties.parameters` = mỗi khóa trong `parameters` thành `{type: String, defaultValue: <giá trị>}`
 
-Các JSON trong `datasets/` có dạng resource API `{name, properties}`. Khi dùng custom dataset của
-Terraform, lấy đúng `type`, `typeProperties`, `schema`, parameter và linked service trong `properties`;
-không gán toàn resource dataset cho `activities_json`.
+Mỗi pipeline phải có đủ hai file cùng tên. Pipeline được tạo theo tầng Execute Pipeline (con trước cha),
+đọc từ `referenceName` bắt đầu bằng `pl_`; lồng tối đa 3 tầng và không gọi `pl_ingest_off`, `pl_master`.
+Mọi giá trị trong `parameters` phải là chuỗi. PR làm một pipeline đổi tầng (con gọi thêm pipeline mới) cần
+P1 thêm khối `moved` trong stack; plan của PR sẽ hiện cặp xóa và tạo cùng tên.
+
+Các JSON trong `datasets/` có dạng resource API `{name, properties}`; stack gửi nguyên `properties`.
 
 Hợp đồng linked service/dataset:
 

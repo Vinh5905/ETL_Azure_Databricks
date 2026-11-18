@@ -5,8 +5,8 @@
 # [x] Remote state core + resource group core
 # [x] Linked service: ls_adls, ls_kv, ls_sql_retail, ls_zenodo, ls_off_api, ls_dbx (MSI)
 # [x] Dataset: publish mọi file adf/datasets/*.json (P2 thêm file ở #144, #183)
-# [ ] Pipeline ingest không gọi Databricks: mọi adf/pipelines/*.json trừ pl_ingest_off, pl_master,
-#     kèm adf/pipeline_settings/<tên>.json; pipeline con trước pipeline cha (AD-OPS-25b)
+# [x] Pipeline ingest không gọi Databricks: mọi adf/pipelines/*.json trừ pl_ingest_off, pl_master,
+#     kèm adf/pipeline_settings/<tên>.json; xếp tầng theo Execute Pipeline (AD-OPS-25b)
 # [ ] Pipeline pl_ingest_off, pl_master (gọi job theo ID) và trigger schedule,
 #     activated = var.triggers_on, mặc định false (AD-OPS-26)
 
@@ -37,6 +37,51 @@ locals {
     for f in fileset(local.dataset_dir, "*.json") :
     trimsuffix(f, ".json") => jsondecode(file("${local.dataset_dir}/${f}"))
   }
+
+  # Pipeline ingest (AD-OPS-25b): adf/pipelines/<tên>.json là mảng activities, adf/pipeline_settings/<tên>.json
+  # là {concurrency, parameters}. pl_ingest_off, pl_master gọi job Databricks theo ID nên để AD-OPS-26.
+  pipeline_dir      = "${path.module}/../../../adf/pipelines"
+  pipeline_settings = "${path.module}/../../../adf/pipeline_settings"
+  pipeline_excluded = ["pl_ingest_off", "pl_master"]
+  pipeline_names = [
+    for f in fileset(local.pipeline_dir, "*.json") : trimsuffix(f, ".json")
+    if !contains(local.pipeline_excluded, trimsuffix(f, ".json"))
+  ]
+  pipeline_text = { for n in local.pipeline_names : n => file("${local.pipeline_dir}/${n}.json") }
+
+  # Tham số ADF đều là String (adf/README.md); giữ đúng giá trị mặc định trong settings.
+  pipelines = {
+    for n in local.pipeline_names : n => {
+      activities  = jsondecode(local.pipeline_text[n])
+      concurrency = jsondecode(file("${local.pipeline_settings}/${n}.json")).concurrency
+      parameters = {
+        for k, v in jsondecode(file("${local.pipeline_settings}/${n}.json")).parameters :
+        k => { type = "String", defaultValue = tostring(v) }
+      }
+    }
+  }
+
+  # ADF từ chối pipeline tham chiếu pipeline chưa có, nên xếp tầng theo Execute Pipeline: tầng 0 không gọi
+  # pipeline nào, tầng k chỉ gọi pipeline ở tầng < k. Tên pipeline theo quy ước bắt đầu bằng "pl_", còn
+  # dataset là "ds_", linked service là "ls_", nên đọc referenceName "pl_*" là đủ.
+  pipeline_refs = {
+    for n, t in local.pipeline_text : n => distinct(flatten(regexall("\"referenceName\"\\s*:\\s*\"(pl_[A-Za-z0-9_]+)\"", t)))
+  }
+  pipeline_tier0 = [for n in local.pipeline_names : n if length(local.pipeline_refs[n]) == 0]
+  pipeline_tier1 = [
+    for n in local.pipeline_names : n
+    if !contains(local.pipeline_tier0, n) && length(setsubtract(local.pipeline_refs[n], local.pipeline_tier0)) == 0
+  ]
+  pipeline_tier2 = [
+    for n in local.pipeline_names : n
+    if !contains(concat(local.pipeline_tier0, local.pipeline_tier1), n)
+    && length(setsubtract(local.pipeline_refs[n], concat(local.pipeline_tier0, local.pipeline_tier1))) == 0
+  ]
+  # Pipeline gọi pipeline bị loại, pipeline không có trong repo, tự gọi/gọi vòng, hoặc lồng sâu hơn 3 tầng.
+  # Khi một pipeline đổi tầng (vd. con gọi thêm pipeline mới), địa chỉ resource đổi theo: PR đó phải kèm
+  # moved { from = azapi_resource.pipeline_tier0["x"]  to = azapi_resource.pipeline_tier1["x"] }, nếu không
+  # plan sẽ xóa rồi tạo lại cùng tên.
+  pipeline_unplaced = setsubtract(local.pipeline_names, concat(local.pipeline_tier0, local.pipeline_tier1, local.pipeline_tier2))
 }
 
 # ---------------------------------------------------------------------------
@@ -137,4 +182,50 @@ resource "azapi_resource" "dataset" {
     azurerm_data_factory_linked_custom_service.http,
     azurerm_data_factory_linked_custom_service.dbx,
   ]
+}
+
+# ---------------------------------------------------------------------------
+# Pipeline ingest không gọi Databricks (AD-OPS-25b). Thêm/sửa pipeline là sửa JSON trong adf/pipelines và
+# adf/pipeline_settings, không sửa file này. Ba resource ứng với ba tầng Execute Pipeline ở locals.
+# Dùng azapi như dataset: gửi nguyên activities, tham số giữ kiểu String và defaultValue như settings.
+# ---------------------------------------------------------------------------
+
+resource "azapi_resource" "pipeline_tier0" {
+  for_each = toset(local.pipeline_tier0)
+
+  type      = "Microsoft.DataFactory/factories/pipelines@2018-06-01"
+  name      = each.key
+  parent_id = local.adf_id
+  body      = { properties = local.pipelines[each.key] }
+
+  # Schema nhúng của azapi lệch API ADF (bắt fileExtension khi dataset đã có tên file, không biết
+  # httpRequestTimeout của HttpReadSettings). ADF vẫn kiểm activities phía server lúc apply.
+  schema_validation_enabled = false
+
+  # Activity tham chiếu dataset và linked service theo tên.
+  depends_on = [azapi_resource.dataset]
+}
+
+resource "azapi_resource" "pipeline_tier1" {
+  for_each = toset(local.pipeline_tier1)
+
+  type                      = "Microsoft.DataFactory/factories/pipelines@2018-06-01"
+  name                      = each.key
+  parent_id                 = local.adf_id
+  body                      = { properties = local.pipelines[each.key] }
+  schema_validation_enabled = false
+
+  depends_on = [azapi_resource.dataset, azapi_resource.pipeline_tier0]
+}
+
+resource "azapi_resource" "pipeline_tier2" {
+  for_each = toset(local.pipeline_tier2)
+
+  type                      = "Microsoft.DataFactory/factories/pipelines@2018-06-01"
+  name                      = each.key
+  parent_id                 = local.adf_id
+  body                      = { properties = local.pipelines[each.key] }
+  schema_validation_enabled = false
+
+  depends_on = [azapi_resource.dataset, azapi_resource.pipeline_tier1]
 }

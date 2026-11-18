@@ -25,7 +25,7 @@
 
 **Cách làm việc của P2:**
 1. Thiết kế và debug pipeline trong ADF Studio. Studio cho phép chạy debug mà không cần publish.
-2. Chọn *Export JSON* phần `activities` của pipeline, lưu vào `adf/pipelines/<tên>.json`.
+2. Chọn *Export JSON* phần `activities` của pipeline, lưu vào `adf/pipelines/<tên>.json`. Tham số và `concurrency` lưu ở `adf/pipeline_settings/<tên>.json` (dạng `{concurrency, parameters}`, mọi giá trị là String).
 3. Mở PR. Merge xong thì `tf-apply` publish pipeline lên factory.
 4. Từ lúc này coi Studio là chỉ đọc. Mọi sửa đổi đều đi qua bước 2.
 
@@ -37,7 +37,8 @@
 | `azurerm_data_factory_linked_custom_service` kiểu `HttpServer` | `ls_zenodo`, `ls_off_api` | Anonymous. Không dùng `azurerm_data_factory_linked_service_web` vì resource đó tạo kiểu `Web` (Web Table), còn dataset `HttpServerLocation` cần `HttpServer` |
 | `azurerm_data_factory_linked_custom_service` kiểu `AzureDatabricks` | `ls_dbx` | Xác thực `MSI` (managed identity của ADF có role `Contributor` trên workspace), không khai cluster. Pipeline dùng activity **Databricks Job** gọi job theo ID. Đã kiểm ở AD-OPS-25: `azurerm_data_factory_linked_service_azure_databricks` bắt buộc một trong `existing_cluster_id`, `instance_pool`, `new_cluster_config`, nên dùng custom service giống spike 3.5 |
 | `azapi_resource` (`Microsoft.DataFactory/factories/datasets`) | Mọi dataset trong `adf/datasets/*.json` | P2 soạn hợp đồng dataset (file dạng `{name, properties}`, `name` phải trùng tên file). Stack đọc cả thư mục bằng `fileset()` và gửi nguyên `properties`, nên thêm hay sửa dataset chỉ cần sửa JSON. Không dùng `azurerm_data_factory_custom_dataset` vì resource đó gán `defaultValue` cho mọi tham số, làm tham số bắt buộc thành tùy chọn |
-| `azurerm_data_factory_pipeline` | Pipeline | `activities_json = file("${path.module}/../../../adf/pipelines/x.json")` |
+| `azapi_resource` (`Microsoft.DataFactory/factories/pipelines`) | Pipeline ingest: mọi `adf/pipelines/*.json` trừ `pl_ingest_off`, `pl_master` | Gửi nguyên mảng activities. `concurrency` và `parameters` lấy từ `adf/pipeline_settings/<tên>.json`; tham số giữ kiểu String và `defaultValue` như file. ADF từ chối pipeline gọi pipeline chưa có, nên stack đọc các `referenceName` dạng `pl_*` trong JSON và xếp pipeline vào 3 tầng (`pipeline_tier0` không gọi pipeline nào, tầng sau chỉ gọi tầng trước). Pipeline gọi pipeline bị loại hoặc lồng quá 3 tầng làm plan lỗi. Thêm pipeline ingest mới chỉ cần thêm 2 file JSON (AD-OPS-25b) |
+| Pipeline `pl_ingest_off`, `pl_master` | Pipeline gọi job Databricks | Cần job ID nên làm ở AD-OPS-26, sau `bundle deploy -t prod` |
 | `azurerm_data_factory_trigger_schedule` | Trigger | `activated = var.triggers_on` (mặc định `false` ở dev để không tốn tiền) |
 
 **Các pipeline:**
