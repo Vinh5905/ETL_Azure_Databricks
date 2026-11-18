@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Che giá trị riêng trong log GitHub Actions. Repo public nên log của job ai cũng xem được.
 # Gọi ở bước đầu job (sau checkout): mọi bước sau in *** thay cho subscription, tenant,
-# client ID, object ID và IP của thành viên. Chỉ che log, không đổi nội dung file trên đĩa.
+# client ID, object ID, IP và email của thành viên. Chỉ che log, không đổi nội dung file trên đĩa.
 set -euo pipefail
 
 mask() {
@@ -13,8 +13,13 @@ for v in "${ARM_SUBSCRIPTION_ID:-}" "${TF_VAR_subscription_id_a:-}" "${TF_VAR_su
   mask "$v"
 done
 
-# Biến dạng JSON map (vai → giá trị).
-for json in "${TF_VAR_member_object_ids:-}" "${TF_VAR_member_ips:-}"; do
+# Biến dạng JSON map (vai → giá trị). member_emails là secret nên GitHub chỉ che nguyên chuỗi JSON,
+# phải che từng email để log của 30-databricks (databricks_user) không lộ địa chỉ.
+for json in "${TF_VAR_member_object_ids:-}" "${TF_VAR_member_ips:-}" "${TF_VAR_member_emails:-}"; do
   [ -n "$json" ] || continue
-  while read -r v; do mask "$v"; done < <(jq -r '.[]' <<<"$json")
+  # Che cả bản chữ thường: Databricks có thể trả userName đã hạ chữ.
+  while read -r v; do
+    mask "$v"
+    mask "$(tr '[:upper:]' '[:lower:]' <<<"$v")"
+  done < <(jq -r '.[]' <<<"$json")
 done

@@ -5,14 +5,15 @@
 # hoặc danh sách tên output đổi khi plan chỉ đổi output).
 # Không có tfplan (plan lỗi): totals.txt chứa các dòng "Error: …".
 # Không đưa thuộc tính tài nguyên ra ngoài vì chúng chứa subscription ID, object ID, IP.
-# GUID và IPv4 còn sót (ví dụ trong tên khóa for_each) được thay bằng <guid>/<ip>.
+# GUID, IPv4 và email còn sót (ví dụ trong tên khóa for_each hay dòng Error) được thay bằng
+# <guid>/<ip>/<email>. ::add-mask:: chỉ che log của job, không che comment PR hay issue drift.
 set -euo pipefail
 
 log="$1"
 plan="${2:-}"
 
 redact() {
-  sed -E 's/[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}/<guid>/g; s/([0-9]{1,3}\.){3}[0-9]{1,3}/<ip>/g'
+  sed -E 's/[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}/<guid>/g; s/([0-9]{1,3}\.){3}[0-9]{1,3}/<ip>/g; s/[^[:space:]@"'\'']+@[^[:space:]@"'\'']+\.[A-Za-z]{2,}/<email>/g'
 }
 
 : >summary.txt

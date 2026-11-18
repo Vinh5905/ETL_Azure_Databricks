@@ -67,18 +67,21 @@ Nếu data source này lỗi (không có metastore), dừng lại và xử lý t
 
 ```hcl
 resource "databricks_service_principal" "ci" {
-  application_id = var.ci_uami_client_id      # client id của id-github-ci
+  # client id của id-github-ci, đọc từ output ci_client_id của state bootstrap
+  application_id = sensitive(data.terraform_remote_state.bootstrap.outputs.ci_client_id)
   display_name   = "sp-github-ci"
+  force          = true   # UAMI CI đã được tự thêm vào workspace lần chạy CI đầu → nhận vào state
 }
 
 # G5: danh tính của Azure Function gợi ý (tạo ở 10-core). Chỉ cần quyền gọi endpoint (CAN_QUERY,
 # cấp trong DAB serving_ds.yml); không cấp cluster, không cấp quyền dữ liệu.
 resource "databricks_service_principal" "func" {
-  application_id             = local.core.func_identity_client_id
+  application_id             = sensitive(local.core.func_identity_client_id)
   display_name               = "sp-func-recommend"
   allow_cluster_create       = false
   databricks_sql_access      = false
   workspace_access           = false
+  force                      = true
 }
 ```
 
@@ -88,23 +91,30 @@ resource "databricks_service_principal" "func" {
 |---|---|
 | Có account admin | Provider `databricks.account` tạo `de_team`, `ds_team`, `bi_readers` và gán vào workspace |
 | Workspace bật *automatic identity management* (nhóm Entra tự đồng bộ) | Tạo 3 nhóm Entra (nếu tenant cho phép), rồi tham chiếu theo tên |
-| Workspace admin tạo account group từ workspace (**chốt G0**, spike 3.4 đạt) | Tạo `de_team`, `ds_team`, `bi_readers` bằng API SCIM account gọi qua workspace (`/api/2.0/account/scim/v2/Groups`) hoặc UI "Add new group to account and workspace". Không cần account admin. GRANT theo tên nhóm |
-| Không có ba điều trên (**dự phòng**) | GRANT trực tiếp cho **từng user** (email trường) bằng `for_each` trên một map vai trò → danh sách người |
+| Workspace admin tạo account group từ workspace (chốt G0, spike 3.4 đạt; **bỏ ở AD-OPS-18**, xem dưới) | Tạo `de_team`, `ds_team`, `bi_readers` bằng API SCIM account gọi qua workspace (`/api/2.0/account/scim/v2/Groups`) hoặc UI "Add new group to account and workspace". Không cần account admin. GRANT theo tên nhóm |
+| Không có ba điều trên (dự phòng; **đang dùng từ AD-OPS-18**) | GRANT trực tiếp cho **từng user** (email trường) bằng `for_each` trên một map vai trò → danh sách người |
 
 **Chốt ở G0 (spike 3.4):**
-- Dùng account group do workspace admin tạo. Sub A không có automatic identity management, nên không tham chiếu được nhóm Entra.
-- Resource Terraform nào tạo được account group bằng provider cấp workspace thì kiểm ở AD-OPS-18/20. Nếu không khai được bằng Terraform thì tạo nhóm một lần bằng API ở trên, còn Terraform chỉ quản lý thành viên và GRANT. Nếu cả cách này cũng hỏng thì GRANT theo từng user.
+- Spike chọn account group do workspace admin tạo. Sub A không có automatic identity management, nên không tham chiếu được nhóm Entra.
+- **Đổi ở AD-OPS-18: GRANT theo từng user.** Provider Terraform chỉ tạo account group qua host `accounts.azuredatabricks.net` (cần account admin). Với provider cấp workspace, `databricks_group` tạo nhóm workspace-local, mà nhóm này không dùng được trong GRANT. Tạo nhóm bằng script API thì thành viên nhóm nằm ngoài state, `drift-check` không thấy. Nhóm 4 người nên cấp theo từng user vẫn gọn, và mọi quyền nằm trong Terraform.
 - **Cấp quyền rõ cho từng principal** (nhóm thành viên, SP CI, SP của Function), không dựa vào nhóm `admins` của workspace. Lúc spike, notebook serverless của P1 báo `PERMISSION_DENIED` trên catalog dù nhóm `admins` là owner; cấp trực tiếp mới chạy được.
 
 ```hcl
-variable "roles" {          # khai báo trong *.auto.tfvars / GitHub Variable, không commit email
-  type = map(list(string))  # { de = ["p1@…","p2@…","p3@…"], ds = ["p4@…","p1@…"], bi = ["p4@…", "<giảng viên>@…"] }
+variable "member_emails" {  # secret TF_VAR_MEMBER_EMAILS dùng chung với 10-core: { p1 = "…@…", … }
+  type      = map(string)
+  sensitive = true
+}
+variable "roles" {          # chỉ chứa key, không chứa email → để trong infra/envs/30-databricks.tfvars
+  type = map(list(string))  # { de = ["p1","p2","p3"], ds = ["p1","p4"], bi = ["p4"] }; giảng viên: thêm key "gv"
 }
 resource "databricks_user" "members" {
-  for_each  = toset(flatten(values(var.roles)))
-  user_name = each.value
+  for_each  = toset(flatten(values(var.roles)))   # lặp theo key (không nhạy cảm)
+  user_name = var.member_emails[each.key]
+  force     = true          # thành viên có role Azure trên workspace nên có thể đã được tự thêm
 }
 ```
+
+> `for_each` không nhận giá trị sensitive, nên các bước sau luôn lặp theo **key** trong `var.roles` rồi tra email bằng `var.member_emails[<key>]`.
 
 ### Bước 3 · Storage credential và external location
 
@@ -218,7 +228,7 @@ resource "databricks_grants" "gold" {
   dynamic "grant" {
     for_each = toset(var.roles.bi)
     content {
-      principal  = grant.value
+      principal  = var.member_emails[grant.value]
       privileges = ["USE_SCHEMA", "SELECT"]
     }
   }
@@ -229,6 +239,8 @@ resource "databricks_grants" "gold" {
   # ... de, ds
 }
 ```
+
+> **Một người có nhiều vai** (ví dụ `p1` thuộc `de` và `ds`, `p4` thuộc `ds` và `bi`): không viết một dynamic block cho mỗi vai, vì cùng một principal sẽ xuất hiện hai lần trong một securable, API trả về một mục đã gộp và plan không bao giờ về *No changes*. Dựng `local` dạng `securable → { key người → hợp privilege của mọi vai người đó có }`, rồi mỗi securable chỉ một dynamic `grant` lặp theo key người, `principal = var.member_emails[grant.key]`.
 
 > `databricks_grants` là **có thẩm quyền tuyệt đối**: nó ghi đè mọi grant không khai báo. Vì vậy mọi quyền trên một securable phải nằm trong **một** khối duy nhất.
 
@@ -261,7 +273,7 @@ resource "databricks_permissions" "policy_use" {
   dynamic "access_control" {
     for_each = toset(flatten(values(var.roles)))
     content {
-      user_name        = access_control.value
+      user_name        = var.member_emails[access_control.value]
       permission_level = "CAN_USE"
     }
   }
@@ -316,9 +328,9 @@ resource "databricks_secret_scope" "kv" {
   }
 }
 resource "databricks_secret_acl" "kv_read" {        # nếu không cấp, chỉ người tạo đọc được
-  for_each   = toset(concat(var.roles.de, var.roles.ds, [databricks_service_principal.ci.application_id]))
+  for_each   = toset(concat(var.roles.de, var.roles.ds, ["ci"]))
   scope      = databricks_secret_scope.kv.name
-  principal  = each.value
+  principal  = each.value == "ci" ? databricks_service_principal.ci.application_id : var.member_emails[each.value]
   permission = "READ"
 }
 ```
@@ -422,8 +434,8 @@ resources:
 
 - [ ] `terraform plan` của `30-databricks` báo *No changes* sau khi apply.
 - [ ] `SHOW SCHEMAS IN instacart` liệt kê đủ 8 schema (thêm `ds_data`); `DESCRIBE EXTERNAL LOCATION el-bronze` trả về đúng URL.
-- [ ] P2 (vai `de`) tạo được bảng trong `bronze`. P3 (vai `bi`) **không** đọc được `bronze` (lỗi PERMISSION_DENIED) nhưng đọc được `gold`.
-- [ ] Không chọn được cấu hình cluster nào ngoài policy single-node; cluster tự tắt sau 20 phút.
+- [ ] P2 (vai `de`) tạo được bảng trong `bronze`. P4 (vai `ds` + `bi`, không thuộc `de`) **không** đọc được `bronze` (lỗi PERMISSION_DENIED) nhưng đọc được `gold`. Không thử bằng P3 vì P3 thuộc `de`.
+- [ ] Không chọn được cấu hình cluster nào ngoài policy single-node; cluster tự tắt sau 20 phút. Thử bằng tài khoản **không** phải admin: thành viên có Contributor trên RG core là workspace admin nên bỏ qua được policy.
 - [ ] `dbutils.secrets.get("kv","sql-admin-password")` trả về `[REDACTED]` trong notebook.
 - [ ] `SELECT 1` chạy được trên `wh-instacart-bi` (hoặc đã chốt lớp serving dự phòng).
 - [ ] `databricks bundle deploy -t dev` từ máy P2 tạo được job `[dev p2] instacart-batch-medallion`.
