@@ -725,7 +725,7 @@ Bước D7: Power BI chỉ đọc gold; view chạy bằng quyền chủ view n�
 2. experiment_metrics: trung vị 3 lần đo, speedup, efficiency, n_ok/n_timeout, so khớp top_n bằng <=>
 3. Nối file vào task publish_gold của ds-benchmark và ds-champion
 4. Chạy publish_gold; đối chiếu số dòng view với bảng nguồn
-5. Kiểm bằng tài khoản vai bi: đọc được gold.association_rules, đọc ml.experiment_runs báo PERMISSION_DENIED
+5. Kiểm bằng P4 (vai bi): đọc được gold.association_rules; SHOW GRANTS ON SCHEMA instacart.ml không có grant riêng cho vai bi (P4 còn vai ds nên đọc được ml)
 
 **Đầu ra**
 

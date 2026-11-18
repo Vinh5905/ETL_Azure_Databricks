@@ -249,6 +249,8 @@ resource "databricks_grants" "gold" {
 
 > **Một người có nhiều vai** (ví dụ `p1` thuộc `de` và `ds`, `p4` thuộc `ds` và `bi`): không viết một dynamic block cho mỗi vai, vì cùng một principal sẽ xuất hiện hai lần trong một securable, API trả về một mục đã gộp và plan không bao giờ về *No changes*. Dựng `local` dạng `securable → { key người → hợp privilege của mọi vai người đó có }`, rồi mỗi securable chỉ một dynamic `grant` lặp theo key người, `principal = var.member_upns[grant.key]`.
 
+> Code thật ở `infra/stacks/30-databricks/main.tf` (bước 5): bảng trên viết thành `local.role_privileges` (securable → vai → privilege), `local.grants_by_member` gộp theo người và rút `ALL_PRIVILEGES` thành một mục. Có ba nhóm `databricks_grants`: catalog, mỗi schema (`for_each`), mỗi volume (`for_each`). Volume nằm trong schema mà vai đã có `ALL_PRIVILEGES` thì quyền đã kế thừa, khai lại chỉ để bảng quyền đọc được trong code.
+
 > `databricks_grants` là **có thẩm quyền tuyệt đối**: nó ghi đè mọi grant không khai báo. Vì vậy mọi quyền trên một securable phải nằm trong **một** khối duy nhất.
 
 **Bảo mật mức dòng ngay trong UC (tùy chọn, bổ trợ cho Power BI):** có thể đặt row filter trên `gold.department_sales` theo nhóm, ví dụ hàm `is_account_group_member('bi_produce')` chỉ cho xem department `produce`. Hàm SQL được tạo bằng job DE (DAB), vì hàm là "việc" chứ không phải "nền". Terraform chỉ cấp quyền `EXECUTE`.

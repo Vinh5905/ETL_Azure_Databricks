@@ -298,7 +298,7 @@ Chi tiết model và DAX nằm ở [de/07 §4](../de/07_power_bi.md) (P3 dựng 
 - [ ] E7: `ml.holdout_metrics` có 9 cấu hình × `val`, baseline × `val`/`test`, champion × `test`.
 - [ ] `instacart.ml.basket_rules@champion` tồn tại; `ml.champion` trỏ đúng `run_key`.
 - [ ] API trả lời `curl` ở §3.1 (hoặc Function ở §3.2/§3.3) trong < 2 giây khi đã nóng; có ảnh chụp.
-- [ ] Tài khoản vai `bi` đọc được `gold.association_rules`; đọc `ml.experiment_runs` thì bị `PERMISSION_DENIED`.
+- [ ] P4 (vai `bi`) đọc được `gold.association_rules`. Không có tài khoản chỉ mang vai `bi` (P4 còn vai `ds`, có ALL_PRIVILEGES trên `ml`), nên kiểm phần chặn bằng `SHOW GRANTS ON SCHEMA instacart.ml`: không có grant nào dành riêng cho vai `bi`.
 - [ ] Power BI trang 6–7 đã publish, có trong app và mobile layout.
 - [ ] Báo cáo có đủ biểu đồ ở [04 §8](04_thuc_nghiem_danh_gia.md), bảng đối chiếu với bài báo ([00 §2](00_tong_quan_ds.md)), ghi rõ giới hạn phần cứng và cách đo bộ nhớ.
 

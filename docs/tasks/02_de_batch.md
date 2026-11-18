@@ -797,7 +797,7 @@ Chốt G3 phía DE: ds_data v1 và file txt cho cụm Hadoop local sẵn sàng t
 
 - [ ] Task check xanh
 - [ ] _manifest.json đủ 3 cấp × 4 quy mô
-- [ ] Vai ds đọc được ds_data và exports; INSERT báo PERMISSION_DENIED
+- [ ] P4 (vai ds, không thuộc de) đọc được ds_data và exports; INSERT báo PERMISSION_DENIED
 - [ ] Chạy lại job với v1 không đổi dữ liệu
 
 ### AD-DE-22
@@ -861,7 +861,7 @@ Power BI chỉ đọc bảng nhỏ đã tổng hợp: kpi_daily, kpi_by_dow_hour
 
 - [ ] sum(items) của department_sales = count(*) của fact_order_lines
 - [ ] product_360 đúng 49.688 dòng
-- [ ] Vai bi đọc được gold.* qua warehouse, đọc silver.* bị PERMISSION_DENIED
+- [ ] P4 (vai bi) đọc được gold.* qua warehouse; SHOW GRANTS ON SCHEMA instacart.silver không có grant riêng cho vai bi (P4 còn vai ds nên đọc được silver)
 
 ### AD-DE-24
 

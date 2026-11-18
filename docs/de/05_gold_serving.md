@@ -304,5 +304,5 @@ dbutils.fs.rm(f"{BASE}/{run}", recurse=True)          # dọn dữ liệu thử
 
 - [ ] Các truy vấn ở mục 4 đều đạt.
 - [ ] `SELECT * FROM instacart.ops.benchmark_results` có 4 định dạng × 3 lần.
-- [ ] Tài khoản vai `bi` đọc được `gold.*` qua warehouse; đọc `silver.*` thì báo PERMISSION_DENIED.
+- [ ] P4 (vai `bi`) đọc được `gold.*` qua warehouse. Không có tài khoản chỉ mang vai `bi` (P4 còn vai `ds`, được đọc silver), nên kiểm phần chặn bằng `SHOW GRANTS ON SCHEMA instacart.silver`: không có grant nào dành riêng cho vai `bi` (bảng quyền ở devops/05 bước 5).
 - [ ] `gold.bi_user_access` có ít nhất 2 người, ở 2 department khác nhau.

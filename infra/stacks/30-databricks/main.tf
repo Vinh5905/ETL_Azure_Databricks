@@ -5,7 +5,7 @@
 # [x] 2. Service principal cho CI (application_id = ci_client_id), user theo vai trò
 # [x] 3. Storage credential + external location theo container
 # [x] 4. Catalog instacart, 8 schema, volume raw + checkpoints
-# [ ] 5. Grants Unity Catalog (một khối databricks_grants cho mỗi securable)
+# [x] 5. Grants Unity Catalog (một khối databricks_grants cho mỗi securable)
 # [ ] 6. Cluster policy single-node + tắt unrestricted cluster creation
 # [ ] 7. Secret scope dựa trên Key Vault (P1 apply từ máy local)
 # [ ] 8. Serverless SQL warehouse wh-instacart-bi
@@ -137,7 +137,8 @@ resource "databricks_storage_credential" "lake" {
   }
 }
 
-# Mỗi container một external location để cấp quyền file theo tầng (bước 5).
+# Mỗi container một external location. Thành viên không có grant trên external location:
+# truy cập file đi qua volume (bước 5).
 resource "databricks_external_location" "layer" {
   for_each = local.lake_containers
 
@@ -220,4 +221,123 @@ resource "databricks_volume" "ml_inbox" {
   comment          = "Kết quả benchmark chạy local"
 
   depends_on = [databricks_external_location.layer]
+}
+
+# ---------------------------------------------------------------------------
+# Bước 5 · Quyền Unity Catalog theo vai (docs/devops/05 bước 5)
+# ---------------------------------------------------------------------------
+# databricks_grants ghi đè mọi grant không khai báo, nên mỗi securable đúng một khối. Một người có
+# thể có nhiều vai (p1: de + ds, p4: ds + bi): nếu viết mỗi vai một dynamic grant thì cùng principal
+# xuất hiện hai lần, API trả về một mục đã gộp và plan không bao giờ về No changes. Vì vậy quyền
+# được gộp theo người trước (local.grants_by_member), mỗi securable chỉ lặp một lần theo người.
+# Thành viên là workspace admin nhưng không phải owner hay metastore admin, nên vẫn bị chặn đọc
+# dữ liệu nếu không có grant ở đây.
+locals {
+  all_privileges = ["ALL_PRIVILEGES"]
+  read_schema    = ["USE_SCHEMA", "SELECT"]
+  rw_volume      = ["READ_VOLUME", "WRITE_VOLUME"]
+
+  # Bảng quyền ở docs/devops/05 bước 5: securable → vai → privilege.
+  role_privileges = {
+    catalog = {
+      de = ["USE_CATALOG", "CREATE_SCHEMA"] # CREATE_SCHEMA cho schema dev <user>_* (de/02 §2.2)
+      ds = ["USE_CATALOG"]
+      bi = ["USE_CATALOG"]
+    }
+    landing_meta      = { de = local.all_privileges }
+    bronze            = { de = local.all_privileges }
+    silver            = { de = local.all_privileges, ds = local.read_schema }
+    gold              = { de = local.all_privileges, ds = local.read_schema, bi = local.read_schema }
+    ml                = { de = local.read_schema, ds = local.all_privileges }
+    ds_data           = { de = local.all_privileges, ds = local.read_schema }
+    ops               = { de = local.all_privileges, ds = local.read_schema, bi = local.read_schema }
+    instacart_sandbox = { de = local.all_privileges, ds = local.all_privileges }
+    raw               = { de = local.rw_volume }
+    checkpoints       = { de = local.rw_volume }
+    exports           = { de = local.rw_volume, ds = ["READ_VOLUME"] }
+    inbox             = { ds = local.rw_volume }
+  }
+
+  # securable → key người → hợp privilege của mọi vai người đó có. ALL_PRIVILEGES đã bao các
+  # privilege khác nên rút gọn còn một mục. Người không có quyền gì trên securable thì bỏ ra.
+  grants_by_member = {
+    for sec, by_role in local.role_privileges : sec => {
+      for m, privs in {
+        for m in local.members : m => distinct(flatten([
+          for role, keys in var.roles : contains(keys, m) ? lookup(by_role, role, []) : []
+        ]))
+      } : m => (contains(privs, "ALL_PRIVILEGES") ? local.all_privileges : sort(privs)) if length(privs) > 0
+    }
+  }
+
+  # SP CI (deploy bundle, chạy job prod): ALL_PRIVILEGES trên mọi schema dữ liệu, trừ sandbox.
+  # SP CI là owner của mọi securable ở đây (nó tạo ra), grant tường minh để không phụ thuộc owner.
+  ci_schemas = setsubtract(keys(local.schemas), ["instacart_sandbox"])
+
+  volumes = {
+    raw         = databricks_volume.raw.id
+    checkpoints = databricks_volume.checkpoints.id
+    exports     = databricks_volume.ds_exports.id
+    inbox       = databricks_volume.ml_inbox.id
+  }
+}
+
+resource "databricks_grants" "catalog" {
+  catalog = databricks_catalog.instacart.name
+
+  dynamic "grant" {
+    for_each = local.grants_by_member["catalog"]
+    content {
+      principal  = databricks_user.members[grant.key].user_name
+      privileges = grant.value
+    }
+  }
+
+  grant {
+    principal  = databricks_service_principal.ci.application_id
+    privileges = ["CREATE_SCHEMA", "USE_CATALOG"]
+  }
+}
+
+resource "databricks_grants" "schema" {
+  for_each = local.schemas
+
+  schema = databricks_schema.s[each.key].id
+
+  dynamic "grant" {
+    for_each = local.grants_by_member[each.key]
+    content {
+      principal  = databricks_user.members[grant.key].user_name
+      privileges = grant.value
+    }
+  }
+
+  dynamic "grant" {
+    for_each = contains(local.ci_schemas, each.key) ? [1] : []
+    content {
+      principal  = databricks_service_principal.ci.application_id
+      privileges = local.all_privileges
+    }
+  }
+}
+
+# Volume nằm trong schema mà vai đã có ALL_PRIVILEGES thì quyền đã kế thừa; khai lại để bảng quyền
+# đọc được ngay trong code. Riêng exports là nơi DS chỉ có SELECT trên ds_data nên cần READ_VOLUME.
+resource "databricks_grants" "volume" {
+  for_each = local.volumes
+
+  volume = each.value
+
+  dynamic "grant" {
+    for_each = local.grants_by_member[each.key]
+    content {
+      principal  = databricks_user.members[grant.key].user_name
+      privileges = grant.value
+    }
+  }
+
+  grant {
+    principal  = databricks_service_principal.ci.application_id
+    privileges = local.rw_volume
+  }
 }

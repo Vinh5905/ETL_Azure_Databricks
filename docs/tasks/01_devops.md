@@ -774,7 +774,7 @@ Rubric 4 yêu cầu ràng buộc ai xem dữ liệu nào ở tầng dữ liệu.
 **Xong khi**
 
 - [ ] P2 (de) tạo được bảng trong bronze
-- [ ] P3 (bi) đọc bronze bị PERMISSION_DENIED, đọc gold được
+- [ ] P4 (ds + bi, không thuộc de) đọc bronze bị PERMISSION_DENIED, đọc gold được (không thử bằng P3 vì P3 thuộc de)
 - [ ] DS đọc được ds_data, ghi được ml
 - [ ] Plan lần hai No changes
 

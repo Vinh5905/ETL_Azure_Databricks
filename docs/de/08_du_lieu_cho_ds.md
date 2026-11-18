@@ -273,7 +273,7 @@ FROM instacart.ds_data.holdout_eval WHERE data_version = :v;
 
 - [ ] Task `check` xanh.
 - [ ] `_manifest.json` có đủ 3 cấp × 4 quy mô.
-- [ ] Tài khoản vai `ds` đọc được `ds_data.*` và volume `exports`; **không** ghi được (`INSERT` báo `PERMISSION_DENIED`).
+- [ ] P4 (vai `ds`, không thuộc `de`) đọc được `ds_data.*` và volume `exports`; **không** ghi được (`INSERT` báo `PERMISSION_DENIED`). Không thử bằng P1 vì P1 thuộc `de`.
 - [ ] Báo DS (P4) rằng `v1` đã sẵn sàng; ghi ngày tạo `v1` vào [ds/00 §5](../ds/00_tong_quan_ds.md).
 
 ## 8. Lỗi giữa chừng thì chạy lại thế nào
