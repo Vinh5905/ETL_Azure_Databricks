@@ -9,8 +9,8 @@
 | [AD-DE-03](#ad-de-03) | Viết khuôn quarantine và bộ luật chất lượng dùng chung | P2 | G0 | Chuẩn bị ngay; Hoàn tất: AD-DE-01 | [#39](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/39) |
 | [AD-DE-04](#ad-de-04) | Viết script SQL tạo bảng nguồn, bật CDC và bảng điều khiển etl | P2 | G1 | Chuẩn bị ngay; Hoàn tất: AD-OPS-12, AD-OPS-06 | [#40](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/40) |
 | [AD-DE-05](#ad-de-05) | Viết seed_retail_db theo đợt và job chạy seed | P2 | G1 | Chuẩn bị ngay; Hoàn tất: AD-DE-04, AD-DE-06, AD-OPS-22 | [#41](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/41) |
-| [AD-DE-06](#ad-de-06) | Dựng ADF pl_ingest_instacart chép CSV Zenodo vào landing | P2 | G1 | Chuẩn bị ngay; Hoàn tất: AD-OPS-25 | [#42](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/42) |
-| [AD-DE-07](#ad-de-07) | Dựng ADF pl_ingest_retail_db đọc CDC theo LSN | P2 | G1 | Bắt đầu: AD-DE-04; Hoàn tất: AD-DE-05, AD-OPS-25 | [#43](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/43) |
+| [AD-DE-06](#ad-de-06) | Dựng ADF pl_ingest_instacart chép CSV Zenodo vào landing | P2 | G1 | Chuẩn bị ngay; Hoàn tất: AD-OPS-25b | [#42](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/42) |
+| [AD-DE-07](#ad-de-07) | Dựng ADF pl_ingest_retail_db đọc CDC theo LSN | P2 | G1 | Bắt đầu: AD-DE-04; Hoàn tất: AD-DE-05, AD-OPS-25b | [#43](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/43) |
 | [AD-DE-08](#ad-de-08) | Khai báo pipeline instacart_batch trong DAB với schema dev riêng | P2 | G1 | Chuẩn bị ngay; Hoàn tất: AD-OPS-19, AD-OPS-21, AD-OPS-20, AD-OPS-05 | [#44](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/44) |
 | [AD-DE-09](#ad-de-09) | Viết bronze.py nạp landing vào bronze bằng Auto Loader | P2 | G1 | Chuẩn bị ngay; Hoàn tất: AD-DE-06, AD-DE-07, AD-DE-08 | [#45](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/45) |
 | [AD-DE-10](#ad-de-10) | Viết crawler Open Food Facts và tải ảnh theo lô | P2 | G3 | Chuẩn bị ngay; Hoàn tất: AD-DE-09 | [#46](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/46) |
@@ -319,8 +319,8 @@ Khi có CSV, chạy job dev để kiểm scope, xác thực SQL, hai lượt wav
 - Issue: [#42](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/42)
 - Tài liệu: `docs/de/01_ingest_landing.md §1, §2`, `docs/devops/06_de_den_dashboard.md §1`
 - **Bắt đầu sau:** Không có.
-- **Hoàn tất còn cần:** [AD-OPS-25](01_devops.md#ad-ops-25) [#27](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/27)
-- **Mở khóa:** [AD-OPS-26](01_devops.md#ad-ops-26) (hoàn tất), [AD-DE-09](02_de_batch.md#ad-de-09) (hoàn tất), [AD-DE-05](02_de_batch.md#ad-de-05) (hoàn tất)
+- **Hoàn tất còn cần:** [AD-OPS-25b](01_devops.md#ad-ops-25b) [#186](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/186)
+- **Mở khóa:** [AD-DE-09](02_de_batch.md#ad-de-09) (hoàn tất), [AD-DE-05](02_de_batch.md#ad-de-05) (hoàn tất)
 
 Bước 1 của luồng: 6 file Instacart vào landing/instacart/<bảng>/release=2017/, theo khuôn staging → công bố → _SUCCESS để chạy lại an toàn.
 
@@ -377,8 +377,8 @@ Bộ mô phỏng local chỉ hỗ trợ dependency Succeeded và tập biểu th
 - Issue: [#43](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/43)
 - Tài liệu: `docs/de/01_ingest_landing.md §3.5, §3.6, §6, §7`
 - **Bắt đầu sau:** [AD-DE-04](02_de_batch.md#ad-de-04) [#40](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/40)
-- **Hoàn tất còn cần:** [AD-DE-05](02_de_batch.md#ad-de-05) [#41](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/41), [AD-OPS-25](01_devops.md#ad-ops-25) [#27](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/27)
-- **Mở khóa:** [AD-OPS-26](01_devops.md#ad-ops-26) (hoàn tất), [AD-DE-09](02_de_batch.md#ad-de-09) (hoàn tất), [AD-DE-19](02_de_batch.md#ad-de-19) (bắt đầu)
+- **Hoàn tất còn cần:** [AD-DE-05](02_de_batch.md#ad-de-05) [#41](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/41), [AD-OPS-25b](01_devops.md#ad-ops-25b) [#186](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/186)
+- **Mở khóa:** [AD-DE-09](02_de_batch.md#ad-de-09) (hoàn tất), [AD-DE-19](02_de_batch.md#ad-de-19) (bắt đầu)
 
 Đọc thay đổi product_prices, promotions theo cửa sổ LSN vào landing/retail_db/<bảng>/snapshot=… hoặc window=…; watermark chỉ tăng sau khi công bố.
 

@@ -5,9 +5,10 @@
 # [x] Remote state core + resource group core
 # [x] Linked service: ls_adls, ls_kv, ls_sql_retail, ls_zenodo, ls_off_api, ls_dbx (MSI)
 # [x] Dataset: publish mọi file adf/datasets/*.json (P2 thêm file ở #144, #183)
-# [ ] Pipeline pl_ingest_instacart, pl_ingest_retail_db, pl_ingest_off, pl_master
-#     (activities_json = file("${path.module}/../../../adf/pipelines/<tên>.json"))
-# [ ] Trigger schedule, activated = var.triggers_on (mặc định false)
+# [ ] Pipeline ingest không gọi Databricks: mọi adf/pipelines/*.json trừ pl_ingest_off, pl_master,
+#     kèm adf/pipeline_settings/<tên>.json; pipeline con trước pipeline cha (AD-OPS-25b)
+# [ ] Pipeline pl_ingest_off, pl_master (gọi job theo ID) và trigger schedule,
+#     activated = var.triggers_on, mặc định false (AD-OPS-26)
 
 data "terraform_remote_state" "core" {
   backend = "azurerm"

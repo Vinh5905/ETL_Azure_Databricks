@@ -465,8 +465,24 @@
       "issue": 27
     },
     {
+      "id": "AD-OPS-25b",
+      "title": "Nạp các pipeline ingest không gọi Databricks vào 40-orchestration",
+      "role": "P1",
+      "gate": "G1",
+      "label": "infra",
+      "docs": [
+        "docs/devops/06_de_den_dashboard.md §1",
+        "adf/README.md"
+      ],
+      "start": [
+        "AD-OPS-25"
+      ],
+      "finish": [],
+      "issue": 186
+    },
+    {
       "id": "AD-OPS-26",
-      "title": "Đưa pipeline và trigger ADF vào 40-orchestration, bật lịch hằng ngày khi pl_master đạt",
+      "title": "Đưa pl_ingest_off, pl_master và trigger ADF vào 40-orchestration, bật lịch hằng ngày khi pl_master đạt",
       "role": "P1",
       "gate": "G3",
       "label": "infra",
@@ -476,11 +492,9 @@
       ],
       "start": [
         "AD-OPS-23",
-        "AD-OPS-25"
+        "AD-OPS-25b"
       ],
       "finish": [
-        "AD-DE-06",
-        "AD-DE-07",
         "AD-DE-19",
         "AD-DE-18"
       ],
@@ -725,7 +739,7 @@
       ],
       "start": [],
       "finish": [
-        "AD-OPS-25"
+        "AD-OPS-25b"
       ],
       "issue": 42
     },
@@ -743,7 +757,7 @@
       ],
       "finish": [
         "AD-DE-05",
-        "AD-OPS-25"
+        "AD-OPS-25b"
       ],
       "issue": 43
     },

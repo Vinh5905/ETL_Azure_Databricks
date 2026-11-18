@@ -49,7 +49,7 @@
 | `pl_ingest_off` | Gọi job Databricks `off_crawler`. Giới hạn 10 request/phút nên crawler nằm trong Python, không dùng ADF ForEach | Hằng ngày, theo lô khoảng 300 sản phẩm |
 | `pl_master` | Execute pipeline retail → OFF → **Databricks Job** `instacart-batch-medallion` | Hằng ngày 02:00 |
 
-`pl_master` gọi job theo **job ID**. Job ID lấy bằng data source `databricks_job` (theo tên job prod do DAB tạo). Vì vậy `40-orchestration` phải apply **sau** lần `bundle deploy -t prod` đầu tiên. Riêng linked service và dataset (AD-OPS-25) không cần job ID nên apply được trước.
+`pl_master` gọi job theo **job ID**. Job ID lấy bằng data source `databricks_job` (theo tên job prod do DAB tạo). Vì vậy phần `pl_ingest_off`, `pl_master` và trigger (AD-OPS-26) phải apply **sau** lần `bundle deploy -t prod` đầu tiên. Linked service, dataset (AD-OPS-25) và các pipeline ingest không gọi Databricks (`pl_ingest_instacart`, `pl_ingest_retail_db` và pipeline con của chúng, AD-OPS-25b) không cần job ID nên apply được trước.
 
 ## 2. Job Databricks (DAB)
 

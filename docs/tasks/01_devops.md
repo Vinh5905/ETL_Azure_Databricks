@@ -1,6 +1,6 @@
 # Phân việc · DevOps / nền tảng (`AD-OPS-xx`)
 
-36 task. Quy ước, trạng thái và bảng tổng ở [README](README.md). Vai ghi theo P1–P4, người thật được gán trên GitHub Project.
+38 task. Quy ước, trạng thái và bảng tổng ở [README](README.md). Vai ghi theo P1–P4, người thật được gán trên GitHub Project.
 
 | Mã | Việc | Vai | Cổng | Phụ thuộc | Issue |
 |---|---|---|---|---|---|
@@ -32,7 +32,8 @@
 | [AD-OPS-23](#ad-ops-23) | Nghiệm thu G1: chạy 30-databricks qua CI và thử de-deploy dev/prod | P1 | G1 | Bắt đầu: AD-OPS-17, AD-OPS-20, AD-OPS-21, AD-OPS-22; Hoàn tất: AD-DE-18, AD-OPS-21b | [#25](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/25) |
 | [AD-OPS-24](#ad-ops-24) | Dựng stack 20-stream (Event Hubs, SAS, secret) và nghiệm thu stream-toggle | P3 | G2 | Bắt đầu: AD-OPS-02, AD-OPS-10; Hoàn tất: AD-OPS-03b | [#26](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/26) |
 | [AD-OPS-25](#ad-ops-25) | Khai báo linked service và dataset ADF trong stack 40-orchestration | P1 | G3 | Bắt đầu: AD-OPS-12, AD-OPS-13; Hoàn tất: AD-OPS-17 | [#27](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/27) |
-| [AD-OPS-26](#ad-ops-26) | Đưa pipeline và trigger ADF vào 40-orchestration, bật lịch hằng ngày khi pl_master đạt | P1 | G3 | Bắt đầu: AD-OPS-23, AD-OPS-25; Hoàn tất: AD-DE-06, AD-DE-07, AD-DE-19, AD-DE-18 | [#28](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/28) |
+| [AD-OPS-25b](#ad-ops-25b) | Nạp các pipeline ingest không gọi Databricks vào 40-orchestration | P1 | G1 | Bắt đầu: AD-OPS-25 | [#186](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/186) |
+| [AD-OPS-26](#ad-ops-26) | Đưa pl_ingest_off, pl_master và trigger ADF vào 40-orchestration, bật lịch hằng ngày khi pl_master đạt | P1 | G3 | Bắt đầu: AD-OPS-23, AD-OPS-25b; Hoàn tất: AD-DE-19, AD-DE-18 | [#28](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/28) |
 | [AD-OPS-27](#ad-ops-27) | Kiểm thử drift-check bằng một thay đổi tay có chủ đích | P1 | G3 | Bắt đầu: AD-OPS-23, AD-OPS-25 | [#29](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/29) |
 | [AD-OPS-28](#ad-ops-28) | Lập bảng theo dõi chi phí theo tag và quota vCPU hằng tuần | P1 | G4 | Bắt đầu: AD-OPS-14 | [#30](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/30) |
 | [AD-OPS-29](#ad-ops-29) | Dựng workspace sandbox 90-sandbox cho DS ở Sub C | P4 | G3 | Bắt đầu: AD-OPS-08; Hoàn tất: AD-DE-21 | [#31](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/31) |
@@ -953,7 +954,7 @@ Event Hubs ở Sub B, cố ý khác region Sub A để đo độ trễ rubric 3.
 - Tài liệu: `docs/devops/06_de_den_dashboard.md §1`
 - **Bắt đầu sau:** [AD-OPS-12](01_devops.md#ad-ops-12) [#14](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/14), [AD-OPS-13](01_devops.md#ad-ops-13) [#15](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/15)
 - **Hoàn tất còn cần:** [AD-OPS-17](01_devops.md#ad-ops-17) [#19](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/19)
-- **Mở khóa:** [AD-OPS-26](01_devops.md#ad-ops-26) (bắt đầu), [AD-OPS-27](01_devops.md#ad-ops-27) (bắt đầu), [AD-DE-06](02_de_batch.md#ad-de-06) (hoàn tất), [AD-DE-07](02_de_batch.md#ad-de-07) (hoàn tất), [AD-DE-19](02_de_batch.md#ad-de-19) (hoàn tất)
+- **Mở khóa:** [AD-OPS-25b](01_devops.md#ad-ops-25b) (bắt đầu), [AD-OPS-27](01_devops.md#ad-ops-27) (bắt đầu), [AD-DE-19](02_de_batch.md#ad-de-19) (hoàn tất)
 
 ADF quản lý bằng Terraform để PR thấy được thay đổi và drift-check bắt được sửa tay trong Studio. Linked service là nền cho pipeline của P2.
 
@@ -973,23 +974,55 @@ ADF quản lý bằng Terraform để PR thấy được thay đổi và drift-c
 - [ ] Test connection của từng linked service trong ADF Studio thành công
 - [ ] Plan 40-orchestration báo No changes
 
+### AD-OPS-25b
+
+**Nạp các pipeline ingest không gọi Databricks vào 40-orchestration**
+
+- Vai dự kiến: **P1 · DevOps**
+- Cổng: **G1**
+- Issue: [#186](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/186)
+- Tài liệu: `docs/devops/06_de_den_dashboard.md §1`, `adf/README.md`
+- **Bắt đầu sau:** [AD-OPS-25](01_devops.md#ad-ops-25) [#27](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/27)
+- **Hoàn tất còn cần:** Không có.
+- **Mở khóa:** [AD-OPS-26](01_devops.md#ad-ops-26) (bắt đầu), [AD-DE-06](02_de_batch.md#ad-de-06) (hoàn tất), [AD-DE-07](02_de_batch.md#ad-de-07) (hoàn tất)
+
+Tách từ AD-OPS-26. Pipeline ingest không gọi Databricks job nên không cần chờ G1, nhờ vậy AD-DE-06 và AD-DE-07 nghiệm thu được trên factory trước khi có job prod. Hợp đồng bàn giao giữa P2 và P1 ở `adf/README.md`, mục "File và ranh giới với P1".
+
+**Việc cần làm**
+
+1. Trong 40-orchestration nạp mọi file adf/pipelines/*.json trừ pl_ingest_off và pl_master (giống cách #185 nạp dataset), đọc kèm adf/pipeline_settings/<tên>.json cho concurrency và tham số; pipeline con tạo trước pipeline cha
+2. Đợt này nạp ngay pl_ingest_instacart_table và pl_ingest_instacart
+3. Khi PR AD-DE-07 merge (pl_cdc_one_table, pl_ingest_retail_db), tf-apply tự nạp tiếp, không cần PR riêng của P1
+4. Đưa template adf/assets/_SUCCESS vào landing/ops/_SUCCESS
+5. Sửa devops/06 §1 cho khớp nếu cách nạp khác mô tả
+
+**Đầu ra**
+
+- pl_ingest_instacart và pl_ingest_instacart_table trên factory
+- Cơ chế tự nạp pipeline ingest mới về sau
+
+**Xong khi**
+
+- [ ] ADF Studio thấy pl_ingest_instacart và pl_ingest_instacart_table giống JSON trong repo (concurrency 1, đủ tham số)
+- [ ] Plan 40-orchestration báo No changes
+
 ### AD-OPS-26
 
-**Đưa pipeline và trigger ADF vào 40-orchestration, bật lịch hằng ngày khi pl_master đạt**
+**Đưa pl_ingest_off, pl_master và trigger ADF vào 40-orchestration, bật lịch hằng ngày khi pl_master đạt**
 
 - Vai dự kiến: **P1 · DevOps**
 - Cổng: **G3**
 - Issue: [#28](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/28)
 - Tài liệu: `docs/devops/06_de_den_dashboard.md §1`, `docs/devops/06_de_den_dashboard.md §3`
-- **Bắt đầu sau:** [AD-OPS-23](01_devops.md#ad-ops-23) [#25](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/25), [AD-OPS-25](01_devops.md#ad-ops-25) [#27](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/27)
-- **Hoàn tất còn cần:** [AD-DE-06](02_de_batch.md#ad-de-06) [#42](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/42), [AD-DE-07](02_de_batch.md#ad-de-07) [#43](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/43), [AD-DE-19](02_de_batch.md#ad-de-19) [#55](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/55), [AD-DE-18](02_de_batch.md#ad-de-18) [#54](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/54)
+- **Bắt đầu sau:** [AD-OPS-23](01_devops.md#ad-ops-23) [#25](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/25), [AD-OPS-25b](01_devops.md#ad-ops-25b) [#186](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/186)
+- **Hoàn tất còn cần:** [AD-DE-19](02_de_batch.md#ad-de-19) [#55](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/55), [AD-DE-18](02_de_batch.md#ad-de-18) [#54](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/54)
 - **Mở khóa:** [AD-OPS-33](01_devops.md#ad-ops-33) (hoàn tất)
 
-pl_master gọi job Databricks theo job ID nên phải apply sau lần deploy bundle prod đầu tiên. Lịch ADF → Databricks Job là bằng chứng ETL tự động rubric 3.2.
+pl_master gọi job Databricks theo job ID nên phải apply sau lần deploy bundle prod đầu tiên. Các pipeline ingest không gọi Databricks đã nạp ở AD-OPS-25b. Lịch ADF → Databricks Job là bằng chứng ETL tự động rubric 3.2.
 
 **Việc cần làm**
 
-1. azurerm_data_factory_pipeline với activities_json = file(adf/pipelines/<tên>.json)
+1. Nạp pl_ingest_off và pl_master (hai pipeline gọi Databricks job) theo cùng cách AD-OPS-25b nạp pipeline ingest
 2. Data source databricks_job lấy job ID theo tên job prod
 3. Trigger schedule (02:00 hằng ngày cho pl_master) với activated = var.triggers_on, mặc định false
 4. Kiểm tf-apply chạy 40-orchestration sau 30-databricks
@@ -997,12 +1030,12 @@ pl_master gọi job Databricks theo job ID nên phải apply sau lần deploy bu
 
 **Đầu ra**
 
-- 4 pipeline và trigger trên factory
+- pl_ingest_off, pl_master và trigger trên factory
 - PR bật triggers_on = true
 
 **Xong khi**
 
-- [ ] ADF Studio thấy 4 pipeline giống JSON trong repo
+- [ ] ADF Studio thấy pl_ingest_off và pl_master giống JSON trong repo
 - [ ] Trigger hằng ngày ở trạng thái Started sau PR bật
 - [ ] Có ít nhất một lần chạy pl_master theo lịch thành công trong Monitor
 
