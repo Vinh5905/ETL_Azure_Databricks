@@ -27,8 +27,9 @@
 | [AD-OPS-19](#ad-ops-19) | Tạo storage credential, external location, catalog instacart, 8 schema và volume (30-databricks bước 3–4) | P1 | G1 | Bắt đầu: AD-OPS-10, AD-OPS-11 | [#21](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/21) |
 | [AD-OPS-20](#ad-ops-20) | Cấp quyền Unity Catalog theo vai trò (30-databricks bước 5) | P1 | G1 | Bắt đầu: AD-OPS-18, AD-OPS-19 | [#22](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/22) |
 | [AD-OPS-21](#ad-ops-21) | Tạo cluster policy single-node, pipeline và ds-benchmark, chặn tạo cluster tự do (30-databricks bước 6) | P1 | G1 | Bắt đầu: AD-OPS-18 | [#23](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/23) |
+| [AD-OPS-21b](#ad-ops-21b) | Chặn cluster không tự tắt và gắn policy cho cluster bảo trì của pipeline | P1 | G1 | Bắt đầu: AD-OPS-21; Hoàn tất: AD-DE-08 | [#180](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/180) |
 | [AD-OPS-22](#ad-ops-22) | Tạo secret scope Key Vault, serverless SQL warehouse và output cho DAB, Power BI (30-databricks bước 7–9) | P1 | G1 | Bắt đầu: AD-OPS-18; Hoàn tất: AD-OPS-12 | [#24](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/24) |
-| [AD-OPS-23](#ad-ops-23) | Nghiệm thu G1: chạy 30-databricks qua CI và thử de-deploy dev/prod | P1 | G1 | Bắt đầu: AD-OPS-17, AD-OPS-20, AD-OPS-21, AD-OPS-22; Hoàn tất: AD-DE-18 | [#25](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/25) |
+| [AD-OPS-23](#ad-ops-23) | Nghiệm thu G1: chạy 30-databricks qua CI và thử de-deploy dev/prod | P1 | G1 | Bắt đầu: AD-OPS-17, AD-OPS-20, AD-OPS-21, AD-OPS-22; Hoàn tất: AD-DE-18, AD-OPS-21b | [#25](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/25) |
 | [AD-OPS-24](#ad-ops-24) | Dựng stack 20-stream (Event Hubs, SAS, secret) và nghiệm thu stream-toggle | P3 | G2 | Bắt đầu: AD-OPS-02, AD-OPS-10; Hoàn tất: AD-OPS-03b | [#26](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/26) |
 | [AD-OPS-25](#ad-ops-25) | Khai báo linked service và dataset ADF trong stack 40-orchestration | P1 | G3 | Bắt đầu: AD-OPS-12, AD-OPS-13; Hoàn tất: AD-OPS-17 | [#27](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/27) |
 | [AD-OPS-26](#ad-ops-26) | Đưa pipeline và trigger ADF vào 40-orchestration, bật lịch hằng ngày khi pl_master đạt | P1 | G3 | Bắt đầu: AD-OPS-23, AD-OPS-25; Hoàn tất: AD-DE-06, AD-DE-07, AD-DE-19, AD-DE-18 | [#28](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/28) |
@@ -788,7 +789,7 @@ Rubric 4 yêu cầu ràng buộc ai xem dữ liệu nào ở tầng dữ liệu.
 - Tài liệu: `docs/devops/05_databricks_platform.md §3 bước 6`, `docs/de/02_bronze_ldp.md §2.1`
 - **Bắt đầu sau:** [AD-OPS-18](01_devops.md#ad-ops-18) [#20](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/20)
 - **Hoàn tất còn cần:** Không có.
-- **Mở khóa:** [AD-OPS-23](01_devops.md#ad-ops-23) (bắt đầu), [AD-OPS-30](01_devops.md#ad-ops-30) (bắt đầu), [AD-DE-08](02_de_batch.md#ad-de-08) (hoàn tất), [AD-ST-03](03_de_stream.md#ad-st-03) (hoàn tất)
+- **Mở khóa:** [AD-OPS-21b](01_devops.md#ad-ops-21b) (bắt đầu), [AD-OPS-23](01_devops.md#ad-ops-23) (bắt đầu), [AD-OPS-30](01_devops.md#ad-ops-30) (bắt đầu), [AD-DE-08](02_de_batch.md#ad-de-08) (hoàn tất), [AD-ST-03](03_de_stream.md#ad-st-03) (hoàn tất)
 
 Quota 4 vCPU buộc cưỡng chế single-node và tự tắt; policy cố định giúp benchmark rubric 3.1 lặp lại được. Bundle tra policy theo tên.
 
@@ -810,6 +811,36 @@ Quota 4 vCPU buộc cưỡng chế single-node và tự tắt; policy cố đị
 - [ ] Thành viên không tạo được cluster ngoài policy
 - [ ] Cluster theo policy tự tắt sau tối đa 20 phút
 - [ ] Cluster theo instacart-ds-benchmark với local[2] trả sc.defaultParallelism = 2
+
+### AD-OPS-21b
+
+**Chặn cluster không tự tắt và gắn policy cho cluster bảo trì của pipeline**
+
+- Vai dự kiến: **P1 · DevOps** (phần 2 cần P2 thử trên pipeline dev)
+- Cổng: **G1**
+- Issue: [#180](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/180)
+- Tài liệu: `docs/devops/05_databricks_platform.md §3 bước 6`, `docs/de/02_bronze_ldp.md §2.1`
+- **Bắt đầu sau:** [AD-OPS-21](01_devops.md#ad-ops-21) [#23](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/23)
+- **Hoàn tất còn cần:** [AD-DE-08](02_de_batch.md#ad-de-08) [#44](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/44)
+- **Mở khóa:** [AD-OPS-23](01_devops.md#ad-ops-23) (hoàn tất)
+
+Tách từ AD-OPS-21: ba policy đã apply, còn hai lỗ hổng phải thử trên cluster thật mới sửa được. Phần 1 làm được ngay khi quota 4 vCPU rảnh; phần 2 chờ pipeline `instacart_batch` có trên dev.
+
+**Việc cần làm**
+
+1. Phần 1, cluster không tự tắt: `autotermination_minutes` chỉ có `maxValue`, nên cluster tạo qua API với giá trị 0 chạy mãi. Thử trên policy tạm (tạo bằng CLI, xóa sau khi thử) có `minValue = 10`, chạy một job one-time (`databricks jobs submit`) không khai `autotermination_minutes`
+2. Job chạy được thì thêm `minValue = 10` vào `local.single_node_policy`; bị từ chối thì tách policy cluster tương tác (`cluster_type` fixed `all-purpose`, tự tắt 10–20) và policy job (`cluster_type` fixed `job`, bỏ autotermination), sửa `bundles/` và 05 bước 6 theo tên mới
+3. Phần 2, cluster bảo trì: sau khi pipeline dev chạy xong một update (AD-DE-08), xem cluster `maintenance` có lên trên `Standard_D4ds_v4` không
+4. Nếu lỗi hoặc sai máy: thêm mục `label: maintenance` (cùng `policy_id`, `spark_conf`, `custom_tags`) vào `bundles/resources/pipeline_*.yml` và mẫu ở de/02, de/04; policy từ chối thì sửa policy `dlt`; ghi kết quả vào de/02 §2.1
+
+**Đầu ra**
+
+- PR sửa policy ở `30-databricks` (và bundle nếu cần)
+
+**Xong khi**
+
+- [ ] Tạo cluster với `autotermination_minutes = 0` bị policy từ chối, job cluster vẫn chạy được
+- [ ] Cluster bảo trì của pipeline dev chạy trên `Standard_D4ds_v4`, có tag `owner`
 
 ### AD-OPS-22
 
@@ -854,7 +885,7 @@ Notebook đọc bí mật qua scope kv; Power BI cần host và HTTP path của 
 - Issue: [#25](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/25)
 - Tài liệu: `docs/devops/05_databricks_platform.md §5`, `docs/devops/04_github_actions_cicd.md §3.4`, `docs/devops/04_github_actions_cicd.md §5`
 - **Bắt đầu sau:** [AD-OPS-17](01_devops.md#ad-ops-17) [#19](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/19), [AD-OPS-20](01_devops.md#ad-ops-20) [#22](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/22), [AD-OPS-21](01_devops.md#ad-ops-21) [#23](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/23), [AD-OPS-22](01_devops.md#ad-ops-22) [#24](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/24)
-- **Hoàn tất còn cần:** [AD-DE-18](02_de_batch.md#ad-de-18) [#54](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/54)
+- **Hoàn tất còn cần:** [AD-DE-18](02_de_batch.md#ad-de-18) [#54](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/54), [AD-OPS-21b](01_devops.md#ad-ops-21b) [#180](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/180)
 - **Mở khóa:** [AD-OPS-26](01_devops.md#ad-ops-26) (bắt đầu), [AD-OPS-27](01_devops.md#ad-ops-27) (bắt đầu), [AD-OPS-31](01_devops.md#ad-ops-31) (bắt đầu), [AD-DE-19](02_de_batch.md#ad-de-19) (hoàn tất)
 
 Đạt checklist 05 §5 thì mở G1 để DE chạy ADF → landing → bronze trên cloud. Bundle validate và de-deploy cần workspace thật.

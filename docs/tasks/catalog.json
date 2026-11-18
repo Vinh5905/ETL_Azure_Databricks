@@ -369,6 +369,24 @@
       "issue": 23
     },
     {
+      "id": "AD-OPS-21b",
+      "title": "Chặn cluster không tự tắt và gắn policy cho cluster bảo trì của pipeline",
+      "role": "P1",
+      "gate": "G1",
+      "label": "infra",
+      "docs": [
+        "docs/devops/05_databricks_platform.md §3 bước 6",
+        "docs/de/02_bronze_ldp.md §2.1"
+      ],
+      "start": [
+        "AD-OPS-21"
+      ],
+      "finish": [
+        "AD-DE-08"
+      ],
+      "issue": 180
+    },
+    {
       "id": "AD-OPS-22",
       "title": "Tạo secret scope Key Vault, serverless SQL warehouse và output cho DAB, Power BI (30-databricks bước 7–9)",
       "role": "P1",
@@ -404,7 +422,8 @@
         "AD-OPS-22"
       ],
       "finish": [
-        "AD-DE-18"
+        "AD-DE-18",
+        "AD-OPS-21b"
       ],
       "issue": 25
     },

@@ -1,6 +1,6 @@
 # Phân việc toàn dự án
 
-Toàn bộ việc còn lại của dự án được tách thành **122 task**. Làm xong hết các task này là xong dự án: hạ tầng, pipeline batch và stream, Power BI, phần DS, báo cáo và demo.
+Toàn bộ việc còn lại của dự án được tách thành **123 task**. Làm xong hết các task này là xong dự án: hạ tầng, pipeline batch và stream, Power BI, phần DS, báo cáo và demo.
 
 Mỗi task là một issue trên GitHub và một thẻ trên GitHub Project [ETL Instacart Azure Databricks](https://github.com/users/Vinh5905/projects/8). Tiêu đề issue bắt đầu bằng mã task, ví dụ `AD-DE-02 — …`.
 
@@ -8,7 +8,7 @@ Mỗi task là một issue trên GitHub và một thẻ trên GitHub Project [ET
 
 | Mã | File | Số task |
 |---|---|---:|
-| `AD-OPS-xx` | [DevOps / nền tảng](01_devops.md) | 36 |
+| `AD-OPS-xx` | [DevOps / nền tảng](01_devops.md) | 37 |
 | `AD-DE-xx` | [DE batch](02_de_batch.md) | 27 |
 | `AD-ST-xx` | [DE streaming](03_de_stream.md) | 10 |
 | `AD-BI-xx` | [Power BI](04_power_bi.md) | 12 |
@@ -87,9 +87,10 @@ Muốn thấy kết quả ngay thì chạy tay `python3 scripts/sync_task_board.
 | [AD-OPS-18](01_devops.md#ad-ops-18) | Thêm service principal CI, SP Function và user theo vai trò vào workspace (30-databricks bước 2) | P1 | G1 | Bắt đầu: AD-OPS-10, AD-OPS-11 | AD-OPS-20 (bắt đầu), AD-OPS-21 (bắt đầu), AD-OPS-22 (bắt đầu), AD-DS-23 (bắt đầu) | [#20](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/20) |
 | [AD-OPS-19](01_devops.md#ad-ops-19) | Tạo storage credential, external location, catalog instacart, 8 schema và volume (30-databricks bước 3–4) | P1 | G1 | Bắt đầu: AD-OPS-10, AD-OPS-11 | AD-OPS-20 (bắt đầu), AD-DE-08 (hoàn tất), AD-DE-20 (hoàn tất), AD-DE-21 (hoàn tất) | [#21](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/21) |
 | [AD-OPS-20](01_devops.md#ad-ops-20) | Cấp quyền Unity Catalog theo vai trò (30-databricks bước 5) | P1 | G1 | Bắt đầu: AD-OPS-18, AD-OPS-19 | AD-OPS-23 (bắt đầu), AD-OPS-30 (bắt đầu), AD-DE-08 (hoàn tất), AD-DE-16 (hoàn tất), AD-DE-18 (hoàn tất), AD-DE-20 (hoàn tất), AD-DE-21 (hoàn tất), AD-ST-03 (hoàn tất), AD-BI-02 (hoàn tất), AD-DS-22 (hoàn tất) | [#22](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/22) |
-| [AD-OPS-21](01_devops.md#ad-ops-21) | Tạo cluster policy single-node, pipeline và ds-benchmark, chặn tạo cluster tự do (30-databricks bước 6) | P1 | G1 | Bắt đầu: AD-OPS-18 | AD-OPS-23 (bắt đầu), AD-OPS-30 (bắt đầu), AD-DE-08 (hoàn tất), AD-ST-03 (hoàn tất) | [#23](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/23) |
+| [AD-OPS-21](01_devops.md#ad-ops-21) | Tạo cluster policy single-node, pipeline và ds-benchmark, chặn tạo cluster tự do (30-databricks bước 6) | P1 | G1 | Bắt đầu: AD-OPS-18 | AD-OPS-21b (bắt đầu), AD-OPS-23 (bắt đầu), AD-OPS-30 (bắt đầu), AD-DE-08 (hoàn tất), AD-ST-03 (hoàn tất) | [#23](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/23) |
+| [AD-OPS-21b](01_devops.md#ad-ops-21b) | Chặn cluster không tự tắt và gắn policy cho cluster bảo trì của pipeline | P1 | G1 | Bắt đầu: AD-OPS-21; Hoàn tất: AD-DE-08 | AD-OPS-23 (hoàn tất) | [#180](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/180) |
 | [AD-OPS-22](01_devops.md#ad-ops-22) | Tạo secret scope Key Vault, serverless SQL warehouse và output cho DAB, Power BI (30-databricks bước 7–9) | P1 | G1 | Bắt đầu: AD-OPS-18; Hoàn tất: AD-OPS-12 | AD-OPS-23 (bắt đầu), AD-DE-05 (hoàn tất), AD-DE-16 (hoàn tất), AD-DE-18 (hoàn tất), AD-ST-03 (hoàn tất), AD-BI-02 (hoàn tất), AD-DS-12 (hoàn tất) | [#24](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/24) |
-| [AD-OPS-23](01_devops.md#ad-ops-23) | Nghiệm thu G1: chạy 30-databricks qua CI và thử de-deploy dev/prod | P1 | G1 | Bắt đầu: AD-OPS-17, AD-OPS-20, AD-OPS-21, AD-OPS-22; Hoàn tất: AD-DE-18 | AD-OPS-26 (bắt đầu), AD-OPS-27 (bắt đầu), AD-OPS-31 (bắt đầu), AD-DE-19 (hoàn tất) | [#25](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/25) |
+| [AD-OPS-23](01_devops.md#ad-ops-23) | Nghiệm thu G1: chạy 30-databricks qua CI và thử de-deploy dev/prod | P1 | G1 | Bắt đầu: AD-OPS-17, AD-OPS-20, AD-OPS-21, AD-OPS-22; Hoàn tất: AD-DE-18, AD-OPS-21b | AD-OPS-26 (bắt đầu), AD-OPS-27 (bắt đầu), AD-OPS-31 (bắt đầu), AD-DE-19 (hoàn tất) | [#25](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/25) |
 | [AD-OPS-24](01_devops.md#ad-ops-24) | Dựng stack 20-stream (Event Hubs, SAS, secret) và nghiệm thu stream-toggle | P3 | G2 | Bắt đầu: AD-OPS-02, AD-OPS-10; Hoàn tất: AD-OPS-03b | AD-OPS-33 (bắt đầu), AD-ST-02 (hoàn tất), AD-ST-03 (hoàn tất), AD-ST-08 (hoàn tất), AD-ST-09 (hoàn tất) | [#26](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/26) |
 | [AD-OPS-25](01_devops.md#ad-ops-25) | Khai báo linked service và dataset ADF trong stack 40-orchestration | P1 | G3 | Bắt đầu: AD-OPS-12, AD-OPS-13; Hoàn tất: AD-OPS-17 | AD-OPS-26 (bắt đầu), AD-OPS-27 (bắt đầu), AD-DE-06 (hoàn tất), AD-DE-07 (hoàn tất), AD-DE-19 (hoàn tất) | [#27](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/27) |
 | [AD-OPS-26](01_devops.md#ad-ops-26) | Đưa pipeline và trigger ADF vào 40-orchestration, bật lịch hằng ngày khi pl_master đạt | P1 | G3 | Bắt đầu: AD-OPS-23, AD-OPS-25; Hoàn tất: AD-DE-06, AD-DE-07, AD-DE-19, AD-DE-18 | AD-OPS-33 (hoàn tất) | [#28](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/28) |
@@ -108,7 +109,7 @@ Muốn thấy kết quả ngay thì chạy tay `python3 scripts/sync_task_board.
 | [AD-DE-05](02_de_batch.md#ad-de-05) | Viết seed_retail_db theo đợt và job chạy seed | P2 | G1 | Chuẩn bị ngay; Hoàn tất: AD-DE-04, AD-OPS-22 | AD-DE-07 (hoàn tất) | [#41](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/41) |
 | [AD-DE-06](02_de_batch.md#ad-de-06) | Dựng ADF pl_ingest_instacart chép CSV Zenodo vào landing | P2 | G1 | Chuẩn bị ngay; Hoàn tất: AD-OPS-25 | AD-OPS-26 (hoàn tất), AD-DE-09 (hoàn tất) | [#42](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/42) |
 | [AD-DE-07](02_de_batch.md#ad-de-07) | Dựng ADF pl_ingest_retail_db đọc CDC theo LSN | P2 | G1 | Bắt đầu: AD-DE-04; Hoàn tất: AD-DE-05, AD-OPS-25 | AD-OPS-26 (hoàn tất), AD-DE-09 (hoàn tất), AD-DE-19 (bắt đầu) | [#43](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/43) |
-| [AD-DE-08](02_de_batch.md#ad-de-08) | Khai báo pipeline instacart_batch trong DAB với schema dev riêng | P2 | G1 | Chuẩn bị ngay; Hoàn tất: AD-OPS-19, AD-OPS-21, AD-OPS-20, AD-OPS-05 | AD-DE-09 (hoàn tất), AD-DE-16 (hoàn tất), AD-DE-18 (bắt đầu), AD-ST-03 (hoàn tất) | [#44](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/44) |
+| [AD-DE-08](02_de_batch.md#ad-de-08) | Khai báo pipeline instacart_batch trong DAB với schema dev riêng | P2 | G1 | Chuẩn bị ngay; Hoàn tất: AD-OPS-19, AD-OPS-21, AD-OPS-20, AD-OPS-05 | AD-OPS-21b (hoàn tất), AD-DE-09 (hoàn tất), AD-DE-16 (hoàn tất), AD-DE-18 (bắt đầu), AD-ST-03 (hoàn tất) | [#44](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/44) |
 | [AD-DE-09](02_de_batch.md#ad-de-09) | Viết bronze.py nạp landing vào bronze bằng Auto Loader | P2 | G1 | Chuẩn bị ngay; Hoàn tất: AD-DE-06, AD-DE-07, AD-DE-08 | AD-DE-10 (hoàn tất), AD-DE-11 (hoàn tất), AD-DE-12 (hoàn tất) | [#45](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/45) |
 | [AD-DE-10](02_de_batch.md#ad-de-10) | Viết crawler Open Food Facts và tải ảnh theo lô | P2 | G3 | Chuẩn bị ngay; Hoàn tất: AD-DE-09 | AD-DE-13 (hoàn tất), AD-DE-19 (hoàn tất) | [#46](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/46) |
 | [AD-DE-11](02_de_batch.md#ad-de-11) | Dựng silver SCD2 lịch sử giá và SCD1 khuyến mãi | P2 | G3 | Chuẩn bị ngay; Hoàn tất: AD-DE-03, AD-DE-09 | AD-DE-14 (hoàn tất), AD-DE-22 (hoàn tất) | [#47](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/47) |
