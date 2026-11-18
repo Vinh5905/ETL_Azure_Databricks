@@ -68,8 +68,11 @@ resource "databricks_service_principal" "ci" {
 
   # Đây là chính danh tính đang chạy apply và là run_as của job prod. Hủy stack (AD-OPS-34) thì
   # gỡ dòng này trước, và hủy bundle prod trước 30-databricks.
+  # display_name: SP này do Databricks tự thêm từ Entra (Source = External), workspace giữ tên
+  # "Unnamed service principal" và không nhận tên mới, nên bỏ qua để plan về No changes.
   lifecycle {
     prevent_destroy = true
+    ignore_changes  = [display_name]
   }
 }
 
