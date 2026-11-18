@@ -798,7 +798,7 @@ Quota 4 vCPU buộc cưỡng chế single-node và tự tắt; policy cố đị
 2. Policy loại dlt instacart-pipeline-single-node theo de/02 §2.1
 3. Policy instacart-ds-benchmark cho chọn local[1]/[2]/[4]/[*]
 4. databricks_permissions CAN_USE cho thành viên và SP CI (ds-benchmark: vai ds + SP CI)
-5. databricks_entitlements tắt allow_cluster_create của nhóm users
+5. Bảo đảm không ai không phải admin có allow_cluster_create: principal của bước 2 đặt false; nhóm users không sửa được bằng API (workspace từ chối) và vốn không có entitlement
 6. Đánh dấu [x] bước 6
 
 **Đầu ra**

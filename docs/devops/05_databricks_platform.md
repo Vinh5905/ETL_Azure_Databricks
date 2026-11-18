@@ -289,7 +289,7 @@ resource "databricks_permissions" "policy_use" {
 }
 ```
 
-Chặn tạo cluster tự do: tắt quyền *Unrestricted cluster creation* của nhóm `users` (`databricks_entitlements`), để mọi người buộc phải dùng policy.
+Chặn tạo cluster tự do: mọi principal do Terraform tạo đặt `allow_cluster_create = false` (bước 2), để ai không phải admin buộc phải dùng policy. Không quản entitlement của nhóm `users`: workspace của dự án từ chối sửa entitlement nhóm `users` và `admins` (lỗi khi apply AD-OPS-21), và nhóm này vốn không có entitlement nào, nên không cấp quyền tạo cluster cho ai.
 
 **Job cluster dùng policy thế nào (kết quả spike 3.4):**
 - Job cluster **không** đặt `apply_policy_default_values: true`. Policy có `autotermination_minutes`, mà job cluster gặp trường này qua giá trị mặc định thì báo "Automated clusters do not support autotermination". Job cluster tự tắt khi job xong, nên không cần trường này.
@@ -326,7 +326,6 @@ resource "databricks_cluster_policy" "ds_benchmark" {
 - Phần chung của `instacart-single-node` và `instacart-ds-benchmark` nằm trong `local.single_node_policy`; hai policy chỉ thêm `spark.master` riêng. Máy và runtime nằm ở `local.node_type_id`, `local.spark_version`.
 - Một `databricks_permissions.policy_use` lặp theo 3 policy: `single_node` và `pipeline` cho mọi thành viên, `ds_benchmark` cho vai `ds`; cả ba thêm SP CI. `user_name` lấy từ `databricks_user.members`, giống grant ở bước 5.
 - Cả ba policy cấm `instance_pool_id`. Policy `dlt` cố định thêm `spark.databricks.cluster.profile = singleNode` (spike 3.4 cần profile này), nên pipeline trong bundle phải khai `spark_conf` như mẫu ở de/02 §2.2.
-- `databricks_entitlements.users` ghi đè cả bộ entitlement của nhóm `users`, nên khai lại `workspace_access` và `databricks_sql_access` bằng `true`. Bỏ hai dòng này thì user không phải admin mất quyền vào workspace.
 
 > Instance pool chỉ có lợi khi chạy nhiều job ngắn liên tiếp. Với quota 4 vCPU, VM idle trong pool vẫn **chiếm quota**. Mặc định **không** dùng pool.
 

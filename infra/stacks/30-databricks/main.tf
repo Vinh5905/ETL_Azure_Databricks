@@ -434,18 +434,8 @@ resource "databricks_permissions" "policy_use" {
   }
 }
 
-# Tắt "Unrestricted cluster creation" của nhóm users (mọi user và SP đều thuộc nhóm này), để ai
-# không phải admin chỉ tạo được cluster qua policy. Resource này ghi đè cả bộ entitlement của nhóm,
-# nên giữ workspace_access và databricks_sql_access đang bật mặc định, kẻo khóa cả workspace.
-# Hệ quả: SP Function (thuộc nhóm users) vẫn thừa hưởng hai quyền này dù tự nó đặt false ở bước 2.
-data "databricks_group" "users" {
-  display_name = "users"
-}
-
-resource "databricks_entitlements" "users" {
-  group_id                   = data.databricks_group.users.id
-  workspace_access           = true
-  databricks_sql_access      = true
-  allow_cluster_create       = false
-  allow_instance_pool_create = false
-}
+# Không quản entitlement của nhóm users bằng Terraform: workspace này từ chối sửa entitlement của
+# nhóm users và admins ("not permitted for this workspace", tf-apply AD-OPS-21). Nhóm users ở đây
+# vốn không có entitlement nào (kể cả allow_cluster_create), nên quyền tạo cluster tự do chỉ đến từ
+# entitlement của từng principal: thành viên, SP CI và SP Function đều đặt allow_cluster_create = false
+# ở bước 2. Người không phải admin vì vậy chỉ tạo được cluster qua policy có CAN_USE.
