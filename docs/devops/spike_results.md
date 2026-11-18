@@ -10,7 +10,7 @@ Ngày làm spike: 2026-11-16 → 2026-11-17 (Sub A) · Người tổng hợp: P1
 |---|---|---|---|---|---|---|---|---|
 | P1 | 2.91.0 | 1.16.5 | 0.66.0 | 1.26.0 | 2.104.0 | 0.9.21 (Python 3.11.14) | 29.1.3 | macOS arm64, kiểm ngày 2026-11-16. Thêm: trivy 0.76.2, pre-commit 4.7.0, AzCopy 10.34.2, Infracost 2.19.1. tflint cài từ GitHub release. Docker cấp 10 CPU, 15,6 GB RAM, thiếu một chút so với mốc 16 GB cho benchmark DS. `pre-commit run --all-files` chạy được |
 | P2 | | | | | | | | |
-| P3 | | | | | | | | |
+| P3 | | | | | | | | Windows, kiểm ngày 2026-11-18: Power BI Desktop 2.159.1231.0 (Microsoft Store) đã mở được. Đã xác nhận Codex có bộ skill Databricks chính thức v0.2.49 |
 | P4 | | | | | | | | |
 
 ## 2. Kết quả phép thử
