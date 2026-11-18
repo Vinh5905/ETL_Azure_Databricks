@@ -14,7 +14,7 @@ JSON được dựng theo API và đã kiểm model SDK. Terraform phụ trách 
 | `pipelines/pl_ingest_instacart.json` | **Mảng activities** pipeline cha | Gửi nguyên làm `properties.activities` |
 | `pipelines/pl_ingest_instacart_table.json` | Mảng activities pipeline con | Stack tự tạo con trước cha theo `referenceName` `pl_*` |
 | `pipeline_settings/<pipeline>.json` | `concurrency` và `parameters` mặc định | P1 phải nạp cùng activities, không bỏ qua |
-| `datasets/*.json` | 3 định nghĩa dataset với linked service theo tên | Hợp đồng cho AD-OPS-25; chưa tạo resource Terraform trong PR này |
+| `datasets/*.json` | 3 định nghĩa dataset với linked service theo tên | Stack `40-orchestration` publish mọi file bằng `azapi_resource` (AD-OPS-25); `name` phải trùng tên file |
 | `assets/_SUCCESS` | Template 0 byte | P1 đưa đúng file vào `landing/ops/_SUCCESS` trước lần chạy đầu |
 
 Stack `40-orchestration` khai mọi tham số pipeline là **String** (`settings.parameters` là map chuỗi).
