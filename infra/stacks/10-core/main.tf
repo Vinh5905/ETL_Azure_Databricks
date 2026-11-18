@@ -136,6 +136,17 @@ resource "azurerm_role_assignment" "kv_officer" {
   principal_type       = each.value.principal_type
 }
 
+# Cho secret scope "kv" của 30-databricks (bước 7): Databricks đọc Key Vault bằng ứng dụng first-party
+# AzureDatabricks (application ID cố định 2ff814a6-3304-4ab8-85cb-cd0e6f879c1d), không bằng người gọi
+# dbutils.secrets.get. Object ID của ứng dụng này khác nhau theo tenant; truyền qua biến để UAMI CI
+# không cần quyền đọc Microsoft Graph.
+resource "azurerm_role_assignment" "kv_databricks" {
+  scope                = module.kv.resource_id
+  role_definition_name = "Key Vault Secrets User"
+  principal_id         = var.databricks_app_object_id
+  principal_type       = "ServicePrincipal"
+}
+
 # Mật khẩu login sqladmin. Ký tự đặc biệt giới hạn ở nhóm an toàn cho connection string
 # (ADF linked service, pymssql), tránh ; { } = ' ".
 resource "random_password" "sql" {

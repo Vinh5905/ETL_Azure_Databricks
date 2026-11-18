@@ -351,6 +351,22 @@ resource "databricks_secret_acl" "kv_read" {        # nếu không cấp, chỉ 
 
 > **Lưu ý đã biết:** API tạo secret scope **dựa trên Key Vault** yêu cầu token Entra của **người dùng**; service principal và managed identity không gọi được. Vì vậy resource này do **P1 apply từ máy local** (auth `azure-cli` bằng tài khoản người). Trong CI thì thêm `lifecycle { ignore_changes = all }` hoặc tách resource ra một thư mục riêng. Ngoài ra, Key Vault phải cấp role **Key Vault Secrets User** cho ứng dụng *AzureDatabricks* (application ID cố định `2ff814a6-3304-4ab8-85cb-cd0e6f879c1d`) thì Databricks mới đọc được bí mật.
 
+**Code thật trong stack** (AD-OPS-22):
+- Role Key Vault Secrets User cho ứng dụng AzureDatabricks nằm ở `10-core` (`azurerm_role_assignment.kv_databricks`). Object ID của ứng dụng khác nhau theo tenant nên đi qua biến `databricks_app_object_id` (GitHub Variable `TF_VAR_DATABRICKS_APP_OBJECT_ID`, xem [04 §4](04_github_actions_cicd.md)).
+- ACL tách hai resource: `databricks_secret_acl.kv_member` cho vai `de` và `ds` (lấy `user_name` từ `databricks_user.members`), `databricks_secret_acl.kv_ci` cho SP CI.
+- ACL của `p1` là MANAGE (người tạo scope), của các thành viên khác là READ.
+- Thứ tự làm (một PR gồm cả `10-core` và `30-databricks`):
+  1. Đặt GitHub Variable `TF_VAR_DATABRICKS_APP_OBJECT_ID` trước khi PR chạy `tf-plan`. Biến bắt buộc, thiếu thì plan `10-core` lỗi. P1 thêm biến này vào `terraform.auto.tfvars` của `10-core` ở máy.
+  2. **Ngay trước khi merge**, P1 tạo scope từ máy (lệnh dưới). Từ lúc này tới lúc merge, không merge PR `infra/**` hay `adf/**` nào khác: state đã có scope mà config trên `main` chưa có, `tf-apply` của PR khác sẽ xóa scope (`ignore_changes` không chặn được destroy).
+  3. Chạy lại `tf-plan` của PR, xác nhận `databricks_secret_scope.kv` không còn là `create`, rồi merge. `tf-apply` gán role ở `10-core` trước, rồi tạo ACL và warehouse ở `30-databricks`.
+
+  ```bash
+  cd infra/stacks/30-databricks
+  terraform init -backend-config=../../backend.hcl
+  cp terraform.auto.tfvars.example terraform.auto.tfvars   # rồi điền UPN thật, giống GitHub Secret TF_VAR_MEMBER_UPNS
+  ALLOW_TF_APPLY=1 terraform apply -target=databricks_secret_scope.kv -var-file=../../envs/30-databricks.tfvars
+  ```
+
 ### Bước 8 · SQL warehouse (lớp phục vụ Power BI)
 
 **Vì sao:** Power BI cần một endpoint SQL ổn định (host + HTTP path) để DirectQuery hoặc import từ `gold`. **Serverless** khởi động trong vài giây, tự tắt và **không tính vào quota vCPU** của subscription. Warehouse classic/pro thì chạy VM trong Sub A, cỡ nhỏ nhất đã vượt 4 vCPU.
@@ -367,7 +383,7 @@ resource "databricks_sql_endpoint" "bi" {
   tags {
     custom_tags {
       key   = "owner"
-      value = "p4"
+      value = "p3"
     }
   }
 }
@@ -378,6 +394,8 @@ resource "databricks_permissions" "wh_use" {
 output "warehouse_http_path" { value = databricks_sql_endpoint.bi.odbc_params[0].path }
 ```
 
+**Code thật trong stack** (AD-OPS-22): tag `owner = p3` vì P3 lo Power BI. `databricks_permissions.warehouse_use` cho mọi thành viên có vai CAN_USE, riêng `p1` CAN_MANAGE; SP CI tạo warehouse nên provider tự giữ CAN_MANAGE của nó. Workspace còn có sẵn "Serverless Starter Warehouse" (Small) do Databricks tạo, không nằm trong Terraform.
+
 Nếu serverless **không** dùng được thì bỏ resource này và dùng lớp serving dự phòng (tài liệu 06, mục 4).
 
 ### Bước 9 · Output cho DAB và Power BI
@@ -385,7 +403,7 @@ Nếu serverless **không** dùng được thì bỏ resource này và dùng l�
 ```hcl
 output "catalog"              { value = databricks_catalog.instacart.name }
 output "cluster_policy_id"    { value = databricks_cluster_policy.single_node.id }
-output "ci_sp_application_id" { value = databricks_service_principal.ci.application_id }
+output "ci_sp_application_id" { value = databricks_service_principal.ci.application_id }  # stack thật thêm sensitive = true
 output "warehouse_id"         { value = databricks_sql_endpoint.bi.id }
 ```
 

@@ -1,0 +1,16 @@
+# Sao chép thành terraform.auto.tfvars (đã nằm trong .gitignore) rồi điền giá trị thật.
+# Dùng khi P1 chạy plan/apply 30-databricks từ máy, ví dụ tạo secret scope kv (docs/devops/05 bước 7).
+# Giá trị không bí mật (roles) nằm ở infra/envs/30-databricks.tfvars, truyền bằng -var-file.
+
+# Storage account chứa state, khớp infra/backend.hcl (CI: TF_VAR_tfstate_account).
+tfstate_account = "sttfstatez87e6"
+
+# Tài khoản Entra (UPN) thành viên dùng đăng nhập workspace, KHÔNG phải hộp thư gm.
+# Phải giống hệt GitHub Secret TF_VAR_MEMBER_UPNS, nếu không plan ở máy lệch với CI và
+# databricks_user bị đổi tên. Tra UPN: az ad user show --id <email trường> --query userPrincipalName -o tsv
+member_upns = {
+  p1 = "00000001@ms.uit.edu.vn"
+  p2 = "00000002@ms.uit.edu.vn"
+  p3 = "00000003@ms.uit.edu.vn"
+  p4 = "00000004@ms.uit.edu.vn"
+}

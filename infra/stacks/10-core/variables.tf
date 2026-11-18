@@ -48,3 +48,13 @@ variable "member_emails" {
     error_message = "Mỗi giá trị trong member_emails phải là một địa chỉ email."
   }
 }
+
+variable "databricks_app_object_id" {
+  description = "Object ID của service principal ứng dụng AzureDatabricks trong tenant (az ad sp show --id 2ff814a6-3304-4ab8-85cb-cd0e6f879c1d --query id -o tsv). Dùng để cấp Key Vault Secrets User cho secret scope kv (30-databricks bước 7). Local: terraform.auto.tfvars; CI: GitHub Variable TF_VAR_DATABRICKS_APP_OBJECT_ID."
+  type        = string
+
+  validation {
+    condition     = can(regex("^[0-9a-fA-F-]{36}$", var.databricks_app_object_id))
+    error_message = "databricks_app_object_id phải là một GUID."
+  }
+}

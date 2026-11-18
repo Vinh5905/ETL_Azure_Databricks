@@ -295,6 +295,7 @@ Chỉ làm khi đã dựng stack `50-serving` ([03 §5.1](03_terraform_azure.md)
 | `TFSTATE_ACCOUNT` | Variable | `backend.hcl` / remote state |
 | `DATABRICKS_HOST` | Variable | `de-deploy` |
 | `TF_VAR_MEMBER_OBJECT_IDS` (JSON, map vai → object ID) | Variable, map vào `TF_VAR_member_object_ids` | Stack `10-core` (bước 3.6, 3.8), `30-databricks` |
+| `TF_VAR_DATABRICKS_APP_OBJECT_ID` (object ID của ứng dụng AzureDatabricks trong tenant, lấy bằng `az ad sp show --id 2ff814a6-3304-4ab8-85cb-cd0e6f879c1d --query id -o tsv`) | Variable, map vào `TF_VAR_databricks_app_object_id` | Stack `10-core` (role Key Vault Secrets User cho secret scope `kv`, [05 bước 7](05_databricks_platform.md)) |
 | `TF_VAR_MEMBER_IPS` (JSON, map vai → IP public) | Variable, map vào `TF_VAR_member_ips` | Stack `10-core` (firewall Azure SQL, bước 3.6) |
 | `TF_VAR_MEMBER_EMAILS` (JSON, map vai → email) | **Secret**, map vào `TF_VAR_member_emails` | Stack `10-core` (action group nhận cảnh báo budget, bước 3.9). Secret vì repo public và Variable hiện rõ trong log |
 | `TF_VAR_MEMBER_UPNS` (JSON, map vai → UPN Entra `<mssv>@ms.uit.edu.vn`) | **Secret**, map vào `TF_VAR_member_upns` | Stack `30-databricks` (`databricks_user`, bước 2). Phải là tài khoản đăng nhập Entra, không phải hộp thư `gm` ở `TF_VAR_MEMBER_EMAILS`; cùng key `p1`…`p4` |

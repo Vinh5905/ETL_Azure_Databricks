@@ -9,7 +9,7 @@ mask() {
 }
 
 for v in "${ARM_SUBSCRIPTION_ID:-}" "${TF_VAR_subscription_id_a:-}" "${TF_VAR_subscription_id_b:-}" \
-  "${ARM_TENANT_ID:-}" "${ARM_CLIENT_ID:-}"; do
+  "${ARM_TENANT_ID:-}" "${ARM_CLIENT_ID:-}" "${TF_VAR_databricks_app_object_id:-}"; do
   mask "$v"
 done
 

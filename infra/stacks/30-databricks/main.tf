@@ -7,9 +7,9 @@
 # [x] 4. Catalog instacart, 8 schema, volume raw + checkpoints
 # [x] 5. Grants Unity Catalog (một khối databricks_grants cho mỗi securable)
 # [x] 6. Cluster policy (single-node, pipeline, ds-benchmark) + tắt unrestricted cluster creation
-# [ ] 7. Secret scope dựa trên Key Vault (P1 apply từ máy local)
-# [ ] 8. Serverless SQL warehouse wh-instacart-bi
-# [ ] 9. Output cho DAB và Power BI
+# [x] 7. Secret scope dựa trên Key Vault (P1 apply từ máy local)
+# [x] 8. Serverless SQL warehouse wh-instacart-bi
+# [x] 9. Output cho DAB và Power BI
 
 data "terraform_remote_state" "core" {
   backend = "azurerm"
@@ -439,3 +439,83 @@ resource "databricks_permissions" "policy_use" {
 # vốn không có entitlement nào (kể cả allow_cluster_create), nên quyền tạo cluster tự do chỉ đến từ
 # entitlement của từng principal: thành viên, SP CI và SP Function đều đặt allow_cluster_create = false
 # ở bước 2. Người không phải admin vì vậy chỉ tạo được cluster qua policy có CAN_USE.
+
+# ---------------------------------------------------------------------------
+# Bước 7 · Secret scope dựa trên Key Vault (docs/devops/05 bước 7)
+# ---------------------------------------------------------------------------
+# Notebook đọc bí mật bằng dbutils.secrets.get("kv", "<tên secret>"); giá trị nằm ở Key Vault của 10-core.
+# Databricks đọc vault bằng ứng dụng AzureDatabricks (role Key Vault Secrets User cấp ở 10-core,
+# azurerm_role_assignment.kv_databricks).
+#
+# API tạo scope dựa trên Key Vault chỉ nhận token Entra của người dùng, không nhận service principal
+# hay managed identity. Vì vậy P1 tạo scope từ máy, trước khi merge PR thêm resource này:
+#   terraform apply -target=databricks_secret_scope.kv -var-file=../../envs/30-databricks.tfvars
+# ignore_changes = all để CI chỉ đọc lại scope, không cố tạo hay sửa nó.
+resource "databricks_secret_scope" "kv" {
+  name = "kv"
+
+  keyvault_metadata {
+    resource_id = local.core.key_vault_id
+    dns_name    = local.core.key_vault_uri
+  }
+
+  lifecycle {
+    ignore_changes = all
+  }
+}
+
+# Vai de và ds đọc được scope, cộng SP CI (job prod). P1 là người tạo scope (ACL MANAGE), nên giữ
+# MANAGE: PUT ACL READ cho cùng principal sẽ hạ quyền đó xuống.
+locals {
+  secret_readers = toset(concat(lookup(var.roles, "de", []), lookup(var.roles, "ds", [])))
+}
+
+resource "databricks_secret_acl" "kv_member" {
+  for_each = local.secret_readers
+
+  scope      = databricks_secret_scope.kv.name
+  principal  = databricks_user.members[each.key].user_name
+  permission = each.key == "p1" ? "MANAGE" : "READ"
+}
+
+resource "databricks_secret_acl" "kv_ci" {
+  scope      = databricks_secret_scope.kv.name
+  principal  = databricks_service_principal.ci.application_id
+  permission = "READ"
+}
+
+# ---------------------------------------------------------------------------
+# Bước 8 · Serverless SQL warehouse cho Power BI (docs/devops/05 bước 8)
+# ---------------------------------------------------------------------------
+# Serverless không chạy VM trong Sub A nên không tính vào quota 4 vCPU. Spike 3.4: wh-spike 2X-Small
+# lên RUNNING sau 6 giây. Một cluster, tự tắt sau 10 phút không có truy vấn.
+resource "databricks_sql_endpoint" "bi" {
+  name                      = "wh-instacart-bi"
+  cluster_size              = "2X-Small"
+  min_num_clusters          = 1
+  max_num_clusters          = 1
+  auto_stop_mins            = 10
+  enable_serverless_compute = true
+  warehouse_type            = "PRO"
+
+  tags {
+    custom_tags {
+      key   = "owner"
+      value = "p3" # P3 lo Power BI
+    }
+  }
+}
+
+# Mọi thành viên có vai được CAN_USE (bi đọc gold, de và ds chạy truy vấn kiểm tra); P1 CAN_MANAGE.
+# SP CI là người tạo warehouse nên provider tự giữ quyền CAN_MANAGE của nó.
+resource "databricks_permissions" "warehouse_use" {
+  sql_endpoint_id = databricks_sql_endpoint.bi.id
+
+  dynamic "access_control" {
+    for_each = local.members
+    content {
+      user_name        = databricks_user.members[access_control.value].user_name
+      permission_level = access_control.value == "p1" ? "CAN_MANAGE" : "CAN_USE"
+    }
+  }
+}
