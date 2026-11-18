@@ -150,7 +150,7 @@ resources:
           policy_id: ${var.pipeline_policy_id}
           num_workers: 0
           spark_conf: { spark.databricks.cluster.profile: singleNode }   # policy fixed, phải khai
-          custom_tags: { owner: p3 }
+          custom_tags: { cost_owner: p3 }
       configuration:
         catalog: ${var.catalog}
         bronze: ${var.schema_prefix}bronze

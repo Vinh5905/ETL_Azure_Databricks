@@ -350,6 +350,9 @@ resource "databricks_grants" "volume" {
 # Job cluster không dùng apply_policy_default_values (lỗi "Automated clusters do not support
 # autotermination"), nên phải tự khai đủ mọi trường fixed dưới đây (bundles/AGENTS.md).
 # Admin workspace bỏ qua được policy và entitlement; hiện mọi thành viên là admin (xem bước 2).
+# Tag người dùng của cluster là cost_owner, không phải owner: workspace mang Azure tag owner = p1 (naming_tags),
+# Databricks chép tag workspace xuống mọi cluster làm tag mặc định, nên custom_tags.owner bị đổi tên và policy
+# báo thiếu tag (lỗi de-deploy prod của job seed_retail_db, 2026-11-18).
 locals {
   node_type_id  = "Standard_D4ds_v4" # trùng biến node_type_id trong bundles/databricks.yml
   spark_version = "15.4.x-scala2.12" # DBR 15.4 LTS, khớp pyspark 3.5 ở pyproject
@@ -362,7 +365,7 @@ locals {
     "spark_conf.spark.databricks.cluster.profile" = { type = "fixed", value = "singleNode" }
     "custom_tags.ResourceClass"                   = { type = "fixed", value = "SingleNode" }
     "autotermination_minutes"                     = { type = "range", maxValue = 20, defaultValue = 15 }
-    "custom_tags.owner"                           = { type = "unlimited", isOptional = false }
+    "custom_tags.cost_owner"                      = { type = "unlimited", isOptional = false }
     "data_security_mode"                          = { type = "fixed", value = "SINGLE_USER" } # workspace không tự chọn access mode
     "instance_pool_id"                            = { type = "forbidden" }                    # VM idle trong pool vẫn chiếm quota
   }
@@ -400,7 +403,7 @@ resource "databricks_cluster_policy" "pipeline_single_node" {
     "node_type_id"                                = { type = "fixed", value = local.node_type_id }
     "num_workers"                                 = { type = "fixed", value = 0 }
     "spark_conf.spark.databricks.cluster.profile" = { type = "fixed", value = "singleNode" }
-    "custom_tags.owner"                           = { type = "unlimited", isOptional = false }
+    "custom_tags.cost_owner"                      = { type = "unlimited", isOptional = false }
     "instance_pool_id"                            = { type = "forbidden" }
   })
 }
@@ -500,8 +503,8 @@ resource "databricks_sql_endpoint" "bi" {
 
   tags {
     custom_tags {
-      key   = "owner"
-      value = "p3" # P3 lo Power BI
+      key   = "cost_owner" # không dùng "owner": trùng Azure tag của workspace (xem bước 6)
+      value = "p3"         # P3 lo Power BI
     }
   }
 }

@@ -7,7 +7,7 @@
   - `prod`: chạy bằng SP CI (`run_as` = `${var.ci_sp_id}`). CI đặt biến này qua `BUNDLE_VAR_ci_sp_id`.
   - Chỉ CI được deploy `prod`.
 - **Compute:**
-  - Job cluster luôn dùng `policy_id: ${var.policy_id}` (tra theo tên policy `instacart-single-node`) và `custom_tags.owner`.
+  - Job cluster luôn dùng `policy_id: ${var.policy_id}` (tra theo tên policy `instacart-single-node`) và `custom_tags.cost_owner` (không dùng khóa `owner`: workspace đã có Azure tag `owner = p1`, Databricks chép xuống cluster làm tag mặc định nên tag trùng tên bị đổi tên và policy từ chối).
   - **Không** đặt `apply_policy_default_values: true`: policy có `autotermination_minutes`, job cluster sẽ báo "Automated clusters do not support autotermination" (spike 3.4).
   - Vì vậy job cluster tự khai đủ trường `fixed` của policy: `spark_version: 15.4.x-scala2.12`, `node_type_id: ${var.node_type_id}`, `num_workers: 0`, `data_security_mode: SINGLE_USER`, `spark_conf` (`spark.databricks.cluster.profile: singleNode`, `spark.master`), `custom_tags.ResourceClass: SingleNode`. Mẫu ở `docs/de/06` §2.
   - Không ghi cứng tên máy; đổi máy thì sửa biến `node_type_id` trong `databricks.yml` cùng lúc với policy ở `infra/stacks/30-databricks`.

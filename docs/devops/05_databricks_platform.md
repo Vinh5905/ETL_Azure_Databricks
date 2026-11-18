@@ -260,7 +260,9 @@ resource "databricks_grants" "gold" {
 **Vì sao:**
 - Quota chỉ khoảng 4 vCPU, nên phải **cưỡng chế** cluster single-node và tự tắt. Không tin vào việc mọi người tự nhớ.
 - Policy cố định cấu hình máy và runtime, nên benchmark đọc/ghi (rubric 3.1) lặp lại được.
-- Tag `owner` bắt buộc trên cluster giúp chi phí DBU và VM tách được theo người.
+- Tag `cost_owner` bắt buộc trên cluster giúp chi phí DBU và VM tách được theo người.
+  - Không dùng khóa `owner`: workspace đã có Azure tag `owner = p1` (module `naming_tags`). Databricks chép mọi tag của workspace xuống cluster làm tag mặc định, nên tag cluster trùng tên bị đổi tên và policy báo thiếu tag (lỗi `de-deploy` prod của job seed ngày 2026-11-18).
+  - VM của cluster vì vậy mang cả `owner = p1` (của workspace) và `cost_owner` (người dùng thật). Lọc chi phí Databricks theo người thì dùng `cost_owner`.
 
 ```hcl
 resource "databricks_cluster_policy" "single_node" {
@@ -273,7 +275,7 @@ resource "databricks_cluster_policy" "single_node" {
     "spark_conf.spark.master"                     = { type = "fixed", value = "local[*]" }
     "custom_tags.ResourceClass"                   = { type = "fixed", value = "SingleNode" }
     "autotermination_minutes" = { type = "range", maxValue = 20, defaultValue = 15 }
-    "custom_tags.owner"       = { type = "unlimited", isOptional = false }
+    "custom_tags.cost_owner"  = { type = "unlimited", isOptional = false }
     "data_security_mode"      = { type = "fixed", value = "SINGLE_USER" }        # bắt buộc với UC
   })
 }
@@ -315,7 +317,7 @@ resource "databricks_cluster_policy" "ds_benchmark" {
                                   defaultValue = "local[*]" }
     "custom_tags.ResourceClass" = { type = "fixed", value = "SingleNode" }
     "autotermination_minutes" = { type = "range", maxValue = 20, defaultValue = 15 }
-    "custom_tags.owner"       = { type = "unlimited", isOptional = false }
+    "custom_tags.cost_owner"  = { type = "unlimited", isOptional = false }
     "data_security_mode"      = { type = "fixed", value = "SINGLE_USER" }
   })
 }
@@ -382,7 +384,7 @@ resource "databricks_sql_endpoint" "bi" {
   warehouse_type            = "PRO"
   tags {
     custom_tags {
-      key   = "owner"
+      key   = "cost_owner"
       value = "p3"
     }
   }
@@ -394,7 +396,7 @@ resource "databricks_permissions" "wh_use" {
 output "warehouse_http_path" { value = databricks_sql_endpoint.bi.odbc_params[0].path }
 ```
 
-**Code thật trong stack** (AD-OPS-22): tag `owner = p3` vì P3 lo Power BI. `databricks_permissions.warehouse_use` cho mọi thành viên có vai CAN_USE, riêng `p1` CAN_MANAGE; SP CI tạo warehouse nên provider tự giữ CAN_MANAGE của nó. Workspace còn có sẵn "Serverless Starter Warehouse" (Small) do Databricks tạo, không nằm trong Terraform.
+**Code thật trong stack** (AD-OPS-22): tag `cost_owner = p3` vì P3 lo Power BI. `databricks_permissions.warehouse_use` cho mọi thành viên có vai CAN_USE, riêng `p1` CAN_MANAGE; SP CI tạo warehouse nên provider tự giữ CAN_MANAGE của nó. Workspace còn có sẵn "Serverless Starter Warehouse" (Small) do Databricks tạo, không nằm trong Terraform.
 
 Nếu serverless **không** dùng được thì bỏ resource này và dùng lớp serving dự phòng (tài liệu 06, mục 4).
 

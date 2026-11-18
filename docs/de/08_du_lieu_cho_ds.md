@@ -228,7 +228,7 @@ resources:
             spark_conf:
               spark.databricks.cluster.profile: singleNode
               spark.master: "local[*]"
-            custom_tags: { ResourceClass: SingleNode, owner: p2 }
+            custom_tags: { ResourceClass: SingleNode, cost_owner: p2 }
 ```
 
 - `run_sql.py` đọc từng file, tách theo dấu `;` ở cuối câu, rồi chạy `spark.sql(stmt, args={"v": data_version})`. Tham số `:v` là *named parameter marker* của Spark SQL; tên bảng không đi qua tham số.

@@ -37,7 +37,7 @@ resource "databricks_cluster_policy" "pipeline_single_node" {
     "node_type_id"      = { type = "fixed", value = "Standard_D4ds_v4" }
     "num_workers"       = { type = "fixed", value = 0 }
     "spark_conf.spark.databricks.cluster.profile" = { type = "fixed", value = "singleNode" }  # thiếu thì cluster 0 worker không có executor
-    "custom_tags.owner" = { type = "unlimited", isOptional = false }
+    "custom_tags.cost_owner" = { type = "unlimited", isOptional = false }
     "instance_pool_id"  = { type = "forbidden" }
   })
 }
@@ -68,7 +68,7 @@ resources:
           policy_id: ${var.pipeline_policy_id}
           num_workers: 0
           spark_conf: { spark.databricks.cluster.profile: singleNode }   # policy fixed, phải khai
-          custom_tags: { owner: p2 }
+          custom_tags: { cost_owner: p2 }
       configuration:
         landing_root: /Volumes/${var.catalog}/landing_meta/raw
         catalog: ${var.catalog}

@@ -248,7 +248,7 @@ resources:
               spark.sql.adaptive.enabled: "false"
             spark_env_vars:
               PYTHONPATH: ${workspace.file_path}/src
-            custom_tags: { ResourceClass: SingleNode, owner: p4 }
+            custom_tags: { ResourceClass: SingleNode, cost_owner: p4 }
         # c2, c4: giống c1, chỉ khác spark.master = local[2] / local[4]
 ```
 

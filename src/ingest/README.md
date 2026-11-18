@@ -65,7 +65,7 @@ Chọn `server`/`database` đúng nguồn được cấp; dùng database thử r
 
 Theo chốt G0 #146 và `bundles/AGENTS.md`, job dùng classic single-node qua `${var.policy_id}`,
 khai đủ các trường fixed của policy: DBR 15.4 LTS, `${var.node_type_id}` (mặc định Standard_D4ds_v4),
-`num_workers: 0`, `SINGLE_USER`, Spark singleNode/local[*], tags owner p2/ResourceClass SingleNode.
+`num_workers: 0`, `SINGLE_USER`, Spark singleNode/local[*], tags cost_owner p2/ResourceClass SingleNode.
 **Không đặt `apply_policy_default_values` hoặc `autotermination_minutes`** vì job cluster không nhận
 thuộc tính auto-termination của policy; Databricks dừng cluster khi job kết thúc. Policy vẫn kiểm các giá trị
 fixed nên đây không phải bỏ qua policy. Không mở pool hoặc chọn VM ngoài cấu hình được P1 chốt.

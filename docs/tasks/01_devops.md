@@ -841,7 +841,7 @@ Tách từ AD-OPS-21: ba policy đã apply, còn hai lỗ hổng phải thử tr
 **Xong khi**
 
 - [ ] Tạo cluster với `autotermination_minutes = 0` bị policy từ chối, job cluster vẫn chạy được
-- [ ] Cluster bảo trì của pipeline dev chạy trên `Standard_D4ds_v4`, có tag `owner`
+- [ ] Cluster bảo trì của pipeline dev chạy trên `Standard_D4ds_v4`, có tag `cost_owner`
 
 ### AD-OPS-22
 

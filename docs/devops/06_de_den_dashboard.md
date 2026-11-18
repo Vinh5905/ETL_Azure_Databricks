@@ -209,7 +209,7 @@ Thông tin đăng nhập nguồn trên Service: OAuth bằng tài khoản P3, ho
 - [ ] Phát nốt khoảng 5% đơn → tile streaming tăng trong ≤ 1 phút; trang DirectQuery cập nhật sau khi refresh.
 - [ ] Bảng `ops.streaming_latency` có số liệu cùng region và khác region (rubric 3.3).
 - [ ] Bảng `ops.benchmark_results`: CSV, Parquet, Delta, Delta có OPTIMIZE (rubric 3.1, 3.4).
-- [ ] Bảng chi phí theo tag `owner`/`stack` trong Cost Management + ảnh chụp quota vCPU (rubric 5.4).
+- [ ] Bảng chi phí theo tag `owner`/`stack` (cluster và warehouse: `cost_owner`) trong Cost Management + ảnh chụp quota vCPU (rubric 5.4).
 
 ## 7. Sau G3/G4: phần Data Science (cổng G5)
 

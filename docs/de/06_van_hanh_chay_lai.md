@@ -77,7 +77,7 @@ resources:
             spark_conf:
               spark.databricks.cluster.profile: singleNode
               spark.master: "local[*]"
-            custom_tags: { ResourceClass: SingleNode, owner: p2 }
+            custom_tags: { ResourceClass: SingleNode, cost_owner: p2 }
 ```
 
 **Vì sao các task sau pipeline là `sql_task` trên serverless warehouse:**
@@ -250,4 +250,4 @@ Mỗi kịch bản cần ghi đủ 4 thứ: **ảnh lỗi**, **lệnh chạy l�
 | Job batch | Job runs; notification email cho P2 trong `job_batch.yml` | Lỗi, hoặc chạy > 60 phút |
 | Chất lượng | Trang 5 Power BI (`ops.dq_results`) | `failed / (passed + failed)` > 1% ở một luật |
 | Đối soát | `ops.reconciliation` | Có dòng `passed = false` |
-| Chi phí | Cost Management theo tag `owner` | Budget 50% |
+| Chi phí | Cost Management theo tag `owner` (resource Azure) và `cost_owner` (cluster, warehouse) | Budget 50% |
