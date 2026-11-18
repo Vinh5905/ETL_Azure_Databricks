@@ -6,6 +6,7 @@
   - `dev`: mode development, tiền tố `[dev <user>]`, schedule bị tạm dừng.
   - `prod`: chạy bằng SP CI (`run_as` = `${var.ci_sp_id}`). CI đặt biến này qua `BUNDLE_VAR_ci_sp_id`.
   - Chỉ CI được deploy `prod`.
+  - PR từ fork không được CI deploy `dev` hay `bundle validate`. Người làm trên fork tự chạy `databricks bundle validate -t dev` và `databricks bundle deploy -t dev` từ máy mình trước khi PR ready (`CONTRIBUTING.md` §3, mục "PR từ fork").
 - **Compute:**
   - Job cluster luôn dùng `policy_id: ${var.policy_id}` (tra theo tên policy `instacart-single-node`) và `custom_tags.cost_owner` (không dùng khóa `owner`: workspace đã có Azure tag `owner = p1`, Databricks chép xuống cluster làm tag mặc định nên tag trùng tên bị đổi tên và policy từ chối).
   - **Không** đặt `apply_policy_default_values: true`: policy có `autotermination_minutes`, job cluster sẽ báo "Automated clusters do not support autotermination" (spike 3.4).

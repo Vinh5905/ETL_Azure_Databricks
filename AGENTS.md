@@ -181,6 +181,14 @@ Chi tiết và ví dụ ở `CONTRIBUTING.md`. Luật được kiểm bằng `sc
 - Tạo bằng `gh pr create --title "…" --body-file <file>` (CLI không tự áp template). Kiểm thân trước: `python3 scripts/commit_lint.py --title "…" --pr-body-file <file>`.
 - Chỉ push và mở PR khi người dùng đồng ý.
 
+**PR từ fork (bắt buộc)**
+- Kiểm trước khi push: `git remote get-url origin` không phải `Vinh5905/ETL_Azure_Databricks` là đang làm trên fork. Nhánh đẩy thẳng lên repo gốc thì bỏ qua mục này.
+- PR từ fork không có GitHub Variables và OIDC, nên CI **không** chạy `bundle validate` (check `bundle` vẫn xanh), `de-deploy dev` và `tf-plan`.
+- Vì vậy agent phải tự chạy từ máy người dùng và ghi kết quả vào `## Cách kiểm tra`:
+  - PR đụng `src/**`, `bundles/**`: `databricks bundle validate -t dev`, `databricks bundle deploy -t dev`, chạy job/pipeline `[dev <user>]` bị sửa.
+  - PR đụng `infra/**`, `adf/**`: nhờ P1 chạy plan và dán tóm tắt lên PR.
+- Chi tiết ở `CONTRIBUTING.md` §3, mục "PR từ fork".
+
 ## Databricks agent skills (bắt buộc khi làm phần Databricks)
 
 Trước khi viết hoặc sửa bất kỳ thứ gì liên quan Databricks, agent phải xác nhận đã có bộ skill chính thức **databricks** (`databricks/databricks-agent-skills`). Các phần liên quan gồm: `bundles/`, `src/pipelines`, `infra/stacks/30-databricks`, Unity Catalog, job, SQL warehouse, streaming.

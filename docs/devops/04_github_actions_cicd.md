@@ -238,6 +238,8 @@ jobs:
           DATABRICKS_AUTH_TYPE: azure-cli     # dùng phiên đăng nhập của azure/login
 ```
 
+**PR từ fork:** GitHub không đưa Variables và token OIDC cho workflow của PR từ fork. Job `dev`, `dev-cleanup` bị skip, `pr-checks / bundle` chỉ in notice, `tf-plan` không có plan. Người làm trên fork phải tự `bundle validate` và `bundle deploy -t dev` từ máy mình, còn plan do P1 chạy hộ ([CONTRIBUTING.md](../../CONTRIBUTING.md) §3, mục "PR từ fork"). Nhánh đẩy thẳng lên repo gốc thì CI chạy đủ.
+
 UAMI phải được **thêm vào workspace** dưới dạng service principal (dùng application ID của UAMI) và được cấp quyền trong Unity Catalog. Việc này làm ở stack `30-databricks` ([05](05_databricks_platform.md)).
 
 ### 3.5 `stream-toggle.yml`: bật/tắt Event Hubs (Sub B)

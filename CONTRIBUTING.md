@@ -125,6 +125,29 @@ Quy tắc trung thực:
 gh pr create --title "feat(infra): add core storage account" --body-file /path/to/body.md
 ```
 
+### PR từ fork: tự chạy phần CI bỏ qua (bắt buộc)
+
+GitHub không đưa GitHub Variables và token OIDC cho workflow chạy từ PR của fork. Vì vậy các bước cần đăng nhập Azure hay Databricks **không chạy**, dù check vẫn có thể báo xanh:
+
+| Workflow | Với PR từ fork |
+|---|---|
+| `pr-checks / bundle` | Chỉ in notice rồi báo xanh, **không** chạy `bundle validate` |
+| `de-deploy` (`dev`, `dev-cleanup`) | Bị skip, không có job `[dev …]` nào được tạo |
+| `tf-plan` | Không có comment plan |
+| `pr-checks / cost` | Bỏ qua vì thiếu secret |
+
+Các kiểm tra chỉ đọc code (`python`, `terraform` validate, `trivy`, `pr-lint`…) vẫn chạy bình thường.
+
+**Nhận biết:** `git remote get-url origin` không trỏ tới `Vinh5905/ETL_Azure_Databricks`, hoặc `gh pr view <số> --json isCrossRepository` trả `true`. Nhánh đẩy thẳng lên repo gốc thì CI chạy đủ, không cần làm thêm phần dưới.
+
+**Việc phải tự làm trước khi chuyển PR sang ready** (ghi lệnh và kết quả vào `## Cách kiểm tra`):
+- **PR đụng `src/**` hoặc `bundles/**`:** từ máy mình, trong `bundles/`:
+  1. `databricks bundle validate -t dev`
+  2. `databricks bundle deploy -t dev`, rồi chạy job hoặc pipeline `[dev <user>] …` mà PR sửa.
+  3. Xong việc thì `databricks bundle destroy -t dev` nếu không cần giữ resource dev nữa (thay cho `dev-cleanup`).
+- **PR đụng `infra/**` hoặc `adf/**`:** nhờ P1 chạy plan chỉ đọc trên nhánh của PR và dán tóm tắt lên PR. Không merge khi chưa có plan.
+- Ghi rõ trong `## Chưa làm / để PR sau` bước nào chưa tự chạy được.
+
 **Merge:** squash merge, cần review của CODEOWNERS và các status check xanh (`pr-checks`, `pr-lint`).
 
 ## 4. Cài hook trên máy

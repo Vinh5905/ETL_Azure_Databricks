@@ -159,7 +159,7 @@ jobs:
       - uses: actions/checkout@v4
       - name: Bỏ qua khi chưa có workspace
         if: vars.DATABRICKS_HOST == ''
-        run: echo "::notice::Chưa đặt GitHub Variable DATABRICKS_HOST, bỏ qua bundle validate."
+        run: echo "::notice::Không có GitHub Variable DATABRICKS_HOST (chưa tới G1 hoặc PR từ fork), bỏ qua bundle validate. PR từ fork tự chạy bundle validate từ máy (CONTRIBUTING.md §3)."
       - uses: azure/login@v2
         if: vars.DATABRICKS_HOST != ''
         with:
