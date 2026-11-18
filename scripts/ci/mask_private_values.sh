@@ -13,9 +13,10 @@ for v in "${ARM_SUBSCRIPTION_ID:-}" "${TF_VAR_subscription_id_a:-}" "${TF_VAR_su
   mask "$v"
 done
 
-# Biến dạng JSON map (vai → giá trị). member_emails là secret nên GitHub chỉ che nguyên chuỗi JSON,
+# Biến dạng JSON map (vai → giá trị). member_emails, member_upns là secret nên GitHub chỉ che nguyên chuỗi JSON,
 # phải che từng email để log của 30-databricks (databricks_user) không lộ địa chỉ.
-for json in "${TF_VAR_member_object_ids:-}" "${TF_VAR_member_ips:-}" "${TF_VAR_member_emails:-}"; do
+for json in "${TF_VAR_member_object_ids:-}" "${TF_VAR_member_ips:-}" "${TF_VAR_member_emails:-}" \
+  "${TF_VAR_member_upns:-}"; do
   [ -n "$json" ] || continue
   # Che cả bản chữ thường: Databricks có thể trả userName đã hạ chữ.
   while read -r v; do

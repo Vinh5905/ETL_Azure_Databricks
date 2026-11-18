@@ -695,9 +695,9 @@ UAMI CI phải là service principal trong workspace để deploy bundle và ch�
 **Việc cần làm**
 
 1. databricks_service_principal ci (application_id = client id id-github-ci) và func (sp-func-recommend, không entitlement)
-2. Biến roles (de, ds, bi) chỉ chứa key người (p1…p4) nên đặt trong infra/envs/30-databricks.tfvars; email lấy từ secret TF_VAR_MEMBER_EMAILS dùng chung với 10-core
+2. Biến roles (de, ds, bi) chỉ chứa key người (p1…p4) nên đặt trong infra/envs/30-databricks.tfvars; UPN Entra lấy từ secret TF_VAR_MEMBER_UPNS (không dùng hộp thư gm của TF_VAR_MEMBER_EMAILS)
 3. databricks_user theo roles; đã chốt GRANT theo từng user vì provider cấp workspace không tạo được account group
-4. TF_VAR_member_emails đã có trong tf-plan, _tf-stack, drift-check; ghi thêm 30-databricks vào docs/devops/04 §4
+4. Thêm TF_VAR_member_upns vào tf-plan, _tf-stack, drift-check; ghi vào docs/devops/04 §4
 5. Đánh dấu [x] bước 2
 
 **Đầu ra**

@@ -31,6 +31,7 @@ jobs:
       TF_VAR_member_object_ids: ${{ vars.TF_VAR_MEMBER_OBJECT_IDS }}
       TF_VAR_member_ips: ${{ vars.TF_VAR_MEMBER_IPS }}
       TF_VAR_member_emails: ${{ secrets.TF_VAR_MEMBER_EMAILS }}
+      TF_VAR_member_upns: ${{ secrets.TF_VAR_MEMBER_UPNS }}
     defaults:
       run:
         working-directory: infra/stacks/${{ inputs.stack }}

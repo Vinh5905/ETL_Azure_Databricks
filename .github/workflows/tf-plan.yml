@@ -64,6 +64,7 @@ jobs:
     # Secret chỉ cấp cho job plan, job detect không cần.
     env:
       TF_VAR_member_emails: ${{ secrets.TF_VAR_MEMBER_EMAILS }}
+      TF_VAR_member_upns: ${{ secrets.TF_VAR_MEMBER_UPNS }}
     defaults:
       run:
         working-directory: infra/stacks/${{ matrix.stack }}

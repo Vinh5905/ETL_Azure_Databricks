@@ -100,7 +100,7 @@ resource "databricks_service_principal" "func" {
 - **Cấp quyền rõ cho từng principal** (nhóm thành viên, SP CI, SP của Function), không dựa vào nhóm `admins` của workspace. Lúc spike, notebook serverless của P1 báo `PERMISSION_DENIED` trên catalog dù nhóm `admins` là owner; cấp trực tiếp mới chạy được.
 
 ```hcl
-variable "member_emails" {  # secret TF_VAR_MEMBER_EMAILS dùng chung với 10-core: { p1 = "…@…", … }
+variable "member_upns" {    # secret TF_VAR_MEMBER_UPNS: { p1 = "<mssv>@ms.uit.edu.vn", … }, tài khoản đăng nhập Entra
   type      = map(string)
   sensitive = true
 }
@@ -109,12 +109,14 @@ variable "roles" {          # chỉ chứa key, không chứa email → để tr
 }
 resource "databricks_user" "members" {
   for_each  = toset(flatten(values(var.roles)))   # lặp theo key (không nhạy cảm)
-  user_name = var.member_emails[each.key]
+  user_name = var.member_upns[each.key]
   force     = true          # thành viên có role Azure trên workspace nên có thể đã được tự thêm
 }
 ```
 
-> `for_each` không nhận giá trị sensitive, nên các bước sau luôn lặp theo **key** trong `var.roles` rồi tra email bằng `var.member_emails[<key>]`.
+> `for_each` không nhận giá trị sensitive, nên các bước sau luôn lặp theo **key** trong `var.roles` rồi tra UPN bằng `var.member_upns[<key>]`.
+
+> **UPN, không phải email.** Databricks trên Azure đăng nhập qua Entra, nên `user_name` phải là UPN (`<mssv>@ms.uit.edu.vn`). AD-OPS-18 lần đầu dùng hộp thư `gm` của `TF_VAR_MEMBER_EMAILS` và tạo ra 4 user không đăng nhập được, cạnh user Entra thật (Source = External). `member_emails` chỉ dùng cho cảnh báo budget ở 10-core.
 
 ### Bước 3 · Storage credential và external location
 
@@ -228,7 +230,7 @@ resource "databricks_grants" "gold" {
   dynamic "grant" {
     for_each = toset(var.roles.bi)
     content {
-      principal  = var.member_emails[grant.value]
+      principal  = var.member_upns[grant.value]
       privileges = ["USE_SCHEMA", "SELECT"]
     }
   }
@@ -240,7 +242,7 @@ resource "databricks_grants" "gold" {
 }
 ```
 
-> **Một người có nhiều vai** (ví dụ `p1` thuộc `de` và `ds`, `p4` thuộc `ds` và `bi`): không viết một dynamic block cho mỗi vai, vì cùng một principal sẽ xuất hiện hai lần trong một securable, API trả về một mục đã gộp và plan không bao giờ về *No changes*. Dựng `local` dạng `securable → { key người → hợp privilege của mọi vai người đó có }`, rồi mỗi securable chỉ một dynamic `grant` lặp theo key người, `principal = var.member_emails[grant.key]`.
+> **Một người có nhiều vai** (ví dụ `p1` thuộc `de` và `ds`, `p4` thuộc `ds` và `bi`): không viết một dynamic block cho mỗi vai, vì cùng một principal sẽ xuất hiện hai lần trong một securable, API trả về một mục đã gộp và plan không bao giờ về *No changes*. Dựng `local` dạng `securable → { key người → hợp privilege của mọi vai người đó có }`, rồi mỗi securable chỉ một dynamic `grant` lặp theo key người, `principal = var.member_upns[grant.key]`.
 
 > `databricks_grants` là **có thẩm quyền tuyệt đối**: nó ghi đè mọi grant không khai báo. Vì vậy mọi quyền trên một securable phải nằm trong **một** khối duy nhất.
 
@@ -273,7 +275,7 @@ resource "databricks_permissions" "policy_use" {
   dynamic "access_control" {
     for_each = toset(flatten(values(var.roles)))
     content {
-      user_name        = var.member_emails[access_control.value]
+      user_name        = var.member_upns[access_control.value]
       permission_level = "CAN_USE"
     }
   }
@@ -330,7 +332,7 @@ resource "databricks_secret_scope" "kv" {
 resource "databricks_secret_acl" "kv_read" {        # nếu không cấp, chỉ người tạo đọc được
   for_each   = toset(concat(var.roles.de, var.roles.ds, ["ci"]))
   scope      = databricks_secret_scope.kv.name
-  principal  = each.value == "ci" ? databricks_service_principal.ci.application_id : var.member_emails[each.value]
+  principal  = each.value == "ci" ? databricks_service_principal.ci.application_id : var.member_upns[each.value]
   permission = "READ"
 }
 ```
