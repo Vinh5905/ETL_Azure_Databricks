@@ -32,11 +32,11 @@
 | Resource Terraform | Đối tượng ADF | Ghi chú |
 |---|---|---|
 | `azurerm_data_factory_linked_service_data_lake_storage_gen2` | `ls_adls` | Xác thực bằng managed identity của ADF |
-| `azurerm_data_factory_linked_service_azure_sql_database` | `ls_sql_retail` | Mật khẩu lấy từ Key Vault qua `ls_kv` |
+| `azurerm_data_factory_linked_service_azure_sql_database` | `ls_sql_retail` | SQL auth: login `sql_admin_login` trong `infra/envs/40-orchestration.tfvars`, mật khẩu là secret `sql-admin-password` lấy qua `ls_kv` |
 | `azurerm_data_factory_linked_service_key_vault` | `ls_kv` | |
-| `azurerm_data_factory_linked_service_web` / HTTP | `ls_zenodo`, `ls_off_api` | Anonymous |
-| `azurerm_data_factory_linked_service_azure_databricks` | `ls_dbx` | `msi_work_space_resource_id` (MSI): managed identity của ADF cần role `Contributor` trên workspace. Pipeline dùng activity **Databricks Job** gọi job theo ID; spike 3.5 tạo linked service bằng ARM không khai cluster mà vẫn chạy được. Resource `azurerm_*` có bắt buộc `existing_cluster_id` / `new_cluster_config` hay không thì kiểm ở AD-OPS-25 |
-| `azurerm_data_factory_dataset_*` | Dataset CSV / Parquet / JSON / SQL | Tham số hóa `ingest_date` |
+| `azurerm_data_factory_linked_custom_service` kiểu `HttpServer` | `ls_zenodo`, `ls_off_api` | Anonymous. Không dùng `azurerm_data_factory_linked_service_web` vì resource đó tạo kiểu `Web` (Web Table), còn dataset `HttpServerLocation` cần `HttpServer` |
+| `azurerm_data_factory_linked_custom_service` kiểu `AzureDatabricks` | `ls_dbx` | Xác thực `MSI` (managed identity của ADF có role `Contributor` trên workspace), không khai cluster. Pipeline dùng activity **Databricks Job** gọi job theo ID. Đã kiểm ở AD-OPS-25: `azurerm_data_factory_linked_service_azure_databricks` bắt buộc một trong `existing_cluster_id`, `instance_pool`, `new_cluster_config`, nên dùng custom service giống spike 3.5 |
+| `azapi_resource` (`Microsoft.DataFactory/factories/datasets`) | Mọi dataset trong `adf/datasets/*.json` | P2 soạn hợp đồng dataset (file dạng `{name, properties}`, `name` phải trùng tên file). Stack đọc cả thư mục bằng `fileset()` và gửi nguyên `properties`, nên thêm hay sửa dataset chỉ cần sửa JSON. Không dùng `azurerm_data_factory_custom_dataset` vì resource đó gán `defaultValue` cho mọi tham số, làm tham số bắt buộc thành tùy chọn |
 | `azurerm_data_factory_pipeline` | Pipeline | `activities_json = file("${path.module}/../../../adf/pipelines/x.json")` |
 | `azurerm_data_factory_trigger_schedule` | Trigger | `activated = var.triggers_on` (mặc định `false` ở dev để không tốn tiền) |
 
@@ -49,7 +49,7 @@
 | `pl_ingest_off` | Gọi job Databricks `off_crawler`. Giới hạn 10 request/phút nên crawler nằm trong Python, không dùng ADF ForEach | Hằng ngày, theo lô khoảng 300 sản phẩm |
 | `pl_master` | Execute pipeline retail → OFF → **Databricks Job** `instacart-batch-medallion` | Hằng ngày 02:00 |
 
-`pl_master` gọi job theo **job ID**. Job ID lấy bằng data source `databricks_job` (theo tên job prod do DAB tạo). Vì vậy `40-orchestration` phải apply **sau** lần `bundle deploy -t prod` đầu tiên.
+`pl_master` gọi job theo **job ID**. Job ID lấy bằng data source `databricks_job` (theo tên job prod do DAB tạo). Vì vậy `40-orchestration` phải apply **sau** lần `bundle deploy -t prod` đầu tiên. Riêng linked service và dataset (AD-OPS-25) không cần job ID nên apply được trước.
 
 ## 2. Job Databricks (DAB)
 
