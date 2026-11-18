@@ -322,6 +322,12 @@ resource "databricks_cluster_policy" "ds_benchmark" {
 # databricks_permissions: CAN_USE cho var.roles.ds và SP CI (giống policy_use ở trên)
 ```
 
+**Code thật trong stack** (`infra/stacks/30-databricks/main.tf`, AD-OPS-21) gọn hơn mẫu trên ở mấy chỗ:
+- Phần chung của `instacart-single-node` và `instacart-ds-benchmark` nằm trong `local.single_node_policy`; hai policy chỉ thêm `spark.master` riêng. Máy và runtime nằm ở `local.node_type_id`, `local.spark_version`.
+- Một `databricks_permissions.policy_use` lặp theo 3 policy: `single_node` và `pipeline` cho mọi thành viên, `ds_benchmark` cho vai `ds`; cả ba thêm SP CI. `user_name` lấy từ `databricks_user.members`, giống grant ở bước 5.
+- Cả ba policy cấm `instance_pool_id`. Policy `dlt` cố định thêm `spark.databricks.cluster.profile = singleNode` (spike 3.4 cần profile này), nên pipeline trong bundle phải khai `spark_conf` như mẫu ở de/02 §2.2.
+- `databricks_entitlements.users` ghi đè cả bộ entitlement của nhóm `users`, nên khai lại `workspace_access` và `databricks_sql_access` bằng `true`. Bỏ hai dòng này thì user không phải admin mất quyền vào workspace.
+
 > Instance pool chỉ có lợi khi chạy nhiều job ngắn liên tiếp. Với quota 4 vCPU, VM idle trong pool vẫn **chiếm quota**. Mặc định **không** dùng pool.
 
 ### Bước 7 · Secret scope dựa trên Key Vault

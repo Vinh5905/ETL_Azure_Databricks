@@ -6,7 +6,7 @@
 # [x] 3. Storage credential + external location theo container
 # [x] 4. Catalog instacart, 8 schema, volume raw + checkpoints
 # [x] 5. Grants Unity Catalog (một khối databricks_grants cho mỗi securable)
-# [ ] 6. Cluster policy single-node + tắt unrestricted cluster creation
+# [x] 6. Cluster policy (single-node, pipeline, ds-benchmark) + tắt unrestricted cluster creation
 # [ ] 7. Secret scope dựa trên Key Vault (P1 apply từ máy local)
 # [ ] 8. Serverless SQL warehouse wh-instacart-bi
 # [ ] 9. Output cho DAB và Power BI
@@ -340,4 +340,112 @@ resource "databricks_grants" "volume" {
     principal  = databricks_service_principal.ci.application_id
     privileges = local.rw_volume
   }
+}
+
+# ---------------------------------------------------------------------------
+# Bước 6 · Cluster policy và chặn tạo cluster tự do (docs/devops/05 bước 6, de/02 §2.1)
+# ---------------------------------------------------------------------------
+# Quota khoảng 4 vCPU nên mọi cluster phải là single-node Standard_D4ds_v4 (spike 3.4). Bundle tra
+# policy theo tên, nên đổi tên policy là phải sửa bundles/ cùng lúc.
+# Job cluster không dùng apply_policy_default_values (lỗi "Automated clusters do not support
+# autotermination"), nên phải tự khai đủ mọi trường fixed dưới đây (bundles/AGENTS.md).
+# Admin workspace bỏ qua được policy và entitlement; hiện mọi thành viên là admin (xem bước 2).
+locals {
+  node_type_id  = "Standard_D4ds_v4" # trùng biến node_type_id trong bundles/databricks.yml
+  spark_version = "15.4.x-scala2.12" # DBR 15.4 LTS, khớp pyspark 3.5 ở pyproject
+
+  # Phần chung của policy single-node và ds-benchmark; hai policy chỉ khác spark.master.
+  single_node_policy = {
+    "spark_version"                               = { type = "fixed", value = local.spark_version }
+    "node_type_id"                                = { type = "fixed", value = local.node_type_id }
+    "num_workers"                                 = { type = "fixed", value = 0 }
+    "spark_conf.spark.databricks.cluster.profile" = { type = "fixed", value = "singleNode" }
+    "custom_tags.ResourceClass"                   = { type = "fixed", value = "SingleNode" }
+    "autotermination_minutes"                     = { type = "range", maxValue = 20, defaultValue = 15 }
+    "custom_tags.owner"                           = { type = "unlimited", isOptional = false }
+    "data_security_mode"                          = { type = "fixed", value = "SINGLE_USER" } # workspace không tự chọn access mode
+    "instance_pool_id"                            = { type = "forbidden" }                    # VM idle trong pool vẫn chiếm quota
+  }
+}
+
+resource "databricks_cluster_policy" "single_node" {
+  name = "instacart-single-node"
+  definition = jsonencode(merge(local.single_node_policy, {
+    "spark_conf.spark.master" = { type = "fixed", value = "local[*]" }
+  }))
+}
+
+# Thực nghiệm E5 của DS (ds/04) đo speedup theo số core nên cho chọn spark.master; máy và runtime
+# vẫn cố định để số đo so được với nhau.
+resource "databricks_cluster_policy" "ds_benchmark" {
+  name = "instacart-ds-benchmark"
+  definition = jsonencode(merge(local.single_node_policy, {
+    "spark_conf.spark.master" = {
+      type         = "allowlist"
+      values       = ["local[1]", "local[2]", "local[4]", "local[*]"]
+      defaultValue = "local[*]"
+    }
+  }))
+}
+
+# Cluster do Lakeflow (LDP) tạo chỉ nhận policy loại dlt. Runtime do channel của pipeline quyết định
+# nên không cố định spark_version; autotermination không áp cho cluster pipeline, thay bằng
+# pipelines.clusterShutdown.delay trong configuration của pipeline.
+# num_workers = 0 mà thiếu profile singleNode thì cluster không có executor; spike 3.4 chạy được nhờ
+# khai profile này, nên pipeline trong bundle phải khai spark_conf giống mẫu ở de/02 §2.2.
+resource "databricks_cluster_policy" "pipeline_single_node" {
+  name = "instacart-pipeline-single-node"
+  definition = jsonencode({
+    "cluster_type"                                = { type = "fixed", value = "dlt" }
+    "node_type_id"                                = { type = "fixed", value = local.node_type_id }
+    "num_workers"                                 = { type = "fixed", value = 0 }
+    "spark_conf.spark.databricks.cluster.profile" = { type = "fixed", value = "singleNode" }
+    "custom_tags.owner"                           = { type = "unlimited", isOptional = false }
+    "instance_pool_id"                            = { type = "forbidden" }
+  })
+}
+
+locals {
+  # Policy → người được CAN_USE. ds-benchmark chỉ cho vai ds; SP CI dùng được cả ba (job prod).
+  policies = {
+    single_node  = { id = databricks_cluster_policy.single_node.id, users = local.members }
+    pipeline     = { id = databricks_cluster_policy.pipeline_single_node.id, users = local.members }
+    ds_benchmark = { id = databricks_cluster_policy.ds_benchmark.id, users = toset(lookup(var.roles, "ds", [])) }
+  }
+}
+
+# databricks_permissions cũng ghi đè toàn bộ: mỗi policy đúng một khối.
+resource "databricks_permissions" "policy_use" {
+  for_each = local.policies
+
+  cluster_policy_id = each.value.id
+
+  dynamic "access_control" {
+    for_each = each.value.users
+    content {
+      user_name        = databricks_user.members[access_control.value].user_name
+      permission_level = "CAN_USE"
+    }
+  }
+
+  access_control {
+    service_principal_name = databricks_service_principal.ci.application_id
+    permission_level       = "CAN_USE"
+  }
+}
+
+# Tắt "Unrestricted cluster creation" của nhóm users (mọi user và SP đều thuộc nhóm này), để ai
+# không phải admin chỉ tạo được cluster qua policy. Resource này ghi đè cả bộ entitlement của nhóm,
+# nên giữ workspace_access và databricks_sql_access đang bật mặc định, kẻo khóa cả workspace.
+# Hệ quả: SP Function (thuộc nhóm users) vẫn thừa hưởng hai quyền này dù tự nó đặt false ở bước 2.
+data "databricks_group" "users" {
+  display_name = "users"
+}
+
+resource "databricks_entitlements" "users" {
+  group_id                   = data.databricks_group.users.id
+  workspace_access           = true
+  databricks_sql_access      = true
+  allow_cluster_create       = false
+  allow_instance_pool_create = false
 }
