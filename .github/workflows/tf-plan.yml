@@ -1,10 +1,11 @@
-# Plan và comment kết quả lên PR khi PR đụng infra/** (docs/devops/04, mục 3.2).
+# Plan và comment kết quả lên PR khi PR đụng infra/** hoặc adf/** (docs/devops/04, mục 3.2).
+# adf/** chỉ kích hoạt stack 40-orchestration (bộ lọc detect), để PR chỉ thêm JSON của P2 vẫn có plan.
 # bootstrap (P1 chạy tay) và 90-sandbox (P4 chạy tay) không nằm trong CI.
 name: tf-plan
 
 on:
   pull_request:
-    paths: ["infra/**"]
+    paths: ["infra/**", "adf/**"]
 
 permissions:
   id-token: write

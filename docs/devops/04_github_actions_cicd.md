@@ -14,7 +14,7 @@
 
 1. Thành viên tạo nhánh `feat/<vai>-<việc>` và mở PR vào `main`.
 2. **`pr-checks`** chạy trên mọi PR: kiểm tra tĩnh, không đăng nhập Azure, nên an toàn cho mọi nhánh.
-3. **`tf-plan`** chỉ chạy khi PR đụng `infra/**`. Workflow đăng nhập Azure bằng OIDC (subject `pull_request`) với quyền **đọc** state, chạy `terraform plan` rồi comment kết quả lên PR.
+3. **`tf-plan`** chỉ chạy khi PR đụng `infra/**` hoặc `adf/**` (`adf/**` chỉ plan stack `40-orchestration`). Workflow đăng nhập Azure bằng OIDC (subject `pull_request`) với quyền **đọc** state, chạy `terraform plan` rồi comment kết quả lên PR.
 4. **`de-deploy` (dev)** chỉ chạy khi PR đụng `src/**` hoặc `bundles/**`. Workflow deploy bundle vào thư mục riêng của PR trong workspace (target `dev`) để chạy thử.
 5. Người review đọc diff và kết quả plan, rồi approve. Branch protection yêu cầu mọi check xanh cùng 1 approve; với `infra/**` thì phải là P1 (CODEOWNERS).
 6. Merge vào `main` sẽ kích hoạt **`tf-apply`** và **`de-deploy` (prod)**. Cả hai dùng environment `prod`, nên phải chờ reviewer bấm *Approve* trong tab Actions trước khi chạy.
@@ -147,7 +147,7 @@ jobs:
 name: tf-plan
 on:
   pull_request:
-    paths: ["infra/**"]
+    paths: ["infra/**", "adf/**"]
 permissions: { id-token: write, contents: read, pull-requests: write }   # id-token cho OIDC
 concurrency:
   group: tf-${{ github.head_ref }}
