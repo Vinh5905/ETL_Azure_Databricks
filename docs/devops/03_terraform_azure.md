@@ -356,7 +356,15 @@ Ghi chú khi làm thật (AD-OPS-12):
 - **Quyền Key Vault:** tới bước này chưa ai có quyền data-plane trên Key Vault, kể cả Owner subscription. Nên hai role *Key Vault Secrets Officer* trong bảng bước 3.8 (P1 và UAMI CI) được tạo luôn ở đây. P1 cần role để apply ghi secret, CI cần role để `plan` đọc lại secret. Role mới có thể mất vài phút mới có hiệu lực: nếu lần apply đầu báo 403 khi ghi secret thì chờ rồi apply lại.
 - **UAMI CI** lấy từ output `ci_principal_id` của `bootstrap` qua `terraform_remote_state`. Tên storage account state (`tfstate_account`) nằm trong `infra/envs/10-core.tfvars`.
 - **Biến mới:** `member_object_ids` (cần key `p1`) và `member_ips`. Cả hai không có `default`. Ở máy local đặt trong `terraform.auto.tfvars`. Trong CI dùng GitHub Variable `TF_VAR_MEMBER_OBJECT_IDS`, `TF_VAR_MEMBER_IPS` (JSON, xem [04 §4](04_github_actions_cicd.md)).
-- **Entra admin** là P1. Thành viên khác đăng nhập bằng Entra thì P1 tạo user trong DB: `CREATE USER [<upn>] FROM EXTERNAL PROVIDER`.
+- **Entra admin** là P1. Role Azure (Contributor trên resource group) không cho vào dữ liệu SQL; thành viên khác đăng nhập bằng Entra sẽ gặp `Login failed for user '<token-identified principal>'` cho tới khi P1 tạo user trong DB. P1 chạy trong `retail_db`:
+  ```sql
+  CREATE USER [<upn>] FROM EXTERNAL PROVIDER;
+  ALTER ROLE db_owner ADD MEMBER [<upn>];  -- P2 cần db_owner để bật CDC (AD-DE-04)
+  ```
+  - `<upn>` là UPN dạng `<mssv>@ms.uit.edu.vn`, **không** phải mail `@gm.uit.edu.vn`. Dùng mail sẽ báo `Principal … could not be found`. Tra UPN: `az ad user list --filter "mail eq '<mail>'" --query "[].userPrincipalName" -o tsv`.
+  - Không dùng `WITH OBJECT_ID` cho user: cú pháp này dành cho service principal trùng tên và báo lỗi 37535 về quy tắc đặt tên.
+  - Thành viên đó phải `az login` bằng chính tài khoản `@ms`, và IP hiện tại phải nằm trong `member_ips`.
+  - Kiểm: `SELECT u.name, r.name FROM sys.database_role_members m JOIN sys.database_principals u ON u.principal_id = m.member_principal_id JOIN sys.database_principals r ON r.principal_id = m.role_principal_id WHERE u.type IN ('E','X');`
 - **Secret tự khai báo:** không dùng `administrator_login_password_key_vault_configuration` của AVM. Biến `count` của secret trong module phụ thuộc vào mật khẩu, mà lúc plan mật khẩu chưa có giá trị, nên plan báo `Invalid count argument`.
 - Output `sql_server_fqdn` được ghép từ tên server, vì output `resource` của AVM bị đánh dấu sensitive.
 

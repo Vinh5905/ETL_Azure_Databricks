@@ -219,7 +219,7 @@ CDC theo LSN cần bảng nguồn, CDC bật trên 2 bảng, watermark và nhậ
 2. Viết src/ingest/sql/02_enable_cdc.sql (retention 7 ngày)
 3. Viết src/ingest/sql/03_etl_control.sql (etl.cdc_watermark, etl.run_log, usp_get_cdc_window, usp_set_cdc_watermark)
 4. Chuẩn bị bản dự phòng watermark updated_at + is_deleted nếu spike CDC không đạt
-5. Chạy trên retail_db bằng tài khoản admin Entra
+5. Chạy trên retail_db bằng tài khoản có db_owner: user Entra của P2 do P1 tạo ở AD-OPS-12, hoặc admin Entra (P1)
 
 **Đầu ra**
 

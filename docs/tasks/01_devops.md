@@ -503,6 +503,7 @@ retail_db là nguồn CDC cho product_prices và promotions. Mật khẩu chỉ 
 4. azurerm_key_vault_secret sql-admin-password
 5. Thêm Entra admin cho server (không bật azuread_authentication_only) để thành viên đăng nhập tay bằng Entra; chốt G0: SQL auth + Entra admin
 6. Thêm output sql_server_fqdn; đánh dấu [x] 3.6
+7. Tạo user Entra cho P2 trong retail_db (`CREATE USER [<upn>] FROM EXTERNAL PROVIDER`, role db_owner) theo 03 §3.6; UPN dạng `@ms.uit.edu.vn`, không phải mail `@gm`
 
 **Đầu ra**
 
@@ -512,6 +513,7 @@ retail_db là nguồn CDC cho product_prices và promotions. Mật khẩu chỉ 
 **Xong khi**
 
 - [ ] sqlcmd hoặc Azure Data Studio kết nối retail_db từ IP thành viên
+- [ ] P2 đăng nhập retail_db bằng Entra và `IS_MEMBER('db_owner')` trả 1
 - [ ] Portal hiện free offer đang áp dụng
 - [ ] Plan lần hai No changes
 
