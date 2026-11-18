@@ -728,7 +728,7 @@ Catalog và volume raw là điều kiện của G1: Auto Loader đọc /Volumes/
 
 1. databricks_storage_credential cred-instacart-lake từ Access Connector
 2. 7 external location el-<container>
-3. Catalog instacart; 8 schema landing_meta, bronze, silver, gold, ml, ds_data, instacart_sandbox, ops với storage_root riêng
+3. Catalog instacart; 8 schema landing_meta, bronze, silver, gold, ml, ds_data, instacart_sandbox, ops với storage_root riêng (landing_meta đặt ở bronze/landing_meta vì volume raw chiếm cả container landing)
 4. Volume raw, checkpoints, ds_data.exports, ml.inbox; kiểm đường dẫn không chồng storage_root
 5. Nếu spike không cho tạo storage credential: đi nhánh managed storage và ghi lại
 6. Đánh dấu [x] bước 3, 4
@@ -1214,6 +1214,8 @@ Dừng tiêu credit sau khi nộp. Destroy phải đi ngược thứ tự để 
 1. Xuất bảng gold, ml cần giữ và ảnh bằng chứng trước khi hủy
 2. Tắt trigger ADF, tắt stream-toggle schedule
 3. P1 (và P3, P4 với Sub B, C) hủy theo thứ tự 50-serving → 90-sandbox → 40 → 20 → 30 → 10 bằng tay hoặc workflow có duyệt
+   - Trước khi hủy 30-databricks: một PR gỡ `prevent_destroy` của SP CI và bật `force_destroy = true` cho catalog `instacart` cùng các schema (còn bảng tạo ngoài Terraform như `landing_meta.off_crawl_state` thì xóa schema lỗi). Hủy bundle prod trước.
+   - Trước khi hủy 10-core: `databricks catalogs get instacart` phải báo không tồn tại. Metastore dùng chung cả tenant, nên catalog, external location, storage credential còn sót sẽ thành đồ mồ côi mà chỉ SP CI dọn được.
 4. Giữ bootstrap đến khi xác nhận không còn tài nguyên, rồi gỡ lock và hủy
 5. Ghi chi phí cuối cùng vào bảng chi phí
 

@@ -131,7 +131,7 @@ resource "databricks_storage_credential" "lake" {
 resource "databricks_external_location" "layer" {
   for_each        = toset(["landing", "bronze", "silver", "gold", "checkpoints", "mlflow", "ds-data"])
   name            = "el-${each.key}"
-  url             = "abfss://${each.key}@${local.core.lake_account_name}.dfs.core.windows.net/"
+  url             = "${local.lake_url[each.key]}/"   # lake_url: abfss://<container>@<account>.dfs.core.windows.net
   credential_name = databricks_storage_credential.lake.name
 }
 ```
@@ -151,13 +151,13 @@ resource "databricks_external_location" "layer" {
 ```hcl
 resource "databricks_catalog" "instacart" {
   name         = "instacart"
-  storage_root = databricks_external_location.layer["bronze"].url   # mặc định; schema ghi đè bên dưới
+  storage_root = "${local.lake_url["bronze"]}/_catalog"   # mặc định; schema ghi đè bên dưới
   comment      = "Instacart Market Basket + Open Food Facts + retail_db"
 }
 
 locals {
   schemas = {
-    landing_meta      = "landing"      # volume chứa file thô, bảng off_crawl_state
+    landing_meta      = "bronze"       # bảng off_crawl_state; volume raw chiếm cả container landing
     bronze            = "bronze"
     silver            = "silver"
     gold              = "gold"
@@ -171,7 +171,7 @@ resource "databricks_schema" "s" {
   for_each     = local.schemas
   catalog_name = databricks_catalog.instacart.name
   name         = each.key
-  storage_root = "${databricks_external_location.layer[each.value].url}${each.key}"
+  storage_root = "${local.lake_url[each.value]}/${each.key}"
 }
 
 resource "databricks_volume" "raw" {               # Auto Loader đọc /Volumes/instacart/landing_meta/raw/...
@@ -179,32 +179,37 @@ resource "databricks_volume" "raw" {               # Auto Loader đọc /Volumes
   catalog_name     = databricks_catalog.instacart.name
   schema_name      = databricks_schema.s["landing_meta"].name
   volume_type      = "EXTERNAL"
-  storage_location = databricks_external_location.layer["landing"].url
+  storage_location = "${local.lake_url["landing"]}/"
 }
 resource "databricks_volume" "checkpoints" {        # checkpoint của streaming
   name             = "checkpoints"
   catalog_name     = databricks_catalog.instacart.name
   schema_name      = databricks_schema.s["ops"].name
   volume_type      = "EXTERNAL"
-  storage_location = databricks_external_location.layer["checkpoints"].url
+  storage_location = "${local.lake_url["checkpoints"]}/"
 }
 resource "databricks_volume" "ds_exports" {         # file txt cho Hadoop local (de/08 §5) → blob ds-data/exports/
   name             = "exports"
   catalog_name     = databricks_catalog.instacart.name
   schema_name      = databricks_schema.s["ds_data"].name
   volume_type      = "EXTERNAL"
-  storage_location = "${databricks_external_location.layer["ds-data"].url}exports"
+  storage_location = "${local.lake_url["ds-data"]}/exports"
 }
 resource "databricks_volume" "ml_inbox" {           # kết quả benchmark local upload lên (ds/03 §7) → blob ds-data/inbox/
   name             = "inbox"
   catalog_name     = databricks_catalog.instacart.name
   schema_name      = databricks_schema.s["ml"].name
   volume_type      = "EXTERNAL"
-  storage_location = "${databricks_external_location.layer["ds-data"].url}inbox"
+  storage_location = "${local.lake_url["ds-data"]}/inbox"
 }
 ```
 
 Đường dẫn của hai volume (`ds-data/exports`, `ds-data/inbox`) và `storage_root` của schema `ds_data` (`ds-data/ds_data`) **không chồng nhau**. Unity Catalog từ chối volume ngoài nằm trong vùng lưu trữ của một schema hay bảng.
+
+Unity Catalog cũng từ chối volume ngoài **bao trùm** vùng lưu managed. Vì vậy:
+- Volume `raw` trỏ cả container `landing`, nên `storage_root` của `landing_meta` đặt ở `bronze/landing_meta`, không đặt trong `landing`.
+- `storage_root` của catalog là `bronze/_catalog`, không phải gốc container `bronze`, để không bao lên `bronze/bronze` và `bronze/landing_meta`.
+- Đường dẫn con dựng từ `local.lake_url` cố định, không nối vào `.url` của external location: `.url` trong state là giá trị API trả về, nếu API bỏ `/` cuối thì `storage_root` (ForceNew) đổi và plan đòi thay cả catalog lẫn schema. Vì không còn tham chiếu, catalog, schema, volume khai `depends_on = [databricks_external_location.layer]`.
 
 ### Bước 5 · Phân quyền Unity Catalog (đặc quyền tối thiểu)
 
