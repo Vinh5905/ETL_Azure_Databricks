@@ -413,7 +413,7 @@ Bộ mô phỏng local chỉ hỗ trợ dependency Succeeded và tập biểu th
 - Tài liệu: `docs/de/02_bronze_ldp.md §2.2`, `docs/de/06_van_hanh_chay_lai.md §3`, `bundles/AGENTS.md`
 - **Bắt đầu sau:** Không có.
 - **Hoàn tất còn cần:** [AD-OPS-19](01_devops.md#ad-ops-19) [#21](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/21), [AD-OPS-21](01_devops.md#ad-ops-21) [#23](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/23), [AD-OPS-20](01_devops.md#ad-ops-20) [#22](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/22), [AD-OPS-05](01_devops.md#ad-ops-05) [#7](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/7)
-- **Mở khóa:** [AD-OPS-21b](01_devops.md#ad-ops-21b) (hoàn tất), [AD-DE-09](02_de_batch.md#ad-de-09) (hoàn tất), [AD-DE-16](02_de_batch.md#ad-de-16) (hoàn tất), [AD-DE-18](02_de_batch.md#ad-de-18) (bắt đầu), [AD-ST-03](03_de_stream.md#ad-st-03) (hoàn tất)
+- **Mở khóa:** [AD-OPS-21c](01_devops.md#ad-ops-21c) (bắt đầu), [AD-DE-09](02_de_batch.md#ad-de-09) (hoàn tất), [AD-DE-16](02_de_batch.md#ad-de-16) (hoàn tất), [AD-DE-18](02_de_batch.md#ad-de-18) (bắt đầu), [AD-ST-03](03_de_stream.md#ad-st-03) (hoàn tất)
 
 LDP instacart_batch chạy bronze → silver → gold. Dev cần tiền tố schema để không tranh bảng với prod.
 
