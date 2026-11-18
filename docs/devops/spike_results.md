@@ -51,7 +51,7 @@ Ngày làm spike: 2026-11-16 → 2026-11-17 (Sub A) · Người tổng hợp: P1
 | 3.6 | Connector Azure Databricks trong Desktop | — | | |
 | 3.6 | Push / streaming semantic model | — | Đạt | P3 gửi `order_count = 10` rồi `25`. Cả hai yêu cầu trả HTTP 200. P3 xác nhận Card đổi từ 10 sang 25 mà không tải lại dashboard. Khi quay lại dashboard ngay sau lệnh, Card đã đổi giá trị. Chưa đo độ trễ và chưa có ảnh chụp trong báo cáo. |
 | 3.6 | Auto page refresh trên Pro | — | | |
-| 3.6 | Service principal gọi Power BI REST API | — | | |
+| 3.6 | Service principal gọi Power BI REST API | — | Chưa xác minh · Tạm dùng thao tác thủ công | Trong Admin portal của tài khoản P3, mục quản trị hiển thị là `Capacity settings`, không có `Tenant settings`. Cần quản trị viên Fabric xác nhận chính sách và phạm vi áp dụng cho danh tính dự án, hoặc chạy thử API bằng chính danh tính đó. Trong lúc chờ, P3 publish và refresh thủ công theo tài liệu 06. |
 
 > **Ghi chú 3.4 (AD-OPS-04, AD-OPS-05):**
 > - Account admin: chưa xác nhận hẳn vì `accounts.azuredatabricks.net` cần đăng nhập bằng email. Kết quả nhóm ở trên không phụ thuộc vào việc này.
