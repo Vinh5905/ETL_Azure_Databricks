@@ -274,7 +274,7 @@ resource "databricks_cluster_policy" "single_node" {
     "spark_conf.spark.databricks.cluster.profile" = { type = "fixed", value = "singleNode" }
     "spark_conf.spark.master"                     = { type = "fixed", value = "local[*]" }
     "custom_tags.ResourceClass"                   = { type = "fixed", value = "SingleNode" }
-    "autotermination_minutes" = { type = "range", maxValue = 20, defaultValue = 15 }
+    "autotermination_minutes" = { type = "range", minValue = 10, maxValue = 20, defaultValue = 15 }
     "custom_tags.cost_owner"  = { type = "unlimited", isOptional = false }
     "data_security_mode"      = { type = "fixed", value = "SINGLE_USER" }        # bắt buộc với UC
   })
@@ -294,6 +294,9 @@ resource "databricks_permissions" "policy_use" {
 Chặn tạo cluster tự do: mọi principal do Terraform tạo đặt `allow_cluster_create = false` (bước 2), để ai không phải admin buộc phải dùng policy. Không quản entitlement của nhóm `users`: workspace của dự án từ chối sửa entitlement nhóm `users` và `admins` (lỗi khi apply AD-OPS-21), và nhóm này vốn không có entitlement nào, nên không cấp quyền tạo cluster cho ai.
 
 **Job cluster dùng policy thế nào (kết quả spike 3.4):**
+- `autotermination_minutes` có cả `minValue = 10` và `maxValue = 20`. Thiếu `minValue` thì ai tạo cluster qua API hay CLI với giá trị `0` có cluster không bao giờ tự tắt, chiếm hết 4 vCPU. Thử ở AD-OPS-21b ngày 2026-11-18 trên policy tạm:
+  - Cluster tương tác với `autotermination_minutes = 0` bị từ chối ("the value needs to be in range [10, 20]").
+  - Job one-time không khai trường này vẫn chạy xong. Job cluster mang giá trị `0` và tắt khi job xong, policy không kiểm khoảng giá trị cho job cluster.
 - Job cluster **không** đặt `apply_policy_default_values: true`. Policy có `autotermination_minutes`, mà job cluster gặp trường này qua giá trị mặc định thì báo "Automated clusters do not support autotermination". Job cluster tự tắt khi job xong, nên không cần trường này.
 - Vì không lấy mặc định từ policy, job cluster phải **tự khai đủ** các trường `fixed`: `spark_version`, `node_type_id`, `num_workers: 0`, `data_security_mode: SINGLE_USER`, `spark_conf` (`spark.databricks.cluster.profile`, `spark.master`), `custom_tags.ResourceClass`. Khai sai thì policy từ chối lúc tạo cluster, nên vẫn không lách được.
 - Spike cho thấy workspace không tự chọn access mode: cluster nào (job hay tương tác) cũng phải khai `data_security_mode = SINGLE_USER`.
@@ -316,7 +319,7 @@ resource "databricks_cluster_policy" "ds_benchmark" {
     "spark_conf.spark.master" = { type = "allowlist", values = ["local[1]", "local[2]", "local[4]", "local[*]"],
                                   defaultValue = "local[*]" }
     "custom_tags.ResourceClass" = { type = "fixed", value = "SingleNode" }
-    "autotermination_minutes" = { type = "range", maxValue = 20, defaultValue = 15 }
+    "autotermination_minutes" = { type = "range", minValue = 10, maxValue = 20, defaultValue = 15 }
     "custom_tags.cost_owner"  = { type = "unlimited", isOptional = false }
     "data_security_mode"      = { type = "fixed", value = "SINGLE_USER" }
   })

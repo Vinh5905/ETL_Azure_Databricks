@@ -349,6 +349,8 @@ resource "databricks_grants" "volume" {
 # policy theo tên, nên đổi tên policy là phải sửa bundles/ cùng lúc.
 # Job cluster không dùng apply_policy_default_values (lỗi "Automated clusters do not support
 # autotermination"), nên phải tự khai đủ mọi trường fixed dưới đây (bundles/AGENTS.md).
+# autotermination_minutes có minValue để cluster tương tác không tắt tự động (giá trị 0) bị từ chối. Job cluster
+# không khai trường này vẫn qua policy, cluster mang autotermination 0 và tắt khi job xong (thử ở AD-OPS-21b).
 # Admin workspace bỏ qua được policy và entitlement; hiện mọi thành viên là admin (xem bước 2).
 # Tag người dùng của cluster là cost_owner, không phải owner: workspace mang Azure tag owner = p1 (naming_tags),
 # Databricks chép tag workspace xuống mọi cluster làm tag mặc định, nên custom_tags.owner bị đổi tên và policy
@@ -364,7 +366,7 @@ locals {
     "num_workers"                                 = { type = "fixed", value = 0 }
     "spark_conf.spark.databricks.cluster.profile" = { type = "fixed", value = "singleNode" }
     "custom_tags.ResourceClass"                   = { type = "fixed", value = "SingleNode" }
-    "autotermination_minutes"                     = { type = "range", maxValue = 20, defaultValue = 15 }
+    "autotermination_minutes"                     = { type = "range", minValue = 10, maxValue = 20, defaultValue = 15 }
     "custom_tags.cost_owner"                      = { type = "unlimited", isOptional = false }
     "data_security_mode"                          = { type = "fixed", value = "SINGLE_USER" } # workspace không tự chọn access mode
     "instance_pool_id"                            = { type = "forbidden" }                    # VM idle trong pool vẫn chiếm quota
