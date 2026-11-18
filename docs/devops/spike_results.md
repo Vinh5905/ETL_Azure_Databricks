@@ -49,7 +49,7 @@ Ngày làm spike: 2026-11-16 → 2026-11-17 (Sub A) · Người tổng hợp: P1
 | 3.6 | Giấy phép Power BI Pro / trial | — | Đạt với P3 (trial) · P1, P2, P4 chưa kiểm | Ngày 2026-11-18, Power BI Service hiển thị `Power BI Trial: 59 days left` trên tài khoản P3 dùng cho dự án. P1, P2, P4 dự kiến dùng trial. Cần xác nhận giấy phép và thời hạn của từng người. |
 | 3.6 | Workspace `instacart-bi` + chia sẻ | — | Đã tạo workspace · Chưa nghiệm thu chia sẻ | Ngày 2026-11-18, đã mở được workspace `instacart-bi` trong Fabric. Cần xác nhận chế độ giấy phép của workspace và kiểm tra P1, P2, P4 truy cập với vai trò Member. |
 | 3.6 | Connector Azure Databricks trong Desktop | — | | |
-| 3.6 | Push / streaming semantic model | — | | |
+| 3.6 | Push / streaming semantic model | — | Đạt bước gửi dữ liệu · Chưa xác minh tile | P3 thử gửi `order_count = 10` rồi `25` tới endpoint của streaming semantic model. Cả hai yêu cầu trả HTTP 200. Cần xác nhận Card đổi từ 10 sang 25 mà không tải lại trang và chụp bằng chứng trên dashboard. |
 | 3.6 | Auto page refresh trên Pro | — | | |
 | 3.6 | Service principal gọi Power BI REST API | — | | |
 
