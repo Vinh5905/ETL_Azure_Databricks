@@ -15,6 +15,7 @@ from pyspark.sql import functions as F
 
 ROOT = Path(__file__).resolve().parents[1]
 CSV_NAMES = ("orders", "order_products_prior", "order_products_train", "products", "aisles", "departments")
+CDC_NAMES = ("product_prices_cdc", "promotions_cdc")
 
 
 class LocalReader:
@@ -40,6 +41,13 @@ class LocalReader:
 
     def load(self, path):
         self.plans.append({"path": path, "options": self.options.copy(), "schema": self.ddl})
+        if self.options["cloudFiles.format"] == "parquet":
+            # Parquet tự mang schema; reader batch dùng đúng các tùy chọn không thuộc cloudFiles.
+            reader = self.spark.read.format("parquet")
+            for key, value in self.options.items():
+                if not key.startswith("cloudFiles."):
+                    reader = reader.option(key, value)
+            return reader.load(path)
         assert self.options["cloudFiles.format"] == "csv"
         reader = self.spark.read.format("csv")
         for key, value in self.options.items():
@@ -92,8 +100,8 @@ def dataset(bronze, name):
     return bronze.definitions[f"`test_catalog`.`qa-de_bronze`.`{name}`"][0]()
 
 
-def test_registers_six_distinct_tables_with_full_refresh_protection(bronze):
-    assert set(bronze.definitions) == {f"`test_catalog`.`qa-de_bronze`.`{name}`" for name in CSV_NAMES}
+def test_registers_csv_and_cdc_tables_with_full_refresh_protection(bronze):
+    assert set(bronze.definitions) == {f"`test_catalog`.`qa-de_bronze`.`{name}`" for name in CSV_NAMES + CDC_NAMES}
     for _, definition in bronze.definitions.values():
         assert definition["table_properties"]["pipelines.reset.allowed"] == "false"
         assert definition["table_properties"]["quality"] == "bronze"
@@ -161,7 +169,7 @@ def test_all_readers_use_immutable_landing_and_leave_state_to_ldp(bronze, monkey
     monkeypatch.setattr(LocalReader, "load", load)
     for function, _ in bronze.definitions.values():
         function()
-    assert len(bronze.plans) == len(CSV_NAMES)
+    assert len(bronze.plans) == len(CSV_NAMES) + len(CDC_NAMES)
     for plan in bronze.plans:
         options = plan["options"]
         assert options["cloudFiles.allowOverwrites"] == "false"
@@ -170,3 +178,68 @@ def test_all_readers_use_immutable_landing_and_leave_state_to_ldp(bronze, monkey
         assert options["recursiveFileLookup"] == "true"
         assert not {"cloudFiles.schemaLocation", "checkpointLocation", "badRecordsPath"}.intersection(options)
         assert "_staging" not in plan["path"]
+
+
+CDC_COLUMNS = (
+    "_lsn STRING, _seqval STRING, _op INT, `__$start_lsn` BINARY, `__$seqval` BINARY, "
+    "`__$operation` INT, `__$update_mask` BINARY"
+)
+
+
+def write_parquet(spark, path, rows, schema):
+    spark.createDataFrame(rows, schema).coalesce(1).write.parquet(str(path))
+
+
+def test_cdc_reads_snapshot_and_windows_without_path_columns(bronze, spark):
+    """Snapshot (cột __$ NULL) và window (cột __$ có giá trị) gộp chung một schema; bronze không lọc gì."""
+    schema = (
+        f"{CDC_COLUMNS}, promo_id STRING, product_id INT, promo_type STRING, discount_pct INT, updated_at TIMESTAMP"
+    )
+    root = bronze.landing / "retail_db/promotions"
+    ts = dt.datetime(2026, 3, 1)
+    write_parquet(
+        spark,
+        root / "snapshot=0x0000000000000000000A",
+        [("0x0000000000000000000A", "0x00000000000000000000", 0, None, None, None, None, "P1", 1, "bogo", 0, ts)],
+        schema,
+    )
+    write_parquet(
+        spark,
+        root / "window=0x0000000000000000000B_0x0000000000000000000C",
+        [
+            (
+                "0x0000000000000000000C",
+                "0x0000000000000000000C",
+                op,
+                b"\x0c",
+                b"\x0c",
+                op,
+                b"\x01",
+                "P1",
+                1,
+                "bogo",
+                0,
+                ts,
+            )
+            for op in (1, 2, 4)
+        ],
+        schema,
+    )
+    # File phụ của Spark/ADF ngoài *.parquet không được đọc.
+    (root / "snapshot=0x0000000000000000000A/_SUCCESS").write_text("")
+    staging = bronze.landing / "_staging/retail_db/promotions/window=0x1_0x2"
+    write_parquet(spark, staging, [("x", "x", 2, None, None, None, None, "P9", 9, "bogo", 0, ts)], schema)
+
+    output = dataset(bronze, "promotions_cdc")
+    rows = output.collect()
+    assert sorted(row._op for row in rows) == [0, 1, 2, 4]
+    assert {row.promo_id for row in rows} == {"P1"}
+    assert not {"snapshot", "window"}.intersection(output.columns)
+    assert {"__$start_lsn", "__$seqval", "__$operation", "__$update_mask"}.issubset(output.columns)
+    assert all(row._source_file and "/retail_db/promotions/" in row._source_file for row in rows)
+    plan = bronze.plans[-1]
+    assert plan["path"] == f"{bronze.landing}/retail_db/promotions/"
+    assert plan["options"]["cloudFiles.format"] == "parquet"
+    assert plan["options"]["cloudFiles.schemaEvolutionMode"] == "addNewColumns"
+    assert plan["options"]["pathGlobFilter"] == "*.parquet"
+    assert plan["schema"] is None

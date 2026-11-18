@@ -1,6 +1,6 @@
-# Nghiệm thu CSV bronze — AD-DE-09
+# Nghiệm thu bronze CSV và CDC — AD-DE-09
 
-`src/pipelines/batch/bronze.py` đăng ký sáu streaming table CSV vào catalog và schema lấy từ
+`src/pipelines/batch/bronze.py` đăng ký sáu streaming table CSV và hai bảng CDC vào catalog và schema lấy từ
 configuration của `instacart_batch`. Glob của bundle nạp file này. LDP quản lý schema store và
 checkpoint riêng cho mỗi flow.
 
@@ -19,9 +19,21 @@ Auto Loader đọc file hiện có và file mới, bỏ qua lần ghi đè cùng
 lệch schema vào rescue. Bản ghi sai cú pháp làm update lỗi với `FAILFAST`. Reader trỏ vào từng nhánh
 dữ liệu đã công bố, ngoài `_staging`, và không đưa `release` vào schema bronze.
 
-Hai nguồn CDC sẽ được bổ sung sau khi AD-DE-07 công bố Parquet. Nguồn JSONL và ảnh OFF đi cùng
-AD-DE-10 khi dữ liệu tương ứng có trên landing. Phân bố `promotions_cdc._op` 0/1/2/4 còn là tiêu chí
-nghiệm thu G1 của [issue #45](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/45).
+## Hai bảng CDC retail
+
+`product_prices_cdc` và `promotions_cdc` đọc Parquet AD-DE-07 đã công bố ở
+`retail_db/<bảng>/snapshot=<lsn>/` và `retail_db/<bảng>/window=<from>_<to>/`.
+Parquet mang sẵn schema nên reader không khai schema, dùng `addNewColumns` và chỉ nhận `*.parquet`.
+Tên thư mục không thành cột (`partitionColumns=""`). Bronze giữ nguyên `_op`, `_lsn`, `_seqval` và
+bốn cột `__$…` của hàm CDC. Ở file snapshot, bốn cột này NULL. Bronze không lọc delete, không khử trùng.
+Auto Loader tự thêm `_rescued_data` cho Parquet. Cột này giữ giá trị lệch kiểu nếu nguồn đổi schema.
+
+| Bảng bronze | Thư mục dưới landing_root | Kỳ vọng |
+|---|---|---|
+| product_prices_cdc | retail_db/product_prices/ | Snapshot 49.688 dòng `_op=0`, mỗi wave seed thêm 2.484 dòng `_op=4` |
+| promotions_cdc | retail_db/promotions/ | `_op` có 0, 1, 2, 4 |
+
+Nguồn JSONL và ảnh OFF đi cùng AD-DE-10 khi dữ liệu tương ứng có trên landing.
 
 ## Chuẩn bị dev
 
@@ -43,19 +55,20 @@ databricks bundle run -t dev instacart_batch
 ```
 
 1. Sau khi update `COMPLETED`, chạy truy vấn [02 §6](02_bronze_ldp.md#6-kiểm-tra-đối-soát-g1)
-   cho sáu bảng CSV, thay catalog/schema bằng giá trị dev đã resolve. Đối chiếu số dòng và
+   cho sáu bảng CSV và hai bảng CDC, thay catalog/schema bằng giá trị dev đã resolve. Đối chiếu số dòng và
    xác nhận `products._rescued_data` có 0 dòng khác null. Lưu update ID và kết quả.
 2. Chạy lại cùng pipeline khi landing chưa thêm file. Đối chiếu số dòng bằng lần đầu.
 3. Thử *Full refresh all* trên pipeline dev bằng `databricks bundle run -t dev instacart_batch --full-refresh-all`.
    Kiểm tra trạng thái update, số dòng và dấu thời gian ingest hoặc phiên bản Delta để xác nhận
-   sáu bảng bronze được giữ, kể cả khi smoke materialized view được tính lại.
+   tám bảng bronze được giữ, kể cả khi smoke materialized view được tính lại.
 4. Ghi kết quả trên issue #45 và PR, gồm pipeline/schema dev, quy mô nguồn, ba update ID,
-   sáu số dòng, số rescue và bằng chứng bảo vệ reset.
+   số dòng tám bảng, phân bố `_op`, số rescue và bằng chứng bảo vệ reset.
 
 ## Kiểm tra local
 
 `tests/test_bronze.py` dùng Spark local để kiểm schema, parsing, metadata, mapping đường dẫn,
-khai báo sáu bảng và cấu hình reset. Adapter local đọc CSV bằng reader Spark native.
+khai báo tám bảng và cấu hình reset. Adapter local đọc CSV/Parquet bằng reader Spark native;
+test CDC gộp snapshot và window, kiểm không có cột `snapshot`/`window` từ đường dẫn.
 Kiểm rescue, checkpoint, chạy lại và full refresh thực hiện trên workspace.
 
 ```bash

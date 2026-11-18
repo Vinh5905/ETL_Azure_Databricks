@@ -191,23 +191,29 @@ for t, (folder, schema) in CSV_TABLES.items():
 ### 3.2 Bảng CDC từ Azure SQL
 
 ```python
+def autoload_cdc(path: str):
+    return with_ingest_metadata(
+        landing_stream("parquet")
+        .option("cloudFiles.schemaEvolutionMode", "addNewColumns")
+        .option("pathGlobFilter", "*.parquet")
+        .load(path)
+    )
+
+
 def make_cdc_table(table: str):
-    @dp.table(name=f"{BRONZE}.{table}_cdc",
-              comment=f"Bronze: thay đổi CDC (snapshot + window) của dbo.{table}",
-              table_properties=BRONZE_PROPS)
-    def _t():
-        return autoload(f"{LANDING}/retail_db/{table}/", "parquet",
-                        pathGlobFilter="*.parquet",
-                        **{"cloudFiles.schemaEvolutionMode": "addNewColumns"})
+    @dp.table(name=table_name(f"{table}_cdc"), table_properties=BRONZE_PROPS)
+    def cdc_table():
+        return autoload_cdc(f"{LANDING}/retail_db/{table}/")
 
 
-for t in ["product_prices", "promotions"]:
-    make_cdc_table(t)
+for _table in ("product_prices", "promotions"):
+    make_cdc_table(_table)
 ```
 
 - Parquet mang sẵn schema, nên dùng `addNewColumns`. Nếu nguồn SQL thêm cột, update đầu tiên sẽ dừng với lỗi đổi schema; LDP tự khởi động lại flow và nhận cột mới.
 - Các cột `__$start_lsn`, `__$seqval`, `__$operation`, `__$update_mask` từ hàm CDC được giữ nguyên trong bronze. Silver dùng các cột `_lsn`, `_seqval`, `_op` đã đổi tên sẵn ở câu truy vấn ADF.
-- Auto Loader mặc định đọc **đệ quy** mọi thư mục con (`snapshot=…`, `window=…`), không cần liệt kê.
+- `landing_stream` bật `recursiveFileLookup` và đặt `cloudFiles.partitionColumns=""`: đọc mọi thư mục con (`snapshot=…`, `window=…`) nhưng không biến tên thư mục thành cột.
+- Trong file snapshot, bốn cột `__$…` có kiểu như file window nhưng toàn NULL. Silver chỉ dùng `_lsn`, `_seqval`, `_op`.
 
 ### 3.3 Open Food Facts: JSON lồng nhau và ảnh
 
@@ -291,7 +297,7 @@ SELECT _op, count(*) FROM instacart.bronze.promotions_cdc GROUP BY _op;         
 
 ### Phần triển khai AD-DE-09
 
-AD-DE-09 triển khai sáu bảng CSV trong [`src/pipelines/batch/bronze.py`](../../src/pipelines/batch/bronze.py).
-Các mục CDC/OFF ở trên mô tả thiết kế khi nguồn AD-DE-07 và AD-DE-10 đã sẵn sàng.
+AD-DE-09 triển khai sáu bảng CSV và hai bảng CDC trong [`src/pipelines/batch/bronze.py`](../../src/pipelines/batch/bronze.py).
+Mục OFF ở trên mô tả thiết kế khi nguồn AD-DE-10 đã sẵn sàng.
 Hướng dẫn chuẩn bị nguồn, thử lần hai/full refresh và ghi bằng chứng:
 [02b · Nghiệm thu bronze](02b_nghiem_thu_bronze.md). Test local không thay cho nghiệm thu Auto Loader.
