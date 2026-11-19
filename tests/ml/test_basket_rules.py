@@ -1,4 +1,4 @@
-"""Kiểm tra model serving, MLflow logging và file artifact."""
+"""Kiểm model BasketRules: xếp hạng, bù món phổ biến, load_context và log/load qua MLflow."""
 
 import mlflow
 import pandas as pd
@@ -75,3 +75,22 @@ def test_pyfunc_model_logs_loads_and_predicts(tmp_path):
         mlflow.set_tracking_uri(previous_uri)
 
     assert predictions["product_id"].tolist() == [102, 104]
+
+
+def test_load_context_fills_k_popular_items_when_no_rule_fires(tmp_path):
+    # Danh mục 150 món, k tối đa 100: phần bù phải lấy được đủ k món ngoài giỏ.
+    rules_path = tmp_path / "rules.parquet"
+    items_path = tmp_path / "items.parquet"
+    pd.DataFrame({"antecedent": [[149]], "item": [148], "confidence": [0.9], "lift": [2.0]}).to_parquet(
+        rules_path, index=False
+    )
+    pd.DataFrame(
+        {"product_id": [1000 + i for i in range(150)], "idx": list(range(150)), "product_name": ["x"] * 150}
+    ).to_parquet(items_path, index=False)
+    model = BasketRules()
+    model.load_context(type("Ctx", (), {"artifacts": {"rules": str(rules_path), "items": str(items_path)}})())
+
+    output = model.predict(None, pd.DataFrame({"product_ids": [[1000, 1001]]}), {"k": 100})
+
+    assert output.product_id.tolist() == [1000 + i for i in range(2, 102)]
+    assert set(output.source) == {"popular"}

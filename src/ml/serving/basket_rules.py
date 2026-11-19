@@ -30,7 +30,9 @@ class BasketRules(mlflow.pyfunc.PythonModel):
         self.pid2idx = {int(pid): int(idx) for pid, idx in zip(items["product_id"], items["idx"], strict=True)}
         self.idx2pid = {idx: pid for pid, idx in self.pid2idx.items()}
         self.idx2name = {int(idx): str(name) for idx, name in zip(items["idx"], items["product_name"], strict=True)}
-        self.popular = [int(idx) for idx in items.sort_values("idx")["idx"].head(50)]
+        # Giữ cả danh mục theo idx (idx nhỏ = phổ biến nhất): cắt ngắn thì giỏ không có luật
+        # với k lớn sẽ không đủ k món. Vòng bù dừng ngay khi đủ k nên không tốn thêm.
+        self.popular = [int(idx) for idx in items.sort_values("idx")["idx"]]
 
     def _recommend(self, product_ids: list[int], k: int) -> list[dict[str, Any]]:
         if k < 1:

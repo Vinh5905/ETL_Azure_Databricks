@@ -45,57 +45,13 @@ Kết quả chọn ghi vào bảng `ml.champion (alias, run_key, min_confidence,
 
 Model Serving không chạy được model Spark (`FPGrowthModel`), vì endpoint phục vụ không có Spark. Vì vậy luật của champion được xuất ra file Parquet và bọc trong một model **`pyfunc` thuần Python**: tra luật theo vế trái, giống hệt logic SQL ở [04 §7.2](04_thuc_nghiem_danh_gia.md). Bản đầu của hình kiến trúc ghi "FPGrowthModel tốt nhất"; trên thực tế thứ được đăng ký là **luật của FP-Growth** đóng gói thành `pyfunc`.
 
-```python
-# src/ml/serving/basket_rules.py
-from itertools import combinations
+Code ở [`src/ml/serving/basket_rules.py`](../../src/ml/serving/basket_rules.py); phần xếp hạng nằm ở [`src/ml/recommendations.py`](../../src/ml/recommendations.py), dùng chung để không lệch với SQL đánh giá.
 
-import mlflow
-import pandas as pd
-
-
-class BasketRules(mlflow.pyfunc.PythonModel):
-    """Input: cột product_ids (list[int]). Output: top-k món gợi ý theo luật, thiếu thì bù bằng món phổ biến."""
-
-    def load_context(self, context):
-        rules = pd.read_parquet(context.artifacts["rules"])    # antecedent(list[int]), item, confidence, lift
-        items = pd.read_parquet(context.artifacts["items"])    # idx, product_id, product_name
-        self.by_antecedent: dict[tuple[int, ...], list[tuple[int, float, float]]] = {}
-        for a, i, c, lift in rules[["antecedent", "item", "confidence", "lift"]].itertuples(index=False):
-            self.by_antecedent.setdefault(tuple(sorted(a)), []).append((int(i), float(c), float(lift)))
-        self.pid2idx = dict(zip(items.product_id, items.idx))
-        self.idx2pid = dict(zip(items.idx, items.product_id))
-        self.idx2name = dict(zip(items.idx, items.product_name))
-        self.popular = items.sort_values("idx").idx.head(50).tolist()     # idx nhỏ = phổ biến nhất
-        self.max_left = max((len(a) for a in self.by_antecedent), default=1)
-
-    def _recommend(self, product_ids: list[int], k: int) -> list[dict]:
-        ctx = sorted({self.pid2idx[p] for p in product_ids if p in self.pid2idx})
-        best: dict[int, tuple[float, float]] = {}
-        for r in range(1, min(self.max_left, len(ctx)) + 1):
-            for a in combinations(ctx, r):
-                for item, conf, lift in self.by_antecedent.get(a, ()):
-                    if item not in ctx and (conf, lift) > best.get(item, (-1.0, -1.0)):
-                        best[item] = (conf, lift)
-        ranked = sorted(best, key=lambda i: (best[i], -i), reverse=True)[:k]
-        out = [{"product_id": int(self.idx2pid[i]), "product_name": self.idx2name[i], "confidence": best[i][0],
-                "lift": best[i][1], "source": "rule"} for i in ranked]
-        for i in self.popular:                                              # bù bằng món phổ biến
-            if len(out) >= k:
-                break
-            if i not in ctx and i not in best:
-                out.append({"product_id": int(self.idx2pid[i]), "product_name": self.idx2name[i],
-                            "confidence": None, "lift": None, "source": "popular"})
-        return out
-
-    def predict(self, context, model_input: pd.DataFrame, params: dict | None = None) -> pd.DataFrame:
-        """Một dòng / món gợi ý; input_row cho biết món đó thuộc giỏ thứ mấy trong request."""
-        k = int((params or {}).get("k", 10))
-        rows = [{"input_row": n, "rank": r + 1, **rec}
-                for n, ids in enumerate(model_input["product_ids"])
-                for r, rec in enumerate(self._recommend(list(ids), k))]
-        cols = ["input_row", "rank", "product_id", "product_name", "confidence", "lift", "source"]
-        return pd.DataFrame(rows, columns=cols).astype({"confidence": "float64", "lift": "float64"})
-```
+- **Input:** cột `product_ids` (list[int]), tham số `k` (mặc định 10, trong khoảng 1..100).
+- **`load_context`:** đọc hai artifact Parquet: `rules` (`antecedent` list[int], `item`, `confidence`, `lift`) và `items` (`idx`, `product_id`, `product_name`). Danh sách món phổ biến giữ **cả danh mục** xếp theo `idx` (idx nhỏ = phổ biến nhất), để giỏ không kích hoạt luật nào vẫn đủ k món với mọi k ≤ 100.
+- **Xếp hạng:** đổi `product_id` sang `idx`, xét các tập con của giỏ có kích thước tới độ dài vế trái lớn nhất của luật, mỗi món giữ luật có (confidence, lift) cao nhất, bỏ món đã có trong giỏ, sắp theo confidence giảm, lift giảm, rồi `idx` tăng. Thiếu thì bù món phổ biến ngoài giỏ (`source = 'popular'`, confidence/lift rỗng).
+- **Output:** một dòng mỗi món gợi ý, 7 cột `input_row`, `rank`, `product_id`, `product_name`, `confidence`, `lift`, `source`; `confidence` và `lift` luôn là `float64` để khớp signature.
+- **Kiểm:** [`tests/ml/test_basket_rules_sql_parity.py`](../../tests/ml/test_basket_rules_sql_parity.py) so top-10 của model với CTE `recommendations` trong `eval_holdout.sql` trên cùng luật và giỏ.
 
 ```python
 # src/ml/champion.py  (phần đăng ký; việc chọn cấu hình theo §2.1 nằm ở đầu file)
