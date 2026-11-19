@@ -39,14 +39,29 @@ def recommend_indices(
     fill_popular: bool = True,
 ) -> list[int]:
     """Xếp hạng món theo confidence/lift, tùy chọn bù top popular tới đủ k."""
+    return [
+        item for item, _, _ in recommend_scored_indices(context, rules, popular_items, k=k, fill_popular=fill_popular)
+    ]
+
+
+def recommend_scored_indices(
+    context: Iterable[int],
+    rules: Iterable[dict],
+    popular_items: Iterable[int] = (),
+    *,
+    k: int = 10,
+    fill_popular: bool = True,
+) -> list[tuple[int, float | None, float | None]]:
+    """Xếp hạng luật và bổ sung món phổ biến, giữ confidence/lift rỗng cho fallback."""
     basket = {int(item) for item in context}
-    ranked = [item for item, _, _ in rank_rule_indices(basket, rules, k=k)]
-    best = set(ranked)
+    ranked = rank_rule_indices(basket, rules, k=k)
+    scores = {item: (confidence, lift) for item, confidence, lift in ranked}
+    result = [*ranked]
     if fill_popular:
         for item in popular_items:
             item = int(item)
-            if len(ranked) >= k:
+            if len(result) >= k:
                 break
-            if item not in basket and item not in best and item not in ranked:
-                ranked.append(item)
-    return ranked
+            if item not in basket and item not in scores and item not in {rec[0] for rec in result}:
+                result.append((item, None, None))
+    return result
