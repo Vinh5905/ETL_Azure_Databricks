@@ -54,77 +54,17 @@ Theo [data_dictionary §4](../data/data_dictionary.md), bổ sung thêm 2 trư�
 
 ### 2.2 Code
 
-```python
-# src/streaming/simulator/simulate.py
-import argparse, datetime as dt, json, math, os, time
-import pandas as pd
-from confluent_kafka import Producer          # pip install confluent-kafka pandas
-
-from common.sim_time import order_ts_sim
-
-
-def clean(v):
-    return None if isinstance(v, float) and math.isnan(v) else v
-
-
-def build_events(data_dir: str) -> list[dict]:
-    o = pd.read_csv(f"{data_dir}/orders.csv")
-    o = o[o.eval_set == "train"]
-    items = (pd.read_csv(f"{data_dir}/order_products__train.csv")
-             .groupby("order_id")[["product_id", "add_to_cart_order", "reordered"]]
-             .apply(lambda g: g.to_dict("records")).rename("items"))
-    o = o.join(items, on="order_id", how="inner")
-    o["event_time"] = [order_ts_sim(u, h) for u, h in zip(o.user_id, o.order_hour_of_day)]
-    o = o.sort_values(["event_time", "order_id"])           # phát theo thứ tự thời gian giả lập
-    return o.to_dict("records")
-
-
-def main():
-    ap = argparse.ArgumentParser()
-    ap.add_argument("--data-dir", required=True)
-    ap.add_argument("--run-id", required=True)               # ví dụ run-03; mỗi lần phát lại một mã mới
-    ap.add_argument("--from-frac", type=float, default=0.0)  # 0.0–0.95 trước demo; 0.95–1.0 trong demo
-    ap.add_argument("--to-frac", type=float, default=1.0)
-    ap.add_argument("--rate", type=float, default=200)       # sự kiện / giây
-    ap.add_argument("--location", default="laptop")
-    a = ap.parse_args()
-
-    conn = os.environ["EH_SEND_CONN"]                         # lấy bằng az keyvault secret show, không ghi ra file
-    ns = conn.split("Endpoint=sb://")[1].split("/")[0]
-    p = Producer({
-        "bootstrap.servers": f"{ns}:9093",
-        "security.protocol": "SASL_SSL", "sasl.mechanism": "PLAIN",
-        "sasl.username": "$ConnectionString", "sasl.password": conn,
-        "enable.idempotence": True,                           # producer tự retry không sinh bản sao trong một phiên
-        "linger.ms": 20, "compression.type": "gzip",
-    })
-    ev = build_events(a.data_dir)
-    lo, hi = int(len(ev) * a.from_frac), int(len(ev) * a.to_frac)
-    for i, e in enumerate(ev[lo:hi]):
-        body = {"event_id": f"order-{e['order_id']}", "event_type": "order_placed", "schema_version": 1,
-                **{k: clean(e[k]) for k in ["order_id", "user_id", "order_number", "order_dow",
-                                     "order_hour_of_day", "days_since_prior_order"]},
-                "event_time": e["event_time"].isoformat().replace("+00:00", "Z"),
-                "replay_run_id": a.run_id, "producer_location": a.location,
-                "produced_at": dt.datetime.now(dt.timezone.utc).isoformat().replace("+00:00", "Z"),
-                "items": e["items"]}
-        p.produce("orders-stream", key=str(e["order_id"]), value=json.dumps(body))
-        if i % 1000 == 0:
-            p.poll(0)
-        time.sleep(1 / a.rate)
-    p.flush()
-```
-
-```bash
-export EH_SEND_CONN=$(az keyvault secret show --vault-name <kv> --name eh-send-connection-string --query value -o tsv)
-python src/streaming/simulator/simulate.py --data-dir ./data --run-id run-01 --to-frac 0.95 --rate 500
-```
+Simulator có hai chế độ. `--dry-run FILE` ghi JSON Lines để kiểm tại máy. `--send` gửi
+cùng cấu trúc JSON tới `orders-stream` qua Kafka. Xem [README simulator](../../src/streaming/simulator/README.md)
+để chạy từ laptop hoặc Codespace và đối soát 1.000 sự kiện trên Azure Portal.
 
 - `key = order_id`, nên mọi sự kiện của một đơn vào cùng partition và giữ thứ tự trong partition.
 - `order_ts_sim` import từ `src/common/sim_time.py`; đơn train là đơn cuối nên dùng
   `days_back = 0` mặc định. Đặt `PYTHONPATH=src` khi chạy script trực tiếp từ gốc repo.
   Không viết lại công thức trong simulator; test local đã so khớp với SQL ở silver.
-- `days_since_prior_order` không bao giờ rỗng ở đơn train (đơn train luôn có đơn trước), nhưng hàm `clean` vẫn đổi NaN thành `null` để JSON hợp lệ.
+- Simulator đổi `days_since_prior_order` rỗng hoặc NaN thành `null` để JSON hợp lệ.
+- Producer đọc chuỗi kết nối SAS từ `EH_SEND_CONN` và bật `enable.idempotence`. Event Hubs
+  Standard dùng `--compression none`. [Hỗ trợ nén Kafka của Azure Event Hubs](https://learn.microsoft.com/en-us/azure/event-hubs/azure-event-hubs-apache-kafka-overview#compression).
 
 ## 3. Pipeline `instacart_stream`
 
