@@ -144,7 +144,7 @@ Nguyên tắc: làm mục 1–3 khi chạm mốc 50% (email budget 50 USD). Hi�
 
 | # | Việc | Ai | Tiết kiệm ước tính |
 |---|---|---|---|
-| 1 | **Đã làm (2026-11-19):** giảm `auto_stop_mins` của `wh-instacart-bi` từ 10 xuống 5 phút (`30-databricks`). Serverless cho phép tối thiểu 5 phút trên UI | P1 | Mỗi lần warehouse rảnh tốn khoảng 0,23 USD thay vì 0,47 USD |
+| 1 | **Đã làm:** giảm `auto_stop_mins` của `wh-instacart-bi` từ 10 xuống 5 phút (2026-11-19), rồi xuống 2 phút (2026-11-20, `30-databricks`). UI chỉ cho chọn từ 5 phút; Terraform đặt thấp hơn cho serverless | P1 | Mỗi lần warehouse rảnh tốn khoảng 0,09 USD thay vì 0,23 USD (5 phút) hay 0,47 USD (10 phút) |
 | 2 | Không để Power BI hay dashboard tự refresh theo lịch ngắn trên warehouse. Report dùng Import, chỉ trang real-time mới dùng DirectQuery. Gom các truy vấn kiểm tra tay vào một lần | P3, mọi người | Phần lớn trong 9 USD/ngày của serverless SQL |
 | 3 | Event Hubs (Sub B) chỉ bật trong buổi đo. `stream-toggle` đã tắt mỗi đêm; không bật lại ngoài buổi đo | P3 | Toàn bộ phí Standard TU ngoài giờ đo |
 | 4 | Job và pipeline classic giữ đúng policy single-node; pipeline dev không bật `continuous` | P2, P3 | Tránh chạy liên tục 4 vCPU (khoảng 0,5 USD/giờ, gồm DBU) |

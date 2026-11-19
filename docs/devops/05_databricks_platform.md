@@ -382,7 +382,7 @@ resource "databricks_sql_endpoint" "bi" {
   cluster_size              = "2X-Small"
   min_num_clusters          = 1
   max_num_clusters          = 1
-  auto_stop_mins            = 5 # 2X-Small khoảng 2,8 USD/giờ, mỗi phút rảnh đều tính tiền
+  auto_stop_mins            = 2 # 2X-Small khoảng 2,8 USD/giờ, mỗi phút rảnh đều tính tiền
   enable_serverless_compute = true
   warehouse_type            = "PRO"
   tags {
