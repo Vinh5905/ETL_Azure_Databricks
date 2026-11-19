@@ -1,4 +1,4 @@
-"""Kiểm tra gợi ý model mà không cần cài MLflow hoặc tạo file artifact."""
+"""Kiểm tra model serving, MLflow logging và file artifact."""
 
 import mlflow
 import pandas as pd
@@ -10,12 +10,14 @@ from ml.serving.basket_rules import BasketRules
 
 def _model():
     model = BasketRules()
-    model.by_antecedent = {(10,): [(12, 0.7, 1.4)], (10, 11): [(13, 0.9, 1.8)]}
+    model.rules = [
+        {"antecedent": [10], "consequent": [12], "confidence": 0.7, "lift": 1.4},
+        {"antecedent": [10, 11], "consequent": [13], "confidence": 0.9, "lift": 1.8},
+    ]
     model.pid2idx = {100: 10, 101: 11, 102: 12, 103: 13, 104: 14}
     model.idx2pid = {idx: pid for pid, idx in model.pid2idx.items()}
     model.idx2name = {idx: f"item-{idx}" for idx in model.idx2pid}
     model.popular = [10, 11, 14, 12]
-    model.max_left = 2
     return model
 
 
@@ -28,6 +30,16 @@ def test_model_ranks_rules_then_fills_with_popularity():
 def test_model_rejects_invalid_k():
     with pytest.raises(ValueError):
         _model().predict(None, pd.DataFrame({"product_ids": [[]]}), {"k": 0})
+
+
+def test_model_uses_popular_fallback_when_no_rule_matches():
+    model = _model()
+    model.rules = []
+    output = model.predict(None, pd.DataFrame({"product_ids": [[100]]}), {"k": 3})
+    assert output.product_id.tolist() == [101, 104, 102]
+    assert output.source.tolist() == ["popular", "popular", "popular"]
+    assert str(output.confidence.dtype) == "float64"
+    assert str(output.lift.dtype) == "float64"
 
 
 def test_pyfunc_model_logs_loads_and_predicts(tmp_path):
