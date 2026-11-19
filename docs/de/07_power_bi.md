@@ -111,7 +111,7 @@ CALCULATE ( SUM ( stream_kpi_1m[orders] ),
 | **2 · Chi tiết sản phẩm** (đích drill-through) | Ảnh (`image_url`), thẻ giá hiện hành / KM / Nutri-Score / NOVA; bảng top 10 sản phẩm hay mua kèm (`product_pair_counts` theo `lift`) | Drill-through field: `product_360[product_id]`; nút *Back* |
 | **3 · Bộ lọc 1: thời gian mua** | Ma trận nhiệt `order_dow` × `order_hour_of_day` (`kpi_by_dow_hour`); đường Orders theo ngày | Slicer ngày; bookmark "Theo giờ" / "Theo tuần" |
 | **4 · Bộ lọc 2: danh mục** | Treemap Dept Revenue theo department → aisle; bảng top sản phẩm (`product_360`); cột Promo Item Share | Slicer department / aisle; chuột phải → *Drill through* sang trang 2 |
-| 5 · Vận hành & real-time | Thẻ `Orders last 5 min`; đường `stream_kpi_1m`; p50/p95 độ trễ theo `eh_region`; bảng `dq_results`, `reconciliation` | Auto page refresh (mục 6) |
+| 5 · Vận hành & real-time | Thẻ `Orders last 5 min`; đường `stream_kpi_1m`; p50/p95 độ trễ theo `eh_region`; bảng `dq_results` (nhãn pipeline ưu tiên `pipeline_name`), `reconciliation` | Auto page refresh (mục 6) |
 | 6 · Luật kết hợp (G5) | Bảng luật (vế trái → vế phải, support, confidence, lift); scatter support × confidence, cỡ điểm theo lift; thẻ số luật | Slicer `confidence`, `lift`, `antecedent_size`; drill-through sang trang 2 theo `consequent_product_id` |
 | 7 · Thực nghiệm thuật toán (G5) | Thời gian theo MinSupp / quy mô / số item; speedup và efficiency theo core; MapReduce và Spark; HitRate@10 kèm baseline | Slicer `experiment`, `grain`, `platform`, `algo`; bookmark "Hiệu năng" / "Chất lượng luật". Danh sách biểu đồ ở [ds/04 §8](../ds/04_thuc_nghiem_danh_gia.md) |
 

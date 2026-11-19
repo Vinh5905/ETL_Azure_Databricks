@@ -694,8 +694,8 @@ Số dòng đạt/bị loại theo từng expectation lấy từ event log, ph�
 
 **Việc cần làm**
 
-1. Tạo bảng ops.dq_results (update_id, pipeline, flow, dataset, expectation, passed, failed, at)
-2. Viết src/tasks/collect_dq.sql MERGE theo (update_id, flow, expectation) cho event_log_batch
+1. Tạo bảng ops.dq_results (update_id, pipeline, pipeline_name, flow, dataset, expectation, passed, failed, at). pipeline ưu tiên ID ổn định, pipeline_name dùng hiển thị.
+2. Viết src/tasks/collect_dq.sql MERGE theo (pipeline, update_id, flow, dataset, expectation) cho event_log_batch
 3. Thêm nhánh cho event_log_stream khi pipeline stream có event log
 4. Lưu sẵn các truy vấn điều tra trong de/06 §3 vào runbook
 
