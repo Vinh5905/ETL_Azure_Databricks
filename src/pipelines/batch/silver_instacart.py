@@ -4,6 +4,7 @@ from pyspark import pipelines as dp
 from pyspark.sql import SparkSession
 from pyspark.sql import functions as F
 
+from common.baskets import BASKET_RULES, COMPLETE_BASKETS, build_baskets
 from common.instacart import (
     ITEM_COLUMNS,
     ITEM_INPUT_RULES,
@@ -91,3 +92,28 @@ dp.create_auto_cdc_flow(
     except_column_list=["_rescued_data", "_ingest_ts", "_source_file", "_file_mtime"],
     stored_as_scd_type=1,
 )
+
+
+if spark.conf.get("enable_baskets", "false").lower() == "true":
+
+    @dp.temporary_view(name="basket_candidates")
+    @dp.expect("holdout_items_present", "split <> 'holdout' OR n_items > 0")
+    def basket_candidates():
+        return build_baskets(
+            spark.read.table(table_name(SILVER, "orders_batch")),
+            spark.read.table(table_name(SILVER, "order_items_prior")),
+            spark.read.table(table_name(SILVER, "stream_orders")),
+            spark.read.table(table_name(SILVER, "stream_order_items")),
+            include_unready_holdout=True,
+        )
+
+    @dp.materialized_view(
+        name=table_name(SILVER, "baskets"),
+        cluster_by=["split"],
+        table_properties={"quality": "silver"},
+        comment="Giỏ DS: batch prior để học, stream train làm holdout; không có đơn test.",
+    )
+    @dp.expect_or_fail("non_empty_prior_basket", "split <> 'prior' OR n_items > 0")
+    @dp.expect_all_or_fail(BASKET_RULES)
+    def baskets():
+        return spark.read.table("basket_candidates").where(COMPLETE_BASKETS)

@@ -42,6 +42,9 @@ variables:
   off_state_schema:
     description: Schema chứa off_crawl_state; dev dùng ops riêng, prod dùng landing_meta
     default: landing_meta
+  enable_baskets:
+    description: Bật baskets khi hai bảng silver stream đã có trong target
+    default: "false"
   node_type_id:
     description: Máy của job cluster, phải trùng giá trị fixed trong policy (docs/devops/05 §3 bước 6)
     default: Standard_D4ds_v4

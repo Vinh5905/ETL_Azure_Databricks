@@ -97,7 +97,7 @@ Quyền duyệt PR theo `.github/CODEOWNERS`.
 
 ```bash
 uv sync                                   # Python 3.11 + pyspark 3.5 (khớp DBR 15.4 LTS)
-uv run pytest -q                          # toàn bộ test (cần Java 17+)
+uv run pytest -q                          # toàn bộ test (dùng Java 17 để chạy Arrow UDF với Spark 3.5)
 uv run pytest tests/test_common_spark.py::test_add_ingest_metadata_adds_columns   # một test
 uv run ruff check . && uv run ruff format --check .
 python3 scripts/commit_lint.py --message "feat(infra): add core storage"   # kiểm commit message

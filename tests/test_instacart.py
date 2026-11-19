@@ -13,6 +13,7 @@ from types import ModuleType, SimpleNamespace
 import pytest
 from pyspark.sql import functions as F
 
+from common.baskets import BASKET_RULES
 from common.instacart import (
     ITEM_COLUMNS,
     ITEM_INPUT_RULES,
@@ -124,7 +125,7 @@ def test_canonical_headers_prefer_valid_then_latest_and_keep_unrecoverable_heade
 
 
 @pytest.fixture
-def pipeline(spark, monkeypatch, inputs):
+def pipeline(spark, monkeypatch, inputs, request):
     datasets, flows, targets, queries = {}, [], {}, []
 
     def register(kind):
@@ -172,11 +173,17 @@ def pipeline(spark, monkeypatch, inputs):
             expect_all=lambda rules: expectation("warn", rules),
             expect_all_or_drop=lambda rules: expectation("drop", rules),
             expect_or_fail=lambda name, condition: expectation("fail", {name: condition}),
+            expect=lambda name, condition: expectation("warn", {name: condition}),
             create_streaming_table=create_streaming_table,
             create_auto_cdc_flow=create_auto_cdc_flow,
         ),
     )
-    configuration = {"catalog": "test_catalog", "bronze": "p2_bronze", "silver": "p2_silver"}
+    configuration = {
+        "catalog": "test_catalog",
+        "bronze": "p2_bronze",
+        "silver": "p2_silver",
+        "enable_baskets": str(getattr(request, "param", True)).lower(),
+    }
     previous = {key: spark.conf.get(key, None) for key in configuration}
     try:
         for key, value in configuration.items():
@@ -331,3 +338,50 @@ def test_item_preprocessing_remains_streaming_and_preserves_later_replay_events(
     finally:
         query.stop()
         spark.catalog.dropTempView(name)
+
+
+@pytest.fixture
+def baskets_pipeline(pipeline, spark):
+    silver = "`test_catalog`.`p2_silver`"
+    headers = assess_instacart(pipeline.raw["`test_catalog`.`p2_bronze`.`orders`"], "orders")
+    pipeline.raw[f"{silver}.`stream_orders`"] = headers.where("eval_set = 'train'").select("order_id", "user_id")
+    pipeline.raw[f"{silver}.`order_items_prior`"] = assess_instacart(
+        pipeline.raw["`test_catalog`.`p2_bronze`.`order_products_prior`"], "items"
+    ).select("order_id", "product_id")
+    pipeline.raw[f"{silver}.`stream_order_items`"] = (
+        spark.read.schema("order_id BIGINT, product_id BIGINT, add_to_cart_order INT, reordered INT")
+        .option("header", "true")
+        .csv(str(ROOT / "tests/fixtures/instacart/order_products__train.csv"))
+    )
+    return pipeline
+
+
+def test_pipeline_baskets_reads_silver_tables_and_applies_failure_rules(baskets_pipeline):
+    name = "`test_catalog`.`p2_silver`.`baskets`"
+    output = baskets_pipeline.read(name)
+    assert output.count() == 15
+    fn, kind, definition = baskets_pipeline.datasets[name]
+    assert kind == "mv" and definition["cluster_by"] == ["split"]
+    assert ("fail", {"non_empty_prior_basket": "split <> 'prior' OR n_items > 0"}) in fn.expectations
+    assert ("fail", BASKET_RULES) in fn.expectations
+    # Task views không thuộc graph LDP, và batch không nhận quyền sở hữu target stream.
+    assert not any("stream_orders" in target or "stream_order_items" in target for target in baskets_pipeline.targets)
+
+
+@pytest.mark.parametrize("source,order", [("order_items_prior", 11), ("stream_order_items", 13)])
+def test_pipeline_baskets_rejects_header_without_items(baskets_pipeline, source, order):
+    key = f"`test_catalog`.`p2_silver`.`{source}`"
+    baskets_pipeline.raw[key] = baskets_pipeline.raw[key].where(F.col("order_id") != order)
+    if source == "order_items_prior":
+        with pytest.raises(ValueError, match="expectation_failed"):
+            baskets_pipeline.read("`test_catalog`.`p2_silver`.`baskets`")
+    else:
+        assert baskets_pipeline.read("`test_catalog`.`p2_silver`.`baskets`").count() == 14
+        warn = ("warn", {"holdout_items_present": "split <> 'holdout' OR n_items > 0"})
+        assert warn in baskets_pipeline.datasets["basket_candidates"][0].expectations
+
+
+@pytest.mark.parametrize("pipeline", [False], indirect=True)
+def test_pipeline_can_run_without_stream_baskets_enabled(pipeline):
+    assert "basket_candidates" not in pipeline.datasets
+    assert "`test_catalog`.`p2_silver`.`baskets`" not in pipeline.datasets

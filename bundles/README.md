@@ -92,5 +92,33 @@ Quyền đọc event log cho vai khác vẫn theo AD-OPS-20; không tự mở r�
 Xem kết quả validate, deploy, smoke update và đọc event log trên [issue AD-DE-08](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/44).
 Smoke update kiểm đường chạy của pipeline và event log. Đối soát dữ liệu ETL thực hiện ở các task bronze, silver và gold.
 
+AD-DE-13 bổ sung notebook `src/pipelines/batch/silver_off.py` được glob hiện tại nạp:
+`off_products_clean`, `product_off_match` và quarantine trong schema silver đã resolve.
+Notebook cài RapidFuzz ở ô đầu; không thêm cluster/job. Cách lấy số thật và nghiệm thu:
+[03d_nghiem_thu_off.md](../docs/de/03d_nghiem_thu_off.md). Số đo theo nhóm nằm ở
+[data dictionary §5.6](../docs/data/data_dictionary.md#56-cách-join-ghép-theo-tên-qua-bảng-cầu-nối).
+
+AD-DE-14 luôn đăng ký MV `dim_product` và chỉ đọc ba nguồn OFF khi bật `enable_off`. MV dùng
+`as_of_date` để chọn khuyến mãi. Giá hiện hành lấy từ SCD2, OFF/ảnh chỉ dùng matched, có fail guard
+cho fanout và xung đột nguồn. Không thêm cluster/job. Cách đối soát 49.688 khóa và coverage giá thật:
+[03e_nghiem_thu_dim_product.md](../docs/de/03e_nghiem_thu_dim_product.md). Đã kiểm trên dev với OFF tắt và bật.
+
+AD-DE-17 có init_reconciliation/reconcile/reconcile_g3/reconcile_g4 trong `src/tasks/`,
+chạy SQL warehouse theo profile kỳ vọng nguồn và run_id/check_date chung. Các stage đọc nguồn
+batch/G3/G4 tách riêng để không resolve bảng chưa có; AD-DE-18 sẽ tích hợp điều phối, chưa tạo job mới.
+Cách lấy kỳ vọng từ manifest và kiểm đủ inventory trước refresh_bi/ds-prepare:
+[06c_nghiem_thu_reconciliation.md](../docs/de/06c_nghiem_thu_reconciliation.md). Hai lượt batch trên
+warehouse dev đều đạt 22 check. G3/G4 còn chờ nguồn.
+
+AD-DE-16 có `src/tasks/collect_dq.sql`, nhận catalog/ops_schema/event_log_table/update_id,
+thu batch hoặc stream vào cùng bảng Delta `ops.dq_results`. Task chạy trên warehouse serverless,
+do AD-DE-18 tích hợp điều phối sau; không tạo job/cluster trong thay đổi này.
+Hợp đồng counters, khóa có dataset và cách nghiệm thu chạy hai lần/quarantine:
+[06b_nghiem_thu_dq.md](../docs/de/06b_nghiem_thu_dq.md). Đã kiểm batch trên warehouse dev với
+47 khóa expectation và bốn bảng quarantine. Còn chờ event log stream.
+
+AD-DE-15 thêm `baskets` và views UC hợp nhất. Mặc định `enable_baskets=false`; chỉ bật
+khi hai bảng stream tồn tại đúng schema. Xem [nghiệm thu baskets](../docs/de/03f_nghiem_thu_baskets.md).
+
 Tham khảo: [resource bundle chính thức](https://learn.microsoft.com/en-us/azure/databricks/dev-tools/bundles/resources),
 [event log pipeline](https://learn.microsoft.com/en-us/azure/databricks/ldp/monitor-event-logs).

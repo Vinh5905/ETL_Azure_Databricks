@@ -101,7 +101,8 @@ variables:
 
 ## 3. Event log và `ops.dq_results`
 
-Bổ sung vào cả hai pipeline (02 §2.2, 04 §3.1) để event log được lưu thành bảng UC. Người có quyền `SELECT` trên `ops` đọc được, không cần là chủ pipeline:
+Cấu hình publish event log UC của batch đã có trong bundle AD-DE-08. Stream dùng cùng schema ops
+và tên `event_log_stream` khi AD-ST-03 triển khai:
 
 ```yaml
       event_log:
@@ -110,89 +111,174 @@ Bổ sung vào cả hai pipeline (02 §2.2, 04 §3.1) để event log được l
         name: event_log_batch          # pipeline stream: event_log_stream
 ```
 
+### 3.1 Thu metrics bằng collect_dq
+
+[`src/tasks/collect_dq.sql`](../../src/tasks/collect_dq.sql) tạo bảng Delta thường `ops.dq_results`
+và MERGE metrics của **một update_id được chỉ định**. Bốn tham số STRING bắt buộc: `catalog`,
+`ops_schema`, `event_log_table` (chỉ event_log_batch hoặc event_log_stream), `update_id`.
+Chạy toàn bộ file cùng phiên SQL trên warehouse serverless, dùng đúng schema dev đã resolve.
+
+Không UNION tới bảng stream chưa có. Khi stream đã publish log, chạy lại **cùng file** với
+`event_log_table=event_log_stream` và update_id của stream. Hai nguồn ghi chung bảng đích.
+AD-DE-18 sẽ truyền tham số/update ID và điều phối SQL task; cần thu cả update lỗi (run_if phù hợp),
+không suy đoán update mới nhất khi một run khác đang chạy. Collector không tạo pipeline hay cấp quyền.
+
+| Cột | Hợp đồng |
+|---|---|
+| update_id | ID update từ origin |
+| pipeline | Ưu tiên origin.pipeline_id, fallback pipeline_name nếu nguồn cũ thiếu ID |
+| flow | origin.flow_name |
+| dataset | Tên từ chính expectation, fallback origin.dataset_name; không gộp các view trong cùng flow |
+| expectation | Tên luật |
+| passed / failed | BIGINT, tổng các bộ đếm quan sát trong event log cho luật đó |
+| at | TIMESTAMP_LTZ, thời điểm event metrics mới nhất, không phải lúc chạy collector |
+
+Khóa MERGE là **(pipeline, update_id, flow, dataset, expectation)**. Khóa ba cột của ví dụ cũ
+không phân biệt được một luật cùng tên trên nhiều dataset trong cùng flow; cũng không tách được pipeline.
+Bảng cũ nếu đã tạo theo hợp đồng khác cần audit khóa trùng trước chuyển đổi, không tự DELETE/overwrite lịch sử.
+
+Collector đọc origin/details JSON STRING hoặc STRUCT, giữ event flow_progress có maturity STABLE hoặc NULL.
+Nó cộng metrics ở **cả RUNNING lẫn COMPLETED**, vì nhiều streaming flow chỉ emit metrics trong micro-batch RUNNING.
+Cùng event ID/cùng nội dung được tính một lần; xung đột ID, thiếu khóa/counter/timestamp, số âm hoặc JSON sai
+làm MERGE fail, nguồn event log vẫn giữ nguyên. Không chuyển counter thiếu thành 0.
+
+Phạm vi là toàn bộ event còn giữ cho update_id, **không cắt lookback hai ngày giữa update**.
+Chạy lại không nhân dòng; event đến muộn bổ sung tổng của cùng khóa. Snapshot cũ có at nhỏ hơn được bỏ qua;
+nguồn cùng/mới hơn nhưng tổng giảm sẽ báo lỗi (điều tra retention hoặc nguồn chưa đầy đủ), không ghi đè kết quả cũ.
+Payload không đổi không ghi UPDATE. Đây không phải cơ chế archive: phải giữ đủ log của update khi thu lần đầu.
+
+### 3.2 Đọc số liệu đúng phạm vi
+
+- Metrics là số dòng đã đi qua **operator/expectation**, không phải số dòng cuối của bảng silver.
+  Một dòng có thể vi phạm nhiều luật; không cộng failed của mọi luật để suy ra số dòng quarantine.
+- View dùng bởi nhiều flow có thể emit nhiều bộ metrics. Đối chiếu đúng pipeline/update/flow/dataset và
+  cùng lô nguồn; không cộng xuyên flow hay so một update với toàn bộ quarantine tích lũy.
+- MV đánh giá snapshot có thể đếm lại toàn bộ dữ liệu ở mỗi update; streaming view đếm phần được xử lý.
+  Timestamp `_quarantined_at` không tự chứng minh cùng input population với metrics.
+- Khi expectation fail (`expect_or_fail` / `expect_all_or_fail`) dừng update do vi phạm,
+  nền tảng **không ghi metrics đếm**; xem ERROR/violation trong event log. Flow không có dữ liệu mới, không có expectation
+  hoặc operator không hỗ trợ có thể không emit metrics. Collector không dựng hàng zero giả cho các trường hợp này.
+- Mục tiêu “mọi expectation” được nghiệm thu bằng đối chiếu inventory: mọi metrics đã emit phải vào bảng,
+  luật fail/không emit cần được giải thích từ cấu hình và event log, không tuyên bố coverage 100% từ số hàng đếm.
+
+### 3.3 Truy vấn điều tra lưu sẵn
+
+Các câu sau chạy độc lập, nhận cùng tham số log/update. Chọn nguồn batch hoặc stream bằng event_log_table.
+
 ```sql
--- src/tasks/collect_dq.sql : MERGE theo (update_id, flow, expectation) → chạy lại không nhân dòng
-MERGE INTO instacart.ops.dq_results t
-USING (
-  SELECT origin.update_id                         AS update_id,
-         origin.pipeline_name                     AS pipeline,
-         origin.flow_name                         AS flow,
-         e.dataset, e.name                        AS expectation,
-         sum(e.passed_records)                    AS passed,
-         sum(e.failed_records)                    AS failed,
-         max(timestamp)                           AS at
-  FROM instacart.ops.event_log_batch
-  LATERAL VIEW explode(from_json(details:flow_progress.data_quality.expectations,
-      'array<struct<name:string,dataset:string,passed_records:bigint,failed_records:bigint>>')) x AS e
-  WHERE event_type = 'flow_progress' AND timestamp > current_timestamp() - INTERVAL 2 DAYS
-  GROUP BY ALL
-) s
-ON t.update_id = s.update_id AND t.flow = s.flow AND t.expectation = s.expectation
-WHEN MATCHED THEN UPDATE SET *
-WHEN NOT MATCHED THEN INSERT *;
+-- Lỗi và violation của update, gồm luật fail không có counter.
+WITH events AS (
+  SELECT timestamp, level, message, error,
+         get_json_object(to_json(named_struct('value', origin)), '$.value') AS o
+  FROM IDENTIFIER('`' || replace(:catalog, '`', '``') || '`.`' || replace(:ops_schema, '`', '``')
+                  || '`.`' || replace(:event_log_table, '`', '``') || '`')
+)
+SELECT timestamp, get_json_object(o, '$.flow_name') AS flow, message, error
+FROM events WHERE level = 'ERROR' AND get_json_object(o, '$.update_id') = :update_id
+ORDER BY timestamp DESC;
+
+-- Status/output mỗi event, không lọc chỉ COMPLETED vì RUNNING có metrics.
+WITH events AS (
+  SELECT id, timestamp,
+    get_json_object(to_json(named_struct('value', origin)), '$.value') AS o,
+    get_json_object(to_json(named_struct('value', details)), '$.value') AS d
+  FROM IDENTIFIER('`' || replace(:catalog, '`', '``') || '`.`' || replace(:ops_schema, '`', '``')
+                  || '`.`' || replace(:event_log_table, '`', '``') || '`')
+  WHERE event_type = 'flow_progress'
+)
+SELECT id, timestamp, get_json_object(o, '$.flow_name') AS flow,
+       get_json_object(d, '$.flow_progress.status') AS status,
+       try_cast(get_json_object(d, '$.flow_progress.metrics.num_output_rows') AS BIGINT) AS rows_out
+FROM events WHERE get_json_object(o, '$.update_id') = :update_id ORDER BY timestamp;
+
+-- Đọc kết quả thu theo từng dataset, tránh cộng lại luật trùng tên giữa các view.
+SELECT pipeline, pipeline_name, update_id, flow, dataset, expectation, passed, failed, at
+FROM IDENTIFIER('`' || replace(:catalog, '`', '``') || '`.`' || replace(:ops_schema, '`', '``') || '`.`dq_results`')
+WHERE update_id = :update_id ORDER BY pipeline, flow, dataset, expectation;
 ```
 
-Bảng `ops.dq_results` tạo một lần với cột `update_id, pipeline, flow, dataset, expectation, passed, failed, at`.
+Đếm lý do quarantine bằng `explode(_dq_failed)` trên **cùng tập bản ghi nguồn cần so**. Mỗi lý do có
+số riêng, một bản ghi có thể có nhiều lý do; số dòng quarantine bằng số bản ghi lỗi duy nhất, không phải
+SUM failed qua các luật. Ví dụ ở AD-DE-12: warn assessed header đọc raw snapshot, canonical header có fail gate,
+orders_batch drop sau canonical; không lấy một tổng metrics của ba nơi để đối chiếu quarantine raw.
 
-Câu hỏi thường gặp khi điều tra:
-
-```sql
--- Update gần nhất lỗi ở flow nào, vì sao
-SELECT timestamp, origin.flow_name, level, message, error
-FROM instacart.ops.event_log_batch
-WHERE level = 'ERROR' ORDER BY timestamp DESC LIMIT 20;
-
--- Mỗi flow xử lý bao nhiêu dòng trong update gần nhất
-SELECT origin.flow_name, details:flow_progress.metrics.num_output_rows::bigint AS rows_out
-FROM instacart.ops.event_log_batch
-WHERE event_type = 'flow_progress' AND details:flow_progress.status = 'COMPLETED'
-  AND origin.update_id = (SELECT max_by(origin.update_id, timestamp)
-                          FROM instacart.ops.event_log_batch WHERE event_type = 'create_update');
-```
+Hướng dẫn chạy hai lần, kiểm dữ liệu xấu/counter thiếu, retention và chốt bằng chứng:
+[06b_nghiem_thu_dq.md](06b_nghiem_thu_dq.md). **Chưa nghiệm thu trên workspace**; #44/#48/#24/#22 còn là gate.
+Tham khảo [schema event log](https://learn.microsoft.com/en-us/azure/databricks/ldp/monitor-event-log-schema),
+[metrics expectations](https://learn.microsoft.com/en-us/azure/databricks/ldp/expectations).
 
 ## 4. Đối soát tự động `ops.reconciliation`
 
+Triển khai ở `src/tasks/init_reconciliation.sql`, `reconcile.sql`, `reconcile_g3.sql`,
+`reconcile_g4.sql`. Các file chạy SQL trên warehouse serverless; không tự chạy pipeline hoặc cấp quyền.
+Tách file theo cổng vì SQL vẫn resolve bảng trong nhánh WHERE=false; không thể dùng điều kiện tắt
+để tránh lỗi khi bảng stream/gold chưa tồn tại.
+
+### 4.1 Kỳ vọng theo manifest nguồn
+
+`ops.expected_counts` có profile, metric, expected BIGINT, source và configured_at.
+Init seed chín số tham chiếu Instacart 2017 **khi khóa chưa có**, không ghi đè cấu hình đã thay.
+Số tham chiếu phải đối chiếu bản Zenodo thực tế; chưa được nghiệm thu trong phiên triển khai này.
+
+Với dữ liệu mẫu, `scripts/expected_counts_sql.py` đọc `_manifest.json` do AD-DE-01 tạo để in SQL MERGE
+chín số tổng hợp và SHA-256 manifest. Script không đọc actual từ bronze/silver, không kết nối cloud,
+không xuất user_ids. Kiểm số nguyên không âm, tổng prior/train/test khớp orders và nguồn không rỗng.
+Không lấy actual làm expected hoặc nhân tất cả số nguồn theo 1%, vì danh mục được giữ toàn bộ.
+
+### 4.2 Các stage và grain kết quả
+
+| Stage / file | Số check | Phạm vi |
+|---|---|---|
+| batch / reconcile.sql | 22 | Sáu bronze CSV so nguồn; split, clock, header/món prior silver, khóa, payload, orphan |
+| G3 / reconcile_g3.sql | 25 | dim_product, phiên bản giá mở, stream train, view hợp nhất và baskets |
+| G4 / reconcile_g4.sql | 3 | Số dòng fact, không fanout, cặp khóa gold khớp silver |
+
+Check số dòng dùng chín kỳ vọng độc lập, không hardcode lại theo từng nguồn.
+Các check payload dùng **EXCEPT ALL hai chiều** để bắt cả dữ liệu sai nhưng tổng số dòng vẫn đúng.
+G3 đối chiếu header stream với bronze train, payload món stream và danh sách/split của giỏ;
+G4 đối chiếu khóa fact với silver.order_items. Chỉ đếm phiên bản giá `__END_AT IS NULL` khi tìm trùng.
+
+`ops.reconciliation` giữ check_date/check_name/expected/actual/passed/checked_at và thêm
+run_id/profile/stage/config_hash để biết lần chạy/phạm vi. Khóa MERGE vẫn **(check_date, check_name)**:
+chạy lại trong ngày ghi lại kết quả mới nhất, không nhân dòng. Không dùng một ops namespace cho các
+profile/dataset khác nhau chạy đồng thời. Check_date ISO do caller cố định cho cả sequence, checked_at
+là thời điểm kiểm, được thay đổi khi chạy lại.
+
+Hash gồm kỳ vọng/provenance và catalog/ops/bronze/silver/gold schema. G3 yêu cầu đủ 22 check batch xanh,
+G4 yêu cầu đủ 47 check trước, cùng run/profile/hash. Thay manifest hoặc namespace cần kiểm lại từ batch.
+Thiếu rows/config, config âm/trùng hoặc kết quả cũ không được coi là đạt; COUNT đủ inventory chặn vacuous pass.
+
+MERGE **lưu cả kết quả sai**, sau đó assert_true cuối file làm task fail. Kết quả đỏ còn trong ops để
+BI/điều tra; đây là hai transaction, không rollback kết quả sai khi assert đỏ. Repair bằng dữ liệu/expected
+đúng nguồn rồi chạy lại, không xóa lịch sử hay đổi số kỳ vọng để che sai.
+
+Nguồn trong reconcile là manifest CSV Instacart của profile tương ứng. Đối soát Azure SQL
+`retail_db` và Parquet CDC theo cửa sổ ADF thuộc nghiệm thu AD-DE-07.
+
+Bronze append-only có thể giữ cả bản cũ và file nạp lại. Check so số khóa phân biệt theo manifest.
+Check payload chọn bản hợp lệ mới nhất theo khóa rồi dùng một FULL OUTER JOIN và so null-safe.
+Số dòng thô dùng để điều tra lượng replay, không quyết định qua cổng. Đo thời gian trên warehouse
+khi đầy đủ nguồn G3 và lưu vào báo cáo cùng quy mô dữ liệu.
+
+### 4.3 Chạy và xem kết quả
+
+Chạy init với catalog/ops_schema rồi cấu hình profile. Mỗi file reconcile nhận tám tham số STRING:
+`catalog`, `ops_schema`, `bronze_schema`, `silver_schema`, `gold_schema`, `profile`, `run_id`, `check_date`.
+Chạy **nguyên file**, dừng ở lỗi đầu tiên. Batch không cần bảng stream/dim/gold; G3 chỉ bật sau full stream;
+G4 chỉ chạy khi gold đã triển khai. G3 chưa xanh thì không chạy ds-prepare, G4 chưa kiểm thì không nhận
+đã nghiệm thu gold/dashboard. AD-DE-18 tích hợp task dependencies để refresh_bi chỉ chạy khi stage cần thiết đạt.
+
 ```sql
--- src/tasks/reconcile.sql
-CREATE TABLE IF NOT EXISTS instacart.ops.reconciliation
-  (check_date DATE, check_name STRING, expected BIGINT, actual BIGINT, passed BOOLEAN, checked_at TIMESTAMP);
-
-MERGE INTO instacart.ops.reconciliation t
-USING (
-  WITH c AS (
-    SELECT 'bronze.orders' n, 3421083 e, (SELECT count(*) FROM instacart.bronze.orders) a
-    UNION ALL SELECT 'bronze.order_products_prior', 32434489, (SELECT count(*) FROM instacart.bronze.order_products_prior)
-    UNION ALL SELECT 'silver.order_items_prior distinct', 32434489,
-                     (SELECT count(*) FROM (SELECT DISTINCT order_id, product_id FROM instacart.silver.order_items_prior))
-    UNION ALL SELECT 'silver.order_items_prior no dup', 0,
-                     (SELECT count(*) - count(DISTINCT order_id, product_id) FROM instacart.silver.order_items_prior)
-    UNION ALL SELECT 'silver.dim_product', 49688, (SELECT count(*) FROM instacart.silver.dim_product)
-    UNION ALL SELECT 'silver.stream_orders', 131209, (SELECT count(*) FROM instacart.silver.stream_orders)
-    UNION ALL SELECT 'stream items = bronze train', (SELECT count(*) FROM instacart.bronze.order_products_train),
-                     (SELECT count(*) FROM instacart.silver.stream_order_items)
-    UNION ALL SELECT 'scd2 open versions dup', 0,
-                     (SELECT count(*) FROM (SELECT product_id FROM instacart.silver.product_prices_history
-                                            WHERE __END_AT IS NULL GROUP BY 1 HAVING count(*) > 1))
-    UNION ALL SELECT 'gold.fact no fanout', 0,
-                     (SELECT count(*) - count(DISTINCT order_id, product_id) FROM instacart.gold.fact_order_lines)
-  )
-  SELECT current_date() AS check_date, n AS check_name, e AS expected, a AS actual,
-         (e = a) AS passed, current_timestamp() AS checked_at FROM c
-) s
-ON t.check_date = s.check_date AND t.check_name = s.check_name
-WHEN MATCHED THEN UPDATE SET *
-WHEN NOT MATCHED THEN INSERT *;
-
--- Làm task fail nếu có kiểm tra không đạt → refresh_bi không chạy
-SELECT assert_true(count_if(NOT passed) = 0, 'reconciliation failed')
-FROM instacart.ops.reconciliation WHERE check_date = current_date();
+SELECT check_name, expected, actual, passed, checked_at, run_id, profile, stage, config_hash
+FROM IDENTIFIER('`' || replace(:catalog, '`', '``') || '`.`' || replace(:ops_schema, '`', '``') || '`.`reconciliation`')
+WHERE check_date = CAST(:check_date AS DATE) AND run_id = :run_id AND profile = :profile
+ORDER BY stage, check_name;
 ```
 
-**Lưu ý:**
-- Kiểm tra liên quan đến stream chỉ đạt sau khi đã phát đủ 100%. Trước mốc G3, đặt các dòng đó trong khối `-- G3` và comment lại.
-- Nhóm có thể thay số cố định bằng bảng `ops.expected_counts` để không phải sửa SQL.
-
-`MERGE` theo `(check_date, check_name)` làm task idempotent: chạy lại trong ngày chỉ cập nhật, không thêm dòng.
+Không chỉ lọc current_date rồi nhìn mọi hàng xanh: các stage có thể thuộc các run/profile khác nhau.
+Hướng dẫn manifest/params, chạy hai lần, thử sai kỳ vọng, repair và chốt bằng chứng:
+[06c_nghiem_thu_reconciliation.md](06c_nghiem_thu_reconciliation.md).
+**Chưa nghiệm thu trên warehouse/G3 thật**; #50/#51/#70 còn là gate hoàn tất.
 
 ## 5. Bộ công cụ chạy lại
 
