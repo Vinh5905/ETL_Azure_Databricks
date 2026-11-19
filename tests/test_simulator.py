@@ -1,6 +1,15 @@
 from __future__ import annotations
 
-from streaming.simulator.simulate import build_events
+import json
+from datetime import UTC, datetime
+from pathlib import Path
+
+import pytest
+
+from common.sim_time import order_time_sim_sql
+from streaming.simulator.simulate import build_events, main
+
+FIXTURE = Path(__file__).parent / "fixtures" / "instacart"
 
 
 def test_build_events_joins_train_orders_and_sorts_ties(tmp_path):
@@ -51,3 +60,54 @@ def test_build_events_joins_train_orders_and_sorts_ties(tmp_path):
             {"product_id": 196, "add_to_cart_order": 2, "reordered": 1},
         ],
     }
+
+
+def test_dry_run_splits_adjacent_ranges_without_overlap(tmp_path):
+    first = tmp_path / "first.jsonl"
+    last = tmp_path / "nested" / "last.jsonl"
+    args = ["--data-dir", str(FIXTURE), "--run-id", "run-01", "--location", "laptop-hcm"]
+    main([*args, "--to-frac", "0.67", "--dry-run", str(first)])
+    main([*args, "--from-frac", "0.67", "--dry-run", str(last)])
+
+    first_events = [json.loads(line) for line in first.read_text(encoding="utf-8").splitlines()]
+    last_events = [json.loads(line) for line in last.read_text(encoding="utf-8").splitlines()]
+    assert len(first_events) == 2
+    assert len(last_events) == 1
+    events = first_events + last_events
+    assert [event["event_id"] for event in events] == [event["event_id"] for event in build_events(FIXTURE)]
+    for event in events:
+        assert event["replay_run_id"] == "run-01"
+        assert event["producer_location"] == "laptop-hcm"
+        assert event["produced_at"].endswith("Z")
+        assert datetime.fromisoformat(event["produced_at"]).tzinfo is UTC
+
+
+@pytest.mark.parametrize(
+    "selection", [["--from-frac", "1.1"], ["--to-frac", "NaN"], ["--from-frac", "0.9", "--to-frac", "0.1"]]
+)
+def test_invalid_fraction_does_not_create_file(tmp_path, selection):
+    output = tmp_path / "events.jsonl"
+    with pytest.raises(SystemExit) as error:
+        main(["--data-dir", str(FIXTURE), "--run-id", "run-01", "--dry-run", str(output), *selection])
+    assert error.value.code == 2
+    assert not output.exists()
+
+
+def test_event_time_matches_silver_sql(spark):
+    view = "simulator_order_headers"
+    orders = spark.read.option("header", True).csv(str(FIXTURE / "orders.csv"))
+    orders.selectExpr("*", "current_timestamp() AS _ingest_ts").createOrReplaceTempView(view)
+    try:
+        silver = (
+            spark.sql(order_time_sim_sql(view, canonical=True))
+            .where("eval_set = 'train'")
+            .selectExpr("order_id", "unix_seconds(order_ts_sim) AS epoch")
+        )
+        expected = {row.order_id: row.epoch for row in silver.collect()}
+    finally:
+        spark.catalog.dropTempView(view)
+
+    assert {
+        event["order_id"]: int(datetime.fromisoformat(event["event_time"]).timestamp())
+        for event in build_events(FIXTURE)
+    } == expected
