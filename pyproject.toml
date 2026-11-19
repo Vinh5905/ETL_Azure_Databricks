@@ -5,6 +5,7 @@ description = "ETL Instacart trên Azure Databricks"
 requires-python = ">=3.11,<3.12" # khớp Databricks Runtime 15.4 LTS
 dependencies = [
     "pandas>=2.0,<3", # khớp nhóm API pandas của Spark 3.5
+    "pyyaml>=6,<7",
     "rapidfuzz>=3,<4",
     "requests>=2.32,<3",
 ]
