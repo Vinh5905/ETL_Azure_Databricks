@@ -18,11 +18,11 @@ def test_basket_rules_ranking_matches_holdout_sql(spark):
     )
     items = pd.DataFrame(
         {
-            "product_id": [101, 102, 103, 104, 105, 106],
-            "idx": [1, 2, 3, 4, 5, 6],
-            "product_name": [f"item-{idx}" for idx in range(1, 7)],
-            "data_version": ["v1"] * 6,
-            "grain": ["product"] * 6,
+            "product_id": list(range(101, 116)),
+            "idx": list(range(1, 16)),
+            "product_name": [f"item-{idx}" for idx in range(1, 16)],
+            "data_version": ["v1"] * 15,
+            "grain": ["product"] * 15,
         }
     )
     item_index = spark.createDataFrame(items[["idx", "data_version", "grain"]])
@@ -52,7 +52,7 @@ def test_basket_rules_ranking_matches_holdout_sql(spark):
     model.idx2pid = {idx: pid for pid, idx in model.pid2idx.items()}
     model.idx2name = dict(zip(items["idx"], items["product_name"], strict=True))
     model.popular = items.sort_values("idx")["idx"].tolist()
-    serving = model._recommend([101, 102], 3)
+    serving = model._recommend([101, 102], 10)
     serving_indices = [model.pid2idx[row["product_id"]] for row in serving]
 
-    assert serving_indices == sql_indices == [3, 4, 5]
+    assert serving_indices == sql_indices == list(range(3, 13))
