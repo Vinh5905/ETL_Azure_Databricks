@@ -355,7 +355,7 @@ Ghi chú khi làm thật (AD-OPS-12):
 - **Tên SKU:** trong body của azapi phải ghi `GP_S_Gen5` và `capacity = 2`. Azure lưu tên SKU theo dạng này; nếu ghi `GP_S_Gen5_2` thì plan lần hai luôn báo 1 to change.
 - **Quyền Key Vault:** tới bước này chưa ai có quyền data-plane trên Key Vault, kể cả Owner subscription. Nên hai role *Key Vault Secrets Officer* trong bảng bước 3.8 (P1 và UAMI CI) được tạo luôn ở đây. P1 cần role để apply ghi secret, CI cần role để `plan` đọc lại secret. Role mới có thể mất vài phút mới có hiệu lực: nếu lần apply đầu báo 403 khi ghi secret thì chờ rồi apply lại.
 - **UAMI CI** lấy từ output `ci_principal_id` của `bootstrap` qua `terraform_remote_state`. Tên storage account state (`tfstate_account`) nằm trong `infra/envs/10-core.tfvars`.
-- **Biến mới:** `member_object_ids` (cần key `p1`) và `member_ips`. Cả hai không có `default`. Ở máy local đặt trong `terraform.auto.tfvars`. Trong CI dùng GitHub Variable `TF_VAR_MEMBER_OBJECT_IDS`, `TF_VAR_MEMBER_IPS` (JSON, xem [04 §4](04_github_actions_cicd.md)).
+- **Biến mới:** `member_object_ids` (cần key `p1`) và `member_ips`. Cả hai không có `default`. Ở máy local đặt trong `terraform.auto.tfvars`. Trong CI dùng GitHub Secret `TF_VAR_MEMBER_OBJECT_IDS`, `TF_VAR_MEMBER_IPS` (JSON, xem [04 §4](04_github_actions_cicd.md)).
 - **Entra admin** là P1. Role Azure (Contributor trên resource group) không cho vào dữ liệu SQL; thành viên khác đăng nhập bằng Entra sẽ gặp `Login failed for user '<token-identified principal>'` cho tới khi P1 tạo user trong DB. P1 chạy trong `retail_db`:
   ```sql
   CREATE USER [<upn>] FROM EXTERNAL PROVIDER;
@@ -464,7 +464,7 @@ resource "azurerm_role_assignment" "members" {
 **Lưu ý:**
 - Hai dòng *Key Vault Secrets Officer* (P1, UAMI CI) đã làm từ bước 3.6 (`azurerm_role_assignment.kv_officer`), bước này không tạo lại.
 - Cả 4 role (Reader, Contributor, Storage Blob Data Contributor, Key Vault Secrets User) đều nằm trong `ci_assignable_role_ids` của bootstrap, và role *RBAC Administrator* của CI có scope cả Sub A, nên CI gán được cả role Reader ở mức subscription.
-- `member_object_ids` phải có đủ `p1`–`p4`, cả trong `terraform.auto.tfvars` ở máy lẫn GitHub Variable `TF_VAR_MEMBER_OBJECT_IDS`. Thiếu key nào thì người đó không có role, và plan ở máy với plan trên CI sẽ lệch nhau.
+- `member_object_ids` phải có đủ `p1`–`p4`, cả trong `terraform.auto.tfvars` ở máy lẫn GitHub Secret `TF_VAR_MEMBER_OBJECT_IDS`. Thiếu key nào thì người đó không có role, và plan ở máy với plan trên CI sẽ lệch nhau.
 - **Đánh đổi của Contributor trên RG:** thành viên xóa được tài nguyên trong RG (kể cả Key Vault, vì `purge_protection_enabled = false`), sửa được action group, và tự thành **workspace admin** Databricks nên đi vòng được policy cluster. Nhóm chấp nhận vì 4 người cùng chịu trách nhiệm; nếu cần chặn xóa thì P1 tự đặt `CanNotDelete` lock cho RG (CI là Contributor nên không tạo lock được).
 - P1 là Owner của Sub A nên các role của P1 ở bảng trên là thừa. Vẫn gán để bảng quyền đúng như thiết kế và không phụ thuộc vào việc ai là Owner.
 
@@ -519,7 +519,7 @@ resource "azurerm_consumption_budget_subscription" "a" {
 **Biến `member_emails`:** map vai → email, ví dụ `{ p1 = "…", p2 = "…", p3 = "…", p4 = "…" }`.
 - Khai báo `sensitive = true`, nên plan in `(sensitive value)` thay cho email. Repo public và `tf-plan` đăng plan lên PR, nên email không được lộ ra ở đó.
 - Ở máy: thêm vào `infra/stacks/10-core/terraform.auto.tfvars` (đã gitignore).
-- Trên CI: GitHub **Secret** `TF_VAR_MEMBER_EMAILS` (JSON), không dùng Variable vì Variable hiện rõ trong log. Lệnh tạo: `gh secret set TF_VAR_MEMBER_EMAILS --body '{"p1":"…","p2":"…","p3":"…","p4":"…"}'`.
+- Trên CI: GitHub **Secret** `TF_VAR_MEMBER_EMAILS` (JSON), như mọi giá trị riêng khác (04 §4). Lệnh tạo: `gh secret set TF_VAR_MEMBER_EMAILS --body '{"p1":"…","p2":"…","p3":"…","p4":"…"}'`.
 
 **Kiểm tra sau apply:**
 - Portal → *Monitor* → *Alerts* → *Action groups* → `ag-instacart-team` → *Test action group*, chọn loại *Email*. Cả 4 người phải nhận được email.

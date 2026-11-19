@@ -40,7 +40,7 @@ az version && terraform version && tflint --version && databricks --version && g
 | Object ID của từng thành viên | `az ad signed-in-user show --query id -o tsv` | Dùng cho RBAC trong Terraform (`members.auto.tfvars`) |
 | Region được phép | Xem lệnh ở mục 3.1 | Mỗi tài khoản Students có danh sách riêng |
 
-> **Không** commit Subscription ID hay Object ID vào repo public. Lưu chúng trong `*.auto.tfvars` đã có trong `.gitignore`, và trong GitHub Variables.
+> **Không** commit Subscription ID hay Object ID vào repo public. Lưu chúng trong `*.auto.tfvars` đã có trong `.gitignore`, và trong GitHub Secrets.
 
 ## 3. Các phép thử spike
 

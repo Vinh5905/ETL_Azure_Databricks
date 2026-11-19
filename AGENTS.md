@@ -132,7 +132,7 @@ databricks bundle validate -t dev         # chạy trong bundles/, cần DATABRI
 - Không đọc, không ghi `*.auto.tfvars`, `*.tfstate`, `.env`.
 - Không đưa subscription ID, object ID, email, connection string vào file commit.
 - Giá trị không bí mật đặt trong `infra/envs/<stack>.tfvars`.
-- Giá trị riêng đi qua `TF_VAR_*` hoặc GitHub Variables.
+- Giá trị riêng đi qua `TF_VAR_*` hoặc GitHub Secrets. Không đặt ID, IP, email ở GitHub Variables: Variable hiện nguyên văn trong log của repo public.
 
 **Module Terraform**
 - Ưu tiên Azure Verified Modules, pin `version` chính xác, đặt `enable_telemetry = false`.
@@ -183,7 +183,7 @@ Chi tiết và ví dụ ở `CONTRIBUTING.md`. Luật được kiểm bằng `sc
 
 **PR từ fork (bắt buộc)**
 - Kiểm trước khi push: `git remote get-url origin` không phải `Vinh5905/ETL_Azure_Databricks` là đang làm trên fork. Nhánh đẩy thẳng lên repo gốc thì bỏ qua mục này.
-- PR từ fork không có GitHub Variables và OIDC, nên CI **không** chạy `bundle validate` (check `bundle` vẫn xanh), `de-deploy dev` và `tf-plan`.
+- PR từ fork không có GitHub Secrets, Variables và OIDC, nên CI **không** chạy `bundle validate` (check `bundle` vẫn xanh), `de-deploy dev` và `tf-plan`.
 - Vì vậy agent phải tự chạy từ máy người dùng và ghi kết quả vào `## Cách kiểm tra`:
   - PR đụng `src/**`, `bundles/**`: `databricks bundle validate -t dev`, `databricks bundle deploy -t dev`, chạy job/pipeline `[dev <user>]` bị sửa.
   - PR đụng `infra/**`, `adf/**`: nhờ P1 chạy plan và dán tóm tắt lên PR.

@@ -27,7 +27,7 @@ infra/
     main.tf            # rg, storage, container, uami, federated credentials
     rbac.tf            # role cho 4 thành viên và CI
     variables.tf
-    outputs.tf         # tên storage, client_id của UAMI → dán vào GitHub Variables
+    outputs.tf         # tên storage, client_id của UAMI → đặt vào GitHub Secrets
     bootstrap.auto.tfvars   # (gitignore) subscription id, object id thành viên, repo
   backend.hcl          # cấu hình backend dùng chung cho mọi stack (không chứa secret)
 ```
@@ -228,14 +228,14 @@ Mỗi stack chỉ cần khai báo `key` riêng:
 ### Bước 7 · Cấu hình GitHub
 
 ```bash
-gh variable set AZURE_CLIENT_ID      --body "<ci_client_id>"
-gh variable set AZURE_TENANT_ID      --body "<tenant_id>"
-gh variable set AZURE_SUBSCRIPTION_A --body "<sub_a_id>"
-gh variable set AZURE_SUBSCRIPTION_B --body "<sub_b_id>"
-gh variable set TFSTATE_ACCOUNT      --body "sttfstate<sfx>"
+gh secret set AZURE_CLIENT_ID      --body "<ci_client_id>"
+gh secret set AZURE_TENANT_ID      --body "<tenant_id>"
+gh secret set AZURE_SUBSCRIPTION_A --body "<sub_a_id>"
+gh secret set AZURE_SUBSCRIPTION_B --body "<sub_b_id>"
+gh secret set TFSTATE_ACCOUNT      --body "sttfstate<sfx>"
 ```
 
-Các giá trị trên là **Variables**, không phải Secrets: chúng không phải bí mật. Nếu không có federated credential khớp thì không ai đăng nhập được bằng chúng.
+Các giá trị trên không phải bí mật theo nghĩa đăng nhập: không có federated credential khớp thì không ai đăng nhập được bằng chúng. Nhưng chúng phải là **Secrets**, không phải Variables: GitHub in khối `env:` của mỗi bước ra log trước khi bước che (`mask_private_values.sh`) có hiệu lực, và Variable hiện nguyên văn ở đó. Repo public nên ai cũng đọc được log (phát hiện khi làm AD-OPS-27, 2026-11-19).
 
 Tạo environment `dev` và `prod` (Settings → Environments). `prod` yêu cầu 1 reviewer (P1 hoặc người được P1 chỉ định). Chi tiết ở [04_github_actions_cicd.md](04_github_actions_cicd.md).
 

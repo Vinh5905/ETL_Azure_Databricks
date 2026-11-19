@@ -127,7 +127,7 @@ gh pr create --title "feat(infra): add core storage account" --body-file /path/t
 
 ### PR từ fork: tự chạy phần CI bỏ qua (bắt buộc)
 
-GitHub không đưa GitHub Variables và token OIDC cho workflow chạy từ PR của fork. Vì vậy các bước cần đăng nhập Azure hay Databricks **không chạy**, dù check vẫn có thể báo xanh:
+GitHub không đưa GitHub Secrets, Variables và token OIDC cho workflow chạy từ PR của fork. Vì vậy các bước cần đăng nhập Azure hay Databricks **không chạy**, dù check vẫn có thể báo xanh:
 
 | Workflow | Với PR từ fork |
 |---|---|

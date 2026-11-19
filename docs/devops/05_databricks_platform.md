@@ -357,11 +357,11 @@ resource "databricks_secret_acl" "kv_read" {        # nếu không cấp, chỉ 
 > **Lưu ý đã biết:** API tạo secret scope **dựa trên Key Vault** yêu cầu token Entra của **người dùng**; service principal và managed identity không gọi được. Vì vậy resource này do **P1 apply từ máy local** (auth `azure-cli` bằng tài khoản người). Trong CI thì thêm `lifecycle { ignore_changes = all }` hoặc tách resource ra một thư mục riêng. Ngoài ra, Key Vault phải cấp role **Key Vault Secrets User** cho ứng dụng *AzureDatabricks* (application ID cố định `2ff814a6-3304-4ab8-85cb-cd0e6f879c1d`) thì Databricks mới đọc được bí mật.
 
 **Code thật trong stack** (AD-OPS-22):
-- Role Key Vault Secrets User cho ứng dụng AzureDatabricks nằm ở `10-core` (`azurerm_role_assignment.kv_databricks`). Object ID của ứng dụng khác nhau theo tenant nên đi qua biến `databricks_app_object_id` (GitHub Variable `TF_VAR_DATABRICKS_APP_OBJECT_ID`, xem [04 §4](04_github_actions_cicd.md)).
+- Role Key Vault Secrets User cho ứng dụng AzureDatabricks nằm ở `10-core` (`azurerm_role_assignment.kv_databricks`). Object ID của ứng dụng khác nhau theo tenant nên đi qua biến `databricks_app_object_id` (GitHub Secret `TF_VAR_DATABRICKS_APP_OBJECT_ID`, xem [04 §4](04_github_actions_cicd.md)).
 - ACL tách hai resource: `databricks_secret_acl.kv_member` cho vai `de` và `ds` (lấy `user_name` từ `databricks_user.members`), `databricks_secret_acl.kv_ci` cho SP CI.
 - ACL của `p1` là MANAGE (người tạo scope), của các thành viên khác là READ.
 - Thứ tự làm (một PR gồm cả `10-core` và `30-databricks`):
-  1. Đặt GitHub Variable `TF_VAR_DATABRICKS_APP_OBJECT_ID` trước khi PR chạy `tf-plan`. Biến bắt buộc, thiếu thì plan `10-core` lỗi. P1 thêm biến này vào `terraform.auto.tfvars` của `10-core` ở máy.
+  1. Đặt GitHub Secret `TF_VAR_DATABRICKS_APP_OBJECT_ID` trước khi PR chạy `tf-plan`. Biến bắt buộc, thiếu thì plan `10-core` lỗi. P1 thêm biến này vào `terraform.auto.tfvars` của `10-core` ở máy.
   2. **Ngay trước khi merge**, P1 tạo scope từ máy (lệnh dưới). Từ lúc này tới lúc merge, không merge PR `infra/**` hay `adf/**` nào khác: state đã có scope mà config trên `main` chưa có, `tf-apply` của PR khác sẽ xóa scope (`ignore_changes` không chặn được destroy).
   3. Chạy lại `tf-plan` của PR, xác nhận `databricks_secret_scope.kv` không còn là `create`, rồi merge. `tf-apply` gán role ở `10-core` trước, rồi tạo ACL và warehouse ở `30-databricks`.
 

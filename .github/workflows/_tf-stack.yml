@@ -22,15 +22,15 @@ jobs:
     environment: ${{ inputs.environment }}
     env:
       ARM_USE_OIDC: "true"
-      ARM_CLIENT_ID: ${{ vars.AZURE_CLIENT_ID }}
-      ARM_TENANT_ID: ${{ vars.AZURE_TENANT_ID }}
-      ARM_SUBSCRIPTION_ID: ${{ vars.AZURE_SUBSCRIPTION_A }}
-      TF_VAR_subscription_id_a: ${{ vars.AZURE_SUBSCRIPTION_A }}
-      TF_VAR_subscription_id_b: ${{ vars.AZURE_SUBSCRIPTION_B }}
-      TF_VAR_tfstate_account: ${{ vars.TFSTATE_ACCOUNT }}
-      TF_VAR_member_object_ids: ${{ vars.TF_VAR_MEMBER_OBJECT_IDS }}
-      TF_VAR_databricks_app_object_id: ${{ vars.TF_VAR_DATABRICKS_APP_OBJECT_ID }}
-      TF_VAR_member_ips: ${{ vars.TF_VAR_MEMBER_IPS }}
+      ARM_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+      ARM_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+      ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_A }}
+      TF_VAR_subscription_id_a: ${{ secrets.AZURE_SUBSCRIPTION_A }}
+      TF_VAR_subscription_id_b: ${{ secrets.AZURE_SUBSCRIPTION_B }}
+      TF_VAR_tfstate_account: ${{ secrets.TFSTATE_ACCOUNT }}
+      TF_VAR_member_object_ids: ${{ secrets.TF_VAR_MEMBER_OBJECT_IDS }}
+      TF_VAR_databricks_app_object_id: ${{ secrets.TF_VAR_DATABRICKS_APP_OBJECT_ID }}
+      TF_VAR_member_ips: ${{ secrets.TF_VAR_MEMBER_IPS }}
       TF_VAR_member_emails: ${{ secrets.TF_VAR_MEMBER_EMAILS }}
       TF_VAR_member_upns: ${{ secrets.TF_VAR_MEMBER_UPNS }}
     defaults:
@@ -44,9 +44,9 @@ jobs:
         run: scripts/ci/mask_private_values.sh
       - uses: azure/login@v2
         with:
-          client-id: ${{ vars.AZURE_CLIENT_ID }}
-          tenant-id: ${{ vars.AZURE_TENANT_ID }}
-          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_A }}
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_A }}
       - uses: hashicorp/setup-terraform@v3
         with:
           terraform_version: "1.16.x"
@@ -54,7 +54,7 @@ jobs:
       - run: >-
           terraform init -input=false
           -backend-config=../../backend.hcl
-          -backend-config="storage_account_name=${{ vars.TFSTATE_ACCOUNT }}"
+          -backend-config="storage_account_name=${{ secrets.TFSTATE_ACCOUNT }}"
       - id: plan
         run: |
           set +e

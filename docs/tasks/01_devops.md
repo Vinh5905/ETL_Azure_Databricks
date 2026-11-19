@@ -166,7 +166,7 @@ Tách từ AD-OPS-03 để AD-OPS-03 đóng được với phần Sub A. Region 
 1. Chủ Sub B, C, D chạy lệnh policy region ở 01 §3.1 trên subscription của mình, gửi danh sách region được phép
 2. Chốt region Event Hubs cho Sub B, khác region Sub A (`eastasia`); ứng viên `japaneast` hoặc `koreacentral`
 3. P3 gán Contributor trên Sub B cho principal của `id-github-ci` bằng lệnh ở 02 §3 bước 5 (P1 gửi ID riêng, không ghi vào issue hay file commit). Giữ quyền này, CI cần nó để apply `20-stream`
-4. P1 đặt GitHub Variable AZURE_SUBSCRIPTION_B
+4. P1 đặt GitHub Secret AZURE_SUBSCRIPTION_B
 5. Cập nhật dòng 3.1 và dòng "Gán role chéo subscription (Sub B → UAMI)" trong spike_results.md
 
 **Đầu ra**
@@ -179,7 +179,7 @@ Tách từ AD-OPS-03 để AD-OPS-03 đóng được với phần Sub A. Region 
 - [ ] Dòng gán role chéo ghi Đạt hoặc Không đạt kèm phương án dự phòng
 - [ ] Có region Sub B khác Sub A
 - [ ] `az role assignment list --assignee <uami> --scope /subscriptions/<subB>` có Contributor
-- [ ] GitHub Variable AZURE_SUBSCRIPTION_B đã đặt
+- [ ] GitHub Secret AZURE_SUBSCRIPTION_B đã đặt
 
 ### AD-OPS-04
 
@@ -361,7 +361,7 @@ Mọi stack cần state chung có khóa và CI cần đăng nhập Azure không 
 2. P1 apply bootstrap bằng local state, ghi output tfstate_account và ci_client_id
 3. Thêm backend azurerm, migrate state lên key bootstrap.tfstate, xóa state local
 4. Điền storage_account_name thật vào infra/backend.hcl
-5. Đặt GitHub Variables AZURE_CLIENT_ID, AZURE_TENANT_ID, AZURE_SUBSCRIPTION_A, TFSTATE_ACCOUNT, TF_VAR_member_object_ids
+5. Đặt GitHub Secrets AZURE_CLIENT_ID, AZURE_TENANT_ID, AZURE_SUBSCRIPTION_A, TFSTATE_ACCOUNT, TF_VAR_member_object_ids
 6. Chạy workflow whoami, rồi xóa .github/workflows/whoami.yml
 
 Quyền Contributor trên Sub B và biến AZURE_SUBSCRIPTION_B chuyển sang [AD-OPS-03b](01_devops.md#ad-ops-03b). Phép thử thành viên khác P1 đọc được state chuyển sang [AD-OPS-29](01_devops.md#ad-ops-29), lúc P4 init `sandbox-p4.tfstate` từ máy mình.
@@ -370,7 +370,7 @@ Quyền Contributor trên Sub B và biến AZURE_SUBSCRIPTION_B chuyển sang [A
 
 - rg-tfstate, sttfstate<sfx>, container tfstate, lock-tfstate, UAMI id-github-ci trên Sub A
 - infra/backend.hcl có tên storage thật
-- GitHub Variables đủ theo 04 §4
+- GitHub Secrets và Variables đủ theo 04 §4
 - PR xóa whoami.yml
 
 **Xong khi**
@@ -502,7 +502,7 @@ retail_db là nguồn CDC cho product_prices và promotions. Mật khẩu chỉ 
 
 1. random_password + module AVM sql-server (hoặc azurerm_mssql_database nếu AVM thiếu free offer), DB retail_db GP_S_Gen5_2
 2. Bật free offer (use_free_limit, AutoPause); nếu provider chưa hỗ trợ thì bật bằng az CLI rồi import
-3. Firewall allow-azure và member_ips (biến không default, giá trị qua *.auto.tfvars / GitHub Variable)
+3. Firewall allow-azure và member_ips (biến không default, giá trị qua *.auto.tfvars / GitHub Secret)
 4. azurerm_key_vault_secret sql-admin-password
 5. Thêm Entra admin cho server (không bật azuread_authentication_only) để thành viên đăng nhập tay bằng Entra; chốt G0: SQL auth + Entra admin
 6. Thêm output sql_server_fqdn; đánh dấu [x] 3.6
