@@ -1,5 +1,6 @@
 """Kiểm tra DApriori và DATID trên các giao dịch đồ chơi."""
 
+import random
 from collections import Counter
 from itertools import combinations
 
@@ -29,8 +30,17 @@ def test_apriori_gen_rejects_unsorted_itemsets():
 
 
 @pytest.mark.parametrize("algorithm", [dapriori, datid])
-@pytest.mark.parametrize("max_k", [None, 2, 3])
+@pytest.mark.parametrize("max_k", [None, 3])
 def test_spark_fim_algorithms_match_exhaustive(spark, algorithm, max_k):
-    rows = [(1, 2, 3), (1, 2), (1, 3), (2, 3), (1, 2, 3), (4,)]
+    rows = []
+    expected = {}
+    for seed in range(6):
+        rng = random.Random(seed)
+        offset = seed * 10
+        sample = [
+            tuple(sorted(offset + item for item in rng.sample(range(1, 7), rng.randint(1, 4)))) for _ in range(15)
+        ]
+        rows.extend(sample)
+        expected.update(_brute_force(sample, 3, max_k))
     tx = spark.sparkContext.parallelize(rows, 2)
-    assert algorithm(tx, min_count=2, max_k=max_k) == _brute_force(rows, 2, max_k)
+    assert algorithm(tx, min_count=3, max_k=max_k) == expected
