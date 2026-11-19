@@ -1,0 +1,7 @@
+# az vm list-usage --location eastasia (Sub A), 2026-11-19 01:50 UTC, lọc dòng vCPU
+# Lúc chụp có 1 cluster pipeline Standard_D4ds_v4 đang chạy.
+Name                                         CurrentValue    Limit
+-------------------------------------------  --------------  -------
+Standard DDSv4 Family vCPUs                  4               4
+Total Regional Low-priority vCPUs            0               3
+Total Regional vCPUs                         4               6
