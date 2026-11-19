@@ -376,13 +376,20 @@ resource "azurerm_subscription_cost_management_view" "by_tag" {
     type = "Forecast"
   }
 
+  # View dạng biểu đồ (khác "Table") bắt buộc có đúng 3 pivot, thiếu thì API trả 400
+  # "Non table views should have three pivots". Thứ tự giống mặc định của portal.
   pivot {
     type = "Dimension"
-    name = "ResourceGroupName"
+    name = "ServiceName"
   }
 
   pivot {
     type = "Dimension"
-    name = "ServiceName"
+    name = "ResourceLocation"
+  }
+
+  pivot {
+    type = "Dimension"
+    name = "ResourceGroupName"
   }
 }
