@@ -1,4 +1,7 @@
 defaults:
+  platform: databricks
+  max_k: null
+  algo_version: fim-v1
   data_version: v1
   reps: 3
   timeout_min: 30
