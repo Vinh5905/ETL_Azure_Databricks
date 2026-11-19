@@ -24,12 +24,12 @@ def gen_rules(
     if not itemsets:
         return spark.createDataFrame([], RULE_SCHEMA)
 
+    # Downward closure: chỉ cần mọi tập con bậc k-1 có mặt. Quy nạp xuống bậc 1 thì mọi
+    # vế trái/phải đều có support, nên driver không phải duyệt lại 2^k cách tách.
     for itemset in itemsets:
-        for size in range(1, len(itemset)):
-            for left in combinations(itemset, size):
-                right = tuple(item for item in itemset if item not in left)
-                if left not in normalized_freq or right not in normalized_freq:
-                    raise ValueError(f"Thiếu support của vế trái/phải khi sinh luật từ {itemset}")
+        for subset in combinations(itemset, len(itemset) - 1):
+            if subset not in normalized_freq:
+                raise ValueError(f"Thiếu support của vế trái/phải khi sinh luật từ {itemset}")
 
     sc = spark.sparkContext
     freq_bc = sc.broadcast(normalized_freq)

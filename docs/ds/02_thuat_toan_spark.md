@@ -179,26 +179,64 @@ def datid(tx: RDD, min_count: int, max_k: int | None = None) -> dict[tuple[int, 
 
 Bài báo cho `map` trên từng partition sinh mọi luật từ danh sách tập phổ biến kèm confidence, rồi `reduce` theo khóa luật để gom kết quả.
 
-Cách làm ở đây: mỗi tập phổ biến S (|S| ≥ 2) sinh **mọi** cách tách S = X ∪ Y. Mỗi luật chỉ sinh ra **đúng một lần** từ đúng tập S của nó, nên bước `reduce` gom trùng của bài báo là không cần. Hàm kiểm tra downward closure trước, broadcast `freq`, rồi dùng `flatMap` trên RDD itemset để sinh luật phân tán. Thiếu support của X hoặc Y là lỗi dữ liệu và phát sinh `ValueError`.
+Cách làm ở đây: mỗi tập phổ biến S (|S| ≥ 2) sinh **mọi** cách tách S = X ∪ Y. Mỗi luật chỉ sinh ra **đúng một lần** từ đúng tập S của nó, nên bước `reduce` gom trùng của bài báo là không cần. Driver chỉ kiểm downward closure ở bậc k-1 (mỗi S cần đủ |S| tập con bậc |S|-1; quy nạp xuống bậc 1 thì mọi X, Y đều có support), broadcast `freq`, rồi `flatMap` trên RDD các tập S để sinh luật phân tán. Thiếu support là lỗi dữ liệu và phát sinh `ValueError`, không bỏ qua âm thầm.
 
 ```python
-# src/ml/fim/rules.py — kiểm tra downward closure trước khi chạy phân tán.
-freq_bc = sc.broadcast(freq)
+# src/ml/fim/rules.py
+from itertools import combinations
 
-def rules_of(itemset):
-    counts = freq_bc.value
-    whole_count = counts[itemset]
-    for size in range(1, len(itemset)):
-        for left in combinations(itemset, size):
-            right = tuple(item for item in itemset if item not in left)
-            if single_consequent and len(right) != 1:
-                continue
-            confidence = whole_count / counts[left]
-            if confidence >= min_conf:
-                yield list(left), list(right), whole_count / n_tx, confidence, confidence * n_tx / counts[right]
+from pyspark.sql import DataFrame, SparkSession
 
-rdd = sc.parallelize(itemsets, partitions).flatMap(rules_of)
-return spark.createDataFrame(rdd, RULE_SCHEMA)
+RULE_SCHEMA = "antecedent array<int>, consequent array<int>, support double, confidence double, lift double"
+
+
+def gen_rules(
+    spark: SparkSession,
+    freq: dict[tuple[int, ...], int],
+    n_tx: int,
+    min_conf: float,
+    single_consequent: bool = False,
+) -> DataFrame:
+    """Sinh luật X → Y, có thể giới hạn vế phải một item để so với MLlib."""
+    if n_tx < 1 or not 0 <= min_conf <= 1:
+        raise ValueError("n_tx phải > 0 và min_conf nằm trong [0, 1]")
+    if any(count < 0 or count > n_tx for count in freq.values()):
+        raise ValueError("Tần suất phải nằm trong [0, n_tx]")
+    normalized_freq = {tuple(sorted(key)): count for key, count in freq.items()}
+    itemsets = [itemset for itemset in normalized_freq if len(itemset) >= 2]
+    if not itemsets:
+        return spark.createDataFrame([], RULE_SCHEMA)
+
+    # Downward closure: chỉ cần mọi tập con bậc k-1 có mặt. Quy nạp xuống bậc 1 thì mọi
+    # vế trái/phải đều có support, nên driver không phải duyệt lại 2^k cách tách.
+    for itemset in itemsets:
+        for subset in combinations(itemset, len(itemset) - 1):
+            if subset not in normalized_freq:
+                raise ValueError(f"Thiếu support của vế trái/phải khi sinh luật từ {itemset}")
+
+    sc = spark.sparkContext
+    freq_bc = sc.broadcast(normalized_freq)
+
+    def rules_of(itemset: tuple[int, ...]):
+        counts = freq_bc.value
+        whole_count = counts[itemset]
+        output = []
+        for size in range(1, len(itemset)):
+            for left in combinations(itemset, size):
+                right = tuple(item for item in itemset if item not in left)
+                if single_consequent and len(right) != 1:
+                    continue
+                left_count, right_count = counts[left], counts[right]
+                confidence = whole_count / left_count
+                if confidence >= min_conf:
+                    output.append(
+                        (list(left), list(right), whole_count / n_tx, confidence, confidence * n_tx / right_count)
+                    )
+        return output
+
+    partitions = min(len(itemsets), max(sc.defaultParallelism, 1))
+    rows = sc.parallelize(itemsets, partitions).flatMap(rules_of)
+    return spark.createDataFrame(rows, RULE_SCHEMA)
 ```
 
 **`single_consequent`** chỉ dùng khi so với MLlib: `associationRules` của Spark **chỉ sinh luật có vế phải 1 item**. Khi so số luật giữa các thuật toán (E1, E2):
