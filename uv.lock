@@ -138,6 +138,7 @@ ingest = [
 [package.dev-dependencies]
 dev = [
     { name = "delta-spark" },
+    { name = "numpy" },
     { name = "pyspark" },
     { name = "pytest" },
     { name = "ruff" },
@@ -156,6 +157,7 @@ provides-extras = ["ingest"]
 [package.metadata.requires-dev]
 dev = [
     { name = "delta-spark", specifier = "==3.3.3" },
+    { name = "numpy", specifier = ">=1.24,<3" },
     { name = "pyspark", specifier = ">=3.5.0,<3.6" },
     { name = "pytest", specifier = ">=8" },
     { name = "ruff", specifier = ">=0.8" },

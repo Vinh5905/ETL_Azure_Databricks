@@ -10,7 +10,8 @@ def dapriori(tx: RDD, min_count: int, max_k: int | None = None) -> dict[tuple[in
     """Quét lại dữ liệu giao dịch gốc ở mỗi bậc để đếm tập mục phổ biến."""
     if min_count < 1 or (max_k is not None and max_k < 1):
         raise ValueError("min_count và max_k phải >= 1")
-    cached = tx.persist(StorageLevel.MEMORY_AND_DISK)
+    owns_cache = not tx.is_cached
+    cached = tx.persist(StorageLevel.MEMORY_AND_DISK) if owns_cache else tx
     try:
         freq = {(item,): count for item, count in count_items(cached, min_count)}
         level, k = sorted(freq), 1
@@ -24,4 +25,5 @@ def dapriori(tx: RDD, min_count: int, max_k: int | None = None) -> dict[tuple[in
             level = sorted(itemset for itemset, _ in found)
         return freq
     finally:
-        cached.unpersist()
+        if owns_cache:
+            cached.unpersist()
