@@ -130,7 +130,7 @@
 Mỗi lần chạy thực nghiệm có một `run_key`, là hash của tất cả tham số ảnh hưởng tới kết quả:
 
 ```
-run_key = sha1(experiment | platform | algo | grain | scale_pct | top_n | min_support | min_confidence | max_k | cores | rep | data_version)
+run_key = sha1(experiment | platform | algo | grain | scale_pct | top_n | min_support | min_confidence | max_k | cores | rep | data_version | algo_version)
 ```
 
 - Ghi kết quả bằng `MERGE … ON run_key`. Chạy lại cùng tổ hợp sẽ ghi đè đúng dòng của nó, không sinh dòng thứ hai.

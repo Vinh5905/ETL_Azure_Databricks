@@ -6,6 +6,7 @@ requires-python = ">=3.11,<3.12" # khớp Databricks Runtime 15.4 LTS
 dependencies = [
     "mlflow>=2.17,<3",
     "pandas>=2.0,<3", # khớp nhóm API pandas của Spark 3.5
+    "pyyaml>=6,<7",
     "rapidfuzz>=3,<4",
     "requests>=2.32,<3",
 ]
@@ -19,6 +20,8 @@ ingest = [
 [dependency-groups]
 dev = [
     "delta-spark==3.3.3", # chạy kiểm thử MERGE thật trên Spark 3.5 local
+    "numpy>=1.24,<3",
+    "pyarrow>=17,<20", # thực thi pandas UDF trên Spark local, hỗ trợ NumPy 2
     "pyspark>=3.5.0,<3.6", # DBR 15.4 LTS = Spark 3.5
     "pytest>=8",
     "ruff>=0.8",

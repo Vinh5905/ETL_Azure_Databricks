@@ -348,162 +348,190 @@ Số liệu đạt/bị loại theo từng luật được lấy từ **event lo
 
 ## 5. Làm giàu từ Open Food Facts: làm phẳng JSON và fuzzy match
 
-File này là **notebook** (định dạng `.py` có header `# Databricks notebook source`). Lý do: LDP cho phép `%pip install` ở ô đầu của notebook, còn file Python thuần thì không.
+Triển khai ở [`silver_off.py`](../../src/pipelines/batch/silver_off.py), notebook source `.py`
+có `%pip install rapidfuzz==3.14.6` ở ô đầu. Cấu hình glob của `instacart_batch` đã nạp thư mục này;
+không cần tạo pipeline hay cluster mới. Logic trả DataFrame nằm ở
+[`common/off.py`](../../src/common/off.py), dùng lại `norm` từ `common/text.py` của AD-DE-02.
+Không gọi API, cài package hoặc ghi bảng bên trong hàm định nghĩa dataset.
 
-```python
-# Databricks notebook source
-# MAGIC %pip install rapidfuzz==3.*
+### 5.1 Làm phẳng và chọn phiên bản
 
-# COMMAND ----------
-# src/pipelines/batch/silver_off.py
-import pandas as pd
-from pyspark import pipelines as dp
-from pyspark.sql import functions as F, types as T
-from pyspark.sql.window import Window
+- Đọc batch từ `bronze.off_products` (mỗi dòng JSONL là một hit của AD-DE-10).
+  `_product_id` trở thành `product_id` INT, `code` thành `off_code` STRING để giữ số 0 đầu.
+- `brands` nhận chuỗi phân cách dấu phẩy hoặc mảng; đầu ra `brand` là chuỗi.
+  Tags nhận mảng hoặc chuỗi phân cách dấu phẩy/JSON array; trường thiếu thành mảng rỗng.
+- Nutriments nhận MAP theo schema hint bronze hoặc STRUCT có trường thưa; trích
+  `energy-kcal_100g`, `sugars_100g`, `fat_100g` thành ba cột DOUBLE. Trường thiếu hay
+  số không parse được nhận NULL qua `try_cast`, kể cả ANSI mode. `nova_group` là INT.
+  Không suy diễn giá trị dinh dưỡng hoặc chuẩn hóa đơn vị ngoài hợp đồng trên 100g của nguồn.
+- `OFF_RULES` kiểm khóa dương, mã vạch 1–32 chữ số, ingest timestamp hợp lệ và rescue NULL.
+  `silver.quarantine_off_products` giữ mọi raw payload cùng metadata, toàn bộ tên luật lỗi
+  và `_quarantined_at`, **trước** khử trùng. Đây là MV theo snapshot bronze, không append lặp mỗi update.
+- `silver.off_products_clean` chỉ lấy bản đạt các luật trên, mới nhất theo `_ingest_ts`
+  cho mỗi `(product_id, off_code)`. Phá hòa bằng SHA-256 raw; chạy lại cùng snapshot không đổi lựa chọn.
+  Nếu bản mới lỗi khóa/ingest/rescue, nó vào quarantine và bản cũ hợp lệ vẫn được dùng.
+  Hash chỉ giúp chọn tất định, không xác nhận đâu là nội dung nghiệp vụ đúng khi cùng timestamp.
+- `has_name` là expectation warn: tên rỗng/NULL vẫn giữ, nhưng scorer trả 0.
+  Trường dinh dưỡng tùy chọn có thể NULL; dữ liệu gốc vẫn còn ở bronze.
 
-from common.text import norm
+### 5.2 Chọn ứng viên và chấm điểm
 
-CAT    = spark.conf.get("catalog")
-BRONZE = f"{CAT}.{spark.conf.get('bronze')}"
-SILVER = f"{CAT}.{spark.conf.get('silver')}"
+1. Danh mục gốc là **toàn bộ** `bronze.products`, khử trùng `product_id` theo ingest mới nhất,
+   rồi tên tăng dần khi hòa; nguồn Instacart là release bất biến. Key không hợp lệ làm flow
+   `product_off_match` fail qua expectation, không âm thầm loại sản phẩm.
+2. Chỉ xét hit của **đúng** `product_id` do crawler gắn, có `countries_tags` chứa chính xác
+   `en:united-states`. Không cross join cả danh mục Instacart và OFF.
+3. LEFT JOIN để giữ cả sản phẩm chưa crawl, không có kết quả hoặc chỉ có kết quả ngoài Mỹ.
+   Khác ví dụ INNER JOIN cũ, bảng cầu nối luôn có một dòng cho mỗi khóa sản phẩm nguồn.
+4. Pandas UDF dùng `rapidfuzz.token_set_ratio(norm(ic_name), norm(off_name))`.
+   Cộng 5 nếu thương hiệu đầu tiên xuất hiện nguyên cụm từ trong tên Instacart đã chuẩn hóa;
+   chặn trên 100. Tên sau chuẩn hóa rỗng nhận 0, không cộng bonus. Không làm tròn điểm trước phân nhãn.
+5. Chọn điểm cao nhất rồi `off_code` tăng dần khi hòa. Từ 85: `matched`; từ 70 đến dưới 85:
+   `low_confidence`; dưới 70: `no_match`. Khi không có ứng viên, mã NULL và điểm 0.
+   Nếu có ứng viên nhưng điểm thấp thì vẫn giữ mã/điểm để kiểm tra, gắn `no_match`.
+6. Đầu ra chỉ có `product_id, off_code, off_match_score, off_match_status`.
+   Expectations fail kiểm key, miền điểm và nhãn tương ứng. Chỉ `matched` được làm giàu BI
+   ở AD-DE-14; `low_confidence`/`no_match` không được dùng để gắn thương hiệu hay dinh dưỡng.
 
+`token_set_ratio` có thể cho 100 khi tên này chứa toàn bộ token của tên kia; đây là heuristic,
+không phải xác suất hai sản phẩm giống nhau. Cần kiểm tay một mẫu sau khi có dữ liệu thật.
+Xem [RapidFuzz](https://rapidfuzz.github.io/RapidFuzz/Usage/fuzz.html#token-set-ratio) và
+[pandas UDF trên Spark](https://spark.apache.org/docs/3.5.7/api/python/user_guide/sql/arrow_pandas.html#pandas-udfs-a-k-a-vectorized-udfs).
 
-@dp.materialized_view(name=f"{SILVER}.off_products_clean",
-                      comment="OFF đã làm phẳng; mỗi (_product_id, code) một dòng mới nhất")
-@dp.expect("has_name", "off_product_name IS NOT NULL")
-def off_products_clean():
-    return (spark.read.table(f"{BRONZE}.off_products")
-            .select(
-                F.col("_product_id").cast("int").alias("product_id"),
-                F.col("code").alias("off_code"),
-                F.col("product_name").alias("off_product_name"),
-                F.concat_ws(",", "brands").alias("brand"),
-                "categories_tags", "countries_tags", "nutriscore_grade", "nova_group",
-                F.col("nutriments")["energy-kcal_100g"].cast("double").alias("energy_kcal_100g"),
-                F.col("nutriments")["sugars_100g"].cast("double").alias("sugars_100g"),
-                F.col("nutriments")["fat_100g"].cast("double").alias("fat_100g"),
-                "image_url", "_ingest_ts")
-            .withColumn("rn", F.row_number().over(
-                Window.partitionBy("product_id", "off_code").orderBy(F.col("_ingest_ts").desc())))
-            .where("rn = 1").drop("rn"))
+### 5.3 Kiểm và nghiệm thu
 
+`uv run pytest tests/test_off.py tests/test_norm.py -q` kiểm flatten, ANSI, thiếu trường,
+quarantine, replay, phá hòa, quốc gia, đủ sản phẩm và thực thi pandas UDF qua Arrow worker.
+PyArrow trong dev dependencies phục vụ Spark local; notebook dùng Arrow/pandas của runtime LDP.
+Test đăng ký `dp` giả lập không thay cho update pipeline trên workspace.
 
-@F.pandas_udf(T.DoubleType())
-def match_score(ic_name: pd.Series, off_name: pd.Series, brand: pd.Series) -> pd.Series:
-    from rapidfuzz import fuzz
-    out = []
-    for a, b, br in zip(ic_name, off_name, brand):
-        s = fuzz.token_set_ratio(norm(a), norm(b))
-        if br and norm(br.split(",")[0]) and norm(br.split(",")[0]) in norm(a):
-            s += 5
-        out.append(float(min(s, 100)))
-    return pd.Series(out)
-
-
-@dp.materialized_view(name=f"{SILVER}.product_off_match",
-                      comment="Bảng cầu nối Instacart ↔ OFF: ứng viên tốt nhất mỗi product_id")
-@dp.expect("has_score", "off_match_score IS NOT NULL")
-def product_off_match():
-    p = spark.read.table(f"{BRONZE}.products").select("product_id", "product_name").dropDuplicates(["product_id"])
-    c = (spark.read.table(f"{SILVER}.off_products_clean")
-         .where(F.array_contains("countries_tags", "en:united-states")))
-    scored = (p.join(c, "product_id")
-               .withColumn("off_match_score", match_score("product_name", "off_product_name", "brand")))
-    w = Window.partitionBy("product_id").orderBy(F.col("off_match_score").desc(), "off_code")
-    return (scored.withColumn("rn", F.row_number().over(w)).where("rn = 1")
-            .withColumn("off_match_status",
-                        F.when(F.col("off_match_score") >= 85, "matched")
-                         .when(F.col("off_match_score") >= 70, "low_confidence")
-                         .otherwise("no_match"))
-            .select("product_id", "off_code", "off_match_score", "off_match_status"))
-```
-
-Hàm `norm` ở `src/common/text.py` có test (`tests/test_norm.py`) với 4 cặp tên ở
-[data_dictionary §5.6](../data/data_dictionary.md). Notebook chỉ import lại hàm đó.
-Hàm bỏ từ nhiễu/số đo trước khi bỏ dấu câu để `12.5 oz` không để lại `12`,
-nhận đơn vị ghép `fl oz`, rồi chuẩn hóa khoảng trắng và cụm `bag-of`.
-Đây là chuẩn hóa tên, chưa quyết định hai sản phẩm có khớp nhau; ngưỡng fuzzy vẫn áp dụng ở bước sau.
+Cách chạy dev, lấy đủ ba nhãn, mẫu số và ghi tỉ lệ thật:
+[03d_nghiem_thu_off.md](03d_nghiem_thu_off.md). AD-DE-10 (#46) đã nghiệm thu Bronze OFF trên dev.
+Kết quả đo AD-DE-13 ở [data dictionary §5.6](../data/data_dictionary.md#56-cách-join-ghép-theo-tên-qua-bảng-cầu-nối).
+`dim_product` thuộc AD-DE-14.
 
 ## 6. `dim_product`: join nhiều nguồn mà không nhân dòng
 
-```python
-@dp.materialized_view(name=f"{SILVER}.dim_product", cluster_by=["product_id"],
-                      comment="products + aisle + department + giá hiện hành + KM đang chạy + OFF")
-@dp.expect_or_fail("no_fanout", "dup_cnt = 1")          # LEFT JOIN không được nhân dòng
-@dp.expect("has_price", "current_price IS NOT NULL")
-def dim_product():
-    as_of = F.to_date(F.lit(spark.conf.get("as_of_date", "2026-03-30")))
-    p  = spark.read.table(f"{BRONZE}.products").dropDuplicates(["product_id"])
-    a  = spark.read.table(f"{BRONZE}.aisles").dropDuplicates(["aisle_id"])
-    d  = spark.read.table(f"{BRONZE}.departments").dropDuplicates(["department_id"])
-    pr = (spark.read.table(f"{SILVER}.product_prices_history").where("__END_AT IS NULL")
-          .select("product_id", F.col("unit_price").alias("current_price")))
-    km = (spark.read.table(f"{SILVER}.promotions")
-          .where((F.col("start_date") <= as_of) & (F.col("end_date") >= as_of))
-          .groupBy("product_id").agg(F.max("discount_pct").alias("discount_pct")))   # gộp trước khi join
-    m  = spark.read.table(f"{SILVER}.product_off_match").where("off_match_status = 'matched'")
-    off = spark.read.table(f"{SILVER}.off_products_clean").drop("product_id", "_ingest_ts")
-    img = spark.read.table(f"{BRONZE}.product_images").select("off_code", F.col("path").alias("image_path"))
+MV khai báo trong [`silver_off.py`](../../src/pipelines/batch/silver_off.py), truy vấn batch nằm ở
+[`common/product.py`](../../src/common/product.py). Năm nguồn cơ sở gồm products, aisles, departments, product_prices_history và promotions.
+Khi bật OFF, đọc thêm product_off_match, off_products_clean và product_images.
+Bảng không tự ghi dữ liệu, không gọi action, không cần job/cluster riêng.
 
-    df = (p.join(a, "aisle_id", "left").join(d, "department_id", "left")
-           .join(pr, "product_id", "left").join(km, "product_id", "left")
-           .join(m.select("product_id", "off_code", "off_match_score", "off_match_status"), "product_id", "left")
-           .join(off.dropDuplicates(["off_code"]), "off_code", "left")
-           .join(img.dropDuplicates(["off_code"]), "off_code", "left")
-           .withColumn("on_promotion", F.col("discount_pct").isNotNull()))
-    # dup_cnt ở lại trong bảng để expectation kiểm được; Power BI không dùng cột này
-    return df.withColumn("dup_cnt", F.count("*").over(Window.partitionBy("product_id")))
-```
+### 6.1 Grain và giá/khuyến mãi
 
-**Quy tắc chống nhân dòng:** mọi bảng bên phải của LEFT JOIN phải **duy nhất theo khóa join** trước khi join (`dropDuplicates`, `groupBy`, hoặc lọc `__END_AT IS NULL`). `expect_or_fail("no_fanout")` dừng pipeline nếu ai đó vô tình phá quy tắc này. Như vậy `dim_product` luôn đúng **49.688** dòng.
+- Danh mục gốc là mọi `product_id` hợp lệ từ `bronze.products`, **LEFT JOIN** các nguồn làm giàu.
+  Thiếu giá, danh mục con hoặc OFF không làm mất sản phẩm.
+- Products/aisles/departments là release bất biến. Với mỗi khóa, ưu tiên bản không có
+  `_rescued_data`, rồi chọn bản mới nhất theo `_ingest_ts`. Nếu mọi bản đều có rescue, vẫn giữ
+  bản mới nhất và ghi cảnh báo. Nhiều payload khác nhau trong nhóm được ưu tiên cũng ghi cảnh báo.
+- Khóa sản phẩm NULL, không ép được sang INT hoặc không dương được đếm ở view
+  `catalog_products_assessed` trước khi loại khỏi bridge và dimension.
+- `dim_product` luôn được đăng ký. Khi `enable_off=false`, dim chỉ đọc năm nguồn cơ sở, đặt các thuộc
+  tính OFF/ảnh thành NULL và giữ `off_match_status=no_match`, `off_match_score=0`.
+  Khi có dữ liệu OFF, bật `enable_off=true` để dùng thêm bridge, OFF sạch và ảnh.
+- Giá lấy **chỉ** hàng `__END_AT IS NULL`, giữ `unit_price` thành `current_price` DECIMAL và `currency`.
+  Không lấy MAX giá, không dùng giá đã hết hiệu lực để bù thiếu. Nhiều hàng đang mở cho cùng sản phẩm
+  là lỗi hợp đồng SCD2 và làm flow fail, kể cả hai hàng giống nhau.
+- `as_of_date` từ configuration, mặc định `2026-03-30`, phải là ngày ISO `YYYY-MM-DD` hợp lệ.
+  Chỉ ngày cấu hình này dùng để lọc khuyến mãi `start_date <= as_of_date <= end_date`, rồi
+  `GROUP BY product_id / MAX(discount_pct)` **trước** join. Không cộng chồng mức giảm.
+  `on_promotion = discount_pct IS NOT NULL`, nên khuyến mãi 0% vẫn là đang chạy.
+- Giá hiện hành không phải giá tại `as_of_date` hay tại lúc đặt hàng. Doanh thu lịch sử ở
+  AD-DE-22 phải join `product_prices_history` theo khoảng hiệu lực `[__START_AT, __END_AT)`.
 
-Đoạn này nằm trong `silver_off.py`, dùng chung import (`Window`, `F`) ở đầu notebook. `as_of_date` lấy từ `configuration` của pipeline, mặc định là ngày cuối cửa sổ replay.
+### 6.2 OFF và ảnh
+
+- Giữ `off_match_score`/`off_match_status` của **mọi** sản phẩm để BI đo chất lượng phủ.
+  Thiếu dòng bridge nhận `no_match`/0. Chỉ khi `matched` mới giữ `off_code` để làm giàu.
+- Join OFF bằng **cặp `(product_id, off_code)`**, không bỏ `product_id` rồi khử trùng toàn cục theo barcode.
+  Hai sản phẩm dùng cùng barcode có thể mang payload OFF khác nhau từ hai lần tra; phải giữ đúng bản của từng sản phẩm.
+- `low_confidence` và `no_match` giữ điểm/nhãn nhưng các trường OFF/ảnh là NULL.
+  Điều này chặn cả ảnh trong cache và thông tin dinh dưỡng của ứng viên không đáng tin đi vào BI.
+- `categories_tags` xuất thành `off_categories`; còn `off_product_name`, `brand`, `countries_tags`,
+  `nutriscore_grade`, `nova_group`, ba cột dinh dưỡng, `image_url` và `image_path` theo hợp đồng nguồn.
+- Ảnh được gộp theo `off_code`: ưu tiên path có giá trị, modificationTime mới nhất, ingest mới nhất,
+  rồi path tăng dần khi hòa. Metadata ảnh được chọn trước join, không thể nhân dòng.
+
+### 6.3 Kiểm chất lượng và nghiệm thu
+
+Mỗi nguồn bên phải được rút về một dòng mỗi khóa trước join, giữ số bản nguồn để không che xung đột.
+Các bản snapshot giống nhau được gộp; riêng giá đang mở phải duy nhất ngay trong SCD2 target.
+Hash payload phá hòa để kết quả nhất quán. Expectation vẫn ghi nhận các payload xung đột.
+
+| Expectation | Hành động | Điều kiện |
+|---|---|---|
+| `no_fanout` | Fail | `dup_cnt = 1` sau toàn bộ join, tính bằng window theo product_id |
+| `unique_sources` | Fail | `_join_sources_unique` không có nguồn liên quan nào xung đột |
+| `valid_product_id` | Fail | Khóa sản phẩm không NULL và dương |
+| `has_price` | Warn | `current_price IS NOT NULL`; sản phẩm thiếu giá vẫn còn trong dim |
+| `catalog_payload_unique` | Warn | Mỗi khóa danh mục có một payload trong nhóm bản ghi được ưu tiên |
+| `catalog_unrescued` | Warn | Dòng products/aisles/departments được chọn không phải bản rescue |
+| `valid_catalog_product_id` | Warn | Khóa gốc ép được sang INT và lớn hơn 0; đếm trước khi chọn phiên bản |
+
+`dup_cnt` và `_join_sources_unique` ở lại bảng để expectations kiểm được, không dùng làm measure BI.
+Nguồn lỗi vẫn giữ trong bronze/silver; dim không xóa hay sửa ngược nguồn. Flow fail không có nghĩa các
+flow khác cùng update rollback; bảng dim có thể còn phiên bản thành công cũ, phải kiểm update ID.
+
+Release đầy đủ phải có **49.688 dòng / 49.688 khóa**, không phải mọi fixture đều có số này.
+Đã nghiệm thu đủ số dòng và số khóa trên dev với OFF tắt và bật. Xem tử/mẫu số `has_price`,
+pipeline update và cách replay trong [runbook dim_product](03e_nghiem_thu_dim_product.md).
 
 ## 7. Gộp batch ∪ stream và dựng `baskets`
 
-Batch và stream thuộc **hai pipeline**, mà mỗi bảng chỉ có một pipeline chủ, nên chúng gặp nhau qua **view của Unity Catalog**. Task SQL `create_views` của job tạo view một lần; view không cần refresh.
+Mỗi bảng chỉ có một pipeline chủ. Task [`src/tasks/create_views.sql`](../../src/tasks/create_views.sql)
+tạo **view Unity Catalog**, còn `baskets` là MV của pipeline batch; pipeline batch chỉ đọc các bảng
+silver stream như nguồn bên ngoài, không khai báo lại target stream.
 
-```sql
--- src/tasks/create_views.sql
-CREATE OR REPLACE VIEW instacart.silver.orders AS
-SELECT order_id, user_id, eval_set, order_number, order_dow, order_hour_of_day,
-       days_since_prior_order, order_ts_sim, source
-FROM instacart.silver.orders_batch
-UNION ALL
-SELECT order_id, user_id, 'train', order_number, order_dow, order_hour_of_day,
-       days_since_prior_order, event_time, 'stream'
-FROM instacart.silver.stream_orders;
+### 7.1 Hai view có tham số schema
 
-CREATE OR REPLACE VIEW instacart.silver.order_items AS
-SELECT order_id, product_id, add_to_cart_order, reordered, 'batch' AS source
-FROM instacart.silver.order_items_prior
-UNION ALL
-SELECT order_id, product_id, add_to_cart_order, reordered, 'stream'
-FROM instacart.silver.stream_order_items;
-```
+File SQL nhận hai tham số STRING bắt buộc `catalog` và `silver_schema` (từng tên riêng, không bọc backtick).
+Câu đầu `USE IDENTIFIER(...)` chọn namespace đã quote cả catalog/schema; hai câu tiếp theo
+`CREATE OR REPLACE VIEW orders` và `order_items` dùng namespace này. Chạy **cả file cùng một phiên**,
+dừng nếu USE lỗi. Không chọn riêng hai câu CREATE dựa vào schema hiện tại của SQL editor.
+Cách này tránh đặt parameter marker trong thân CREATE VIEW, vốn không được Spark 3.5 chấp nhận.
 
-`baskets` là materialized view trong pipeline batch. Nó đọc bảng của pipeline stream như một nguồn bên ngoài (được phép, vì chỉ **đọc**):
+| View | Nhánh batch | Nhánh stream |
+|---|---|---|
+| `orders` | Header prior/test từ orders_batch, giữ source và is_test | stream_orders: eval_set=train, event_time đổi tên order_ts_sim, source=stream, is_test=false |
+| `order_items` | order_items_prior, source=batch | stream_order_items, source=stream |
 
-```python
-# src/pipelines/batch/silver_instacart.py  (cuối file)
-@dp.materialized_view(name=f"{SILVER}.baskets", cluster_by=["split"],
-                      comment="Giỏ hàng cho DS: prior để train, holdout (đơn train qua stream) để đánh giá")
-@dp.expect_or_fail("non_empty_basket", "n_items >= 1")
-def baskets():
-    return spark.sql(f"""
-      SELECT order_id, user_id, split, array_sort(collect_set(product_id)) AS items, count(*) AS n_items
-      FROM (
-        SELECT i.order_id, o.user_id, i.product_id, 'prior' AS split
-        FROM {SILVER}.order_items_prior i JOIN {SILVER}.orders_batch o USING (order_id)
-        WHERE o.eval_set = 'prior'
-        UNION ALL
-        SELECT i.order_id, s.user_id, i.product_id, 'holdout'
-        FROM {SILVER}.stream_order_items i JOIN {SILVER}.stream_orders s USING (order_id)
-      )
-      GROUP BY order_id, user_id, split""")
-```
+Cả hai dùng **UNION ALL**, chọn cột tường minh; không đọc `bronze.order_products_train` để nạp lại train
+bằng batch, không che trùng khóa bằng UNION/DISTINCT. Nguồn phải upsert/duy nhất và hai nhóm mã đơn
+phải rời nhau. View phản ánh thay đổi bảng nguồn, không cần refresh hay chạy lại DDL khi có stream mới.
+`orders` giữ header test và cờ is_test; test không tạo giỏ DS.
 
-Đơn test không có món hàng nên tự nhiên không xuất hiện trong `baskets`.
+### 7.2 Materialized view baskets
+
+MV ở cuối [`silver_instacart.py`](../../src/pipelines/batch/silver_instacart.py), helper
+[`common/baskets.py`](../../src/common/baskets.py) đọc batch bốn bảng silver trực tiếp:
+
+- orders_batch lọc eval_set=prior + order_items_prior → split `prior` để học luật.
+- stream_orders + stream_order_items → split `holdout` để đánh giá.
+- Không đọc hai view UC để tránh vòng phụ thuộc bootstrap. Target stream phải tồn tại đúng schema
+  trước khi bật `enable_baskets=true`. Cờ mặc định là `false` để batch vẫn chạy khi stream chưa sẵn sàng.
+- Giữ mọi header đủ điều kiện bằng LEFT JOIN món. Header chưa có món có `items=[]`, n_items=0 và
+  làm check `non_empty_prior_basket` fail ở prior. Ở holdout, header chờ món chỉ cảnh báo trong
+  `basket_candidates` và được đưa vào basket ở update sau khi items đã commit.
+- `items = array_sort(collect_set(product_id))`, kiểu `ARRAY<INT>`; `n_items = size(items)`.
+  Món trùng do replay không làm tăng n_items; danh sách là tập sản phẩm, không phải số lượng mua.
+  Bản sao header cùng order_id/user_id được gộp, header cùng mã nhưng khác user bị fail.
+- Giữ cờ kiểm tra kỹ thuật để fail khi có sản phẩm NULL/không dương, khóa header sai,
+  order_id xuất hiện ở nhiều giỏ hoặc mã đơn stream giao với **bất kỳ** header batch nào (kể cả test).
+  Nguồn vẫn còn nguyên trong silver để điều tra, không sửa/xóa nguồn từ MV.
+
+Expectations fail: `non_empty_prior_basket`, `valid_basket_keys`, `valid_basket_items`,
+`disjoint_sources`, `unique_basket_order`. Các cột kỹ thuật `_items_valid`, `_source_disjoint`,
+`dup_cnt` ở lại bảng cho expectations; DS chỉ lấy năm cột nghiệp vụ.
+Món không có header không thể thành basket; đối soát orphan/count ở AD-DE-17 vẫn bắt buộc.
+
+Sau khi stream phát đủ, mục tiêu **3.214.874 prior / 131.209 holdout**, cần đối chiếu số thật.
+Giỏ rỗng trong lúc stream mới cập nhật một target chưa phải mất dữ liệu: chờ cả hai target hoàn tất
+rồi chạy lại batch. Một update thất bại có thể để lại MV phiên bản thành công cũ; kiểm update ID.
+
+Hướng dẫn bootstrap, chạy SQL hai lần trên warehouse, đối soát và replay:
+[03f_nghiem_thu_baskets.md](03f_nghiem_thu_baskets.md). Còn chờ AD-ST-05 (#68) để bật giỏ và nghiệm thu với stream thật.
+Tham khảo [IDENTIFIER](https://learn.microsoft.com/en-us/azure/databricks/sql/language-manual/sql-ref-names-identifier-clause)
+và [USE](https://learn.microsoft.com/en-us/azure/databricks/sql/language-manual/sql-ref-syntax-ddl-use-schema).
 
 ## 8. Lỗi giữa chừng thì chạy lại thế nào
 

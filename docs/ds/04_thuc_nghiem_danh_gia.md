@@ -370,7 +370,7 @@ Với mỗi đơn trong `ds_data.holdout_eval`:
 | Coverage (đơn) | Tỉ lệ đơn có ít nhất 1 luật kích hoạt, không tính bù phổ biến | MinSupp cao → ít luật → ít đơn có luật |
 | Coverage (danh mục) | Số món khác nhau được gợi ý / số món trong `item_index` | Luật có chỉ xoay quanh vài món phổ biến không |
 
-**Fallback khi không đủ luật:** danh sách gợi ý được bù bằng top-k món phổ biến nhất không nằm trong `context`, để API luôn có thể trả đủ món. Để đánh giá riêng đóng góp của luật, `ml.holdout_metrics` lưu thêm các cột `rule_only_*`, tính trên các luật mà không bù popular. Baseline `run_key = 'popularity'` chỉ dùng top-k món phổ biến. So sánh luật-only với baseline để biết luật có giá trị hay không; báo cáo cũng nêu metric đã bù fallback để phản ánh hành vi API.
+**Fallback khi không đủ luật:** danh sách gợi ý được bù bằng top-k món phổ biến nhất không nằm trong `context`, để API luôn có thể trả đủ món. Để đánh giá riêng đóng góp của luật, `ml.holdout_metrics` lưu thêm các cột `rule_only_*`, tính trên các luật mà không bù popular. Baseline `run_key = 'popularity'` chỉ dùng top-k món phổ biến. **Baseline bắt buộc:** luật kết hợp phải hơn baseline ở các cột `rule_only_*` thì mới có ý nghĩa; nếu không hơn, báo cáo phải nói thẳng như vậy. Báo cáo cũng nêu metric đã bù fallback để phản ánh hành vi API.
 
 **Chống "chọn trên tập kiểm tra":** chọn cấu hình champion bằng `eval_part = 'val'`, báo cáo số cuối trên `eval_part = 'test'`.
 
@@ -378,7 +378,7 @@ Với mỗi đơn trong `ds_data.holdout_eval`:
 
 Truy vấn nguồn tại [`src/ml/sql/eval_holdout.sql`](../../src/ml/sql/eval_holdout.sql) tạo hai danh sách: gợi ý luật có bù popular để khớp hành vi serving và gợi ý chỉ từ luật để đo riêng chất lượng luật. Trường hợp `run_key = 'popularity'` chạy baseline độc lập. Popularity được xếp theo `item_index.idx` (chỉ số mã hóa), không dùng `item_key`.
 
-- Mảng `antecedent` trong `ml.association_rules` và mảng tập con ở `sub` đều **tăng dần** (vì `context` tăng dần theo `idx`), nên so `=` giữa hai mảng là đúng. `holdout_eval.context` được DE sắp sẵn ([de/08 §4](../de/08_du_lieu_cho_ds.md)).
+- Mảng `antecedent` trong `ml.association_rules` và mảng tập con ở CTE `subsets` đều **tăng dần** (vì `context` tăng dần theo `idx`), nên so `=` giữa hai mảng là đúng. `holdout_eval.context` được DE sắp sẵn ([de/08 §4](../de/08_du_lieu_cho_ds.md)).
 - Kết quả ghi vào `ml.holdout_metrics` (khóa: `run_key`, `min_confidence`, `eval_part`, `k`), có thêm một dòng cho baseline (`run_key = 'popularity'`). Test Spark chạy truy vấn trên bảng toy để kiểm tra cả run luật và baseline: [`tests/ml/test_evaluate_holdout.py`](../../tests/ml/test_evaluate_holdout.py).
 
 ## 8. Phân tích kết quả
