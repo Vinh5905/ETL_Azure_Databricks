@@ -558,6 +558,16 @@ output "action_group_id"          { value = azurerm_monitor_action_group.team.id
 - [ ] `sqlcmd` (hoặc Azure Data Studio) kết nối `retail_db` từ IP thành viên được.
 - [ ] Email test của action group đến được cả 4 người.
 
+### Bước 3.11 · View Cost Management theo tag (AD-OPS-28)
+
+`azurerm_subscription_cost_management_view` tạo 3 view lưu sẵn cho Sub A, mỗi view nhóm theo một tag: `owner`, `stack`, `cost_owner`. Mỗi view hiển thị tháng hiện tại, chia theo ngày, kèm KPI dự báo.
+
+CI có role Contributor trên Sub A, đủ quyền ghi `Microsoft.CostManagement/views`.
+
+Số liệu hằng tuần và ảnh chụp ghi ở [`chi_phi_quota.md`](chi_phi_quota.md).
+
+**Kiểm tra:** vào Portal → *Cost analysis* → *Views*, thấy 3 view `Instacart: chi phí theo tag …`.
+
 ---
 
 ## 4. Stack `20-stream` (Sub B): Event Hubs theo buổi

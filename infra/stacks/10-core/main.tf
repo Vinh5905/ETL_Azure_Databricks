@@ -11,6 +11,7 @@
 # [x] 3.8  RBAC cho 4 thành viên
 # [x] 3.9  Action group + budget 25/50/75/90%
 # [x] 3.10 Output cho stack sau (outputs.tf) + nghiệm thu checklist 10-core
+# [x] 3.11 View Cost Management lưu sẵn theo tag owner / stack / cost_owner (AD-OPS-28)
 
 module "nt" {
   source = "../../modules/naming_tags"
@@ -338,5 +339,50 @@ resource "azurerm_consumption_budget_subscription" "a" {
       threshold_type = "Actual"
       contact_groups = [azurerm_monitor_action_group.team.id]
     }
+  }
+}
+
+# Bước 3.11 (AD-OPS-28): view lưu sẵn trong Cost Management → Cost analysis, mỗi view nhóm theo một tag.
+# - owner, stack: tag Azure do module naming_tags gắn cho mọi tài nguyên Terraform.
+# - cost_owner: tag của job cluster / warehouse Databricks. DBU serverless thường không mang tag này.
+# Dùng để chụp ảnh bằng chứng rubric 5.4; số liệu hằng tuần ghi ở docs/devops/chi_phi_quota.md.
+# Sub B không có view ở đây: stack 20-stream bị destroy mỗi đêm nên view sẽ mất theo.
+resource "azurerm_subscription_cost_management_view" "by_tag" {
+  for_each = toset(["owner", "stack", "cost_owner"])
+
+  name            = "instacart-cost-by-${replace(each.value, "_", "-")}"
+  display_name    = "Instacart: chi phí theo tag ${each.value}"
+  subscription_id = "/subscriptions/${var.subscription_id_a}"
+  chart_type      = "StackedColumn"
+  accumulated     = false
+  report_type     = "Usage"
+  timeframe       = "MonthToDate"
+
+  dataset {
+    granularity = "Daily"
+
+    aggregation {
+      name        = "totalCost"
+      column_name = "Cost"
+    }
+
+    grouping {
+      type = "TagKey"
+      name = each.value
+    }
+  }
+
+  kpi {
+    type = "Forecast"
+  }
+
+  pivot {
+    type = "Dimension"
+    name = "ResourceGroupName"
+  }
+
+  pivot {
+    type = "Dimension"
+    name = "ServiceName"
   }
 }
