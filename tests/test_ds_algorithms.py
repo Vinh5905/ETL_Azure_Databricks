@@ -3,6 +3,7 @@
 import random
 from collections import Counter
 from itertools import combinations
+from math import ceil
 
 import pytest
 from pyspark.sql import functions as F
@@ -22,15 +23,10 @@ def _brute_force(rows, min_count, max_k=None):
     return {itemset: count for itemset, count in counts.items() if count >= min_count}
 
 
-def _six_seed_rows():
-    rows = []
-    for seed in range(6):
-        rng = random.Random(seed)
-        offset = seed * 10
-        rows.extend(
-            tuple(sorted(offset + item for item in rng.sample(range(1, 7), rng.randint(1, 4)))) for _ in range(15)
-        )
-    return rows
+def _seed_rows(seed):
+    rng = random.Random(seed)
+    n_items = rng.choice([8, 15, 30])
+    return [tuple(sorted(rng.sample(range(1, n_items + 1), rng.randint(1, min(9, n_items))))) for _ in range(400)]
 
 
 def test_apriori_gen_prunes_candidates():
@@ -43,14 +39,6 @@ def test_apriori_gen_rejects_unsorted_itemsets():
         apriori_gen([(2, 1), (2, 3)])
 
 
-@pytest.mark.parametrize("algorithm", [dapriori, datid])
-@pytest.mark.parametrize("max_k", [None, 3])
-def test_spark_fim_algorithms_match_exhaustive(spark, algorithm, max_k):
-    rows = _six_seed_rows()
-    tx = spark.sparkContext.parallelize(rows, 2)
-    assert algorithm(tx, min_count=3, max_k=max_k) == _brute_force(rows, 3, max_k)
-
-
 def test_rule_metrics_and_single_consequent_filter(spark):
     freq = {(1,): 4, (2,): 3, (3,): 2, (1, 2): 2, (1, 3): 2, (2, 3): 2, (1, 2, 3): 2}
     rules = gen_rules(spark, freq, n_tx=5, min_conf=0.5).collect()
@@ -61,22 +49,30 @@ def test_rule_metrics_and_single_consequent_filter(spark):
     single = gen_rules(spark, freq, n_tx=5, min_conf=0.5, single_consequent=True).collect()
     assert all(len(row.consequent) == 1 for row in single)
     assert gen_rules(spark, {(1,): 4}, n_tx=5, min_conf=0.5).count() == 0
+    with pytest.raises(ValueError, match="Thiếu support"):
+        gen_rules(spark, {(1,): 4, (1, 2): 2}, n_tx=5, min_conf=0.5)
 
 
-def test_fpgrowth_and_single_consequent_rules_match_mllib(spark):
-    rows = _six_seed_rows()
+@pytest.mark.parametrize("seed", range(6))
+def test_four_way_fim_and_rule_comparison(spark, seed):
+    rng = random.Random(seed)
+    rows = _seed_rows(seed)
+    min_support = rng.choice([0.02, 0.05, 0.1])
+    max_k = rng.choice([None, 3])
+    min_count = ceil(min_support * len(rows))
+    expected_freq = _brute_force(rows, min_count, max_k=max_k)
+    tx = spark.sparkContext.parallelize(rows, 2)
+    assert dapriori(tx, min_count=min_count, max_k=max_k) == expected_freq
+    assert datid(tx, min_count=min_count, max_k=max_k) == expected_freq
+
     frame = spark.createDataFrame([(list(row),) for row in rows], ["items"])
-    min_count = 3
     min_conf = 0.1
-    model = fpgrowth(frame, min_support=min_count / len(rows), min_conf=min_conf, num_partitions=2)
-    expected_freq = _brute_force(rows, min_count, max_k=3)
-    actual_freq = {
-        tuple(sorted(row.items)): row.freq for row in model.freqItemsets.where(F.size("items") <= 3).collect()
-    }
+    model = fpgrowth(frame, min_support=min_support, min_conf=min_conf, num_partitions=2)
+    fp_freq = {tuple(sorted(row.items)): row.freq for row in model.freqItemsets.collect()}
+    actual_freq = {itemset: count for itemset, count in fp_freq.items() if max_k is None or len(itemset) <= max_k}
     assert actual_freq == expected_freq
 
-    freq = dapriori(spark.sparkContext.parallelize(rows, 2), min_count=min_count, max_k=3)
-    generated = gen_rules(spark, freq, n_tx=len(rows), min_conf=min_conf, single_consequent=True).collect()
+    generated = gen_rules(spark, fp_freq, n_tx=len(rows), min_conf=min_conf, single_consequent=True).collect()
     mllib = model.associationRules.where(F.size("consequent") == 1).collect()
     generated_metrics = {
         (tuple(sorted(row.antecedent)), tuple(sorted(row.consequent))): (row.confidence, row.lift) for row in generated
@@ -84,11 +80,6 @@ def test_fpgrowth_and_single_consequent_rules_match_mllib(spark):
     mllib_metrics = {
         (tuple(sorted(row.antecedent)), tuple(sorted(row.consequent))): (row.confidence, row.lift) for row in mllib
     }
-    extra = generated_metrics.keys() - mllib_metrics.keys()
-    missing = mllib_metrics.keys() - generated_metrics.keys()
-    print("generated", len(generated_metrics), "mllib", len(mllib_metrics))
-    print("extra", [(key, generated_metrics[key]) for key in list(extra)[:10]])
-    print("missing", [(key, mllib_metrics[key]) for key in list(missing)[:10]])
     assert generated_metrics.keys() == mllib_metrics.keys()
     for key, (confidence, lift) in generated_metrics.items():
         assert confidence == pytest.approx(mllib_metrics[key][0], abs=1e-9)
