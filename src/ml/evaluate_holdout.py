@@ -1,7 +1,7 @@
 """Đánh giá luật kết hợp trên holdout validation/test và baseline phổ biến."""
 
 import argparse
-from collections import defaultdict
+import logging
 from collections.abc import Iterable
 from itertools import combinations
 from pathlib import Path
@@ -9,39 +9,11 @@ from pathlib import Path
 import mlflow
 from pyspark.sql import SparkSession
 
+from ml.recommendations import recommend_indices
+
+LOGGER = logging.getLogger(__name__)
 HOLDOUT_METRICS = "instacart.ml.holdout_metrics"
 EVAL_SQL = Path(__file__).with_name("sql") / "eval_holdout.sql"
-
-
-def _recommend(context: Iterable[int], rules: Iterable[dict], popular: Iterable[int], k: int = 10) -> list[int]:
-    """Trả top-k món theo confidence/lift, rồi bù từ danh sách phổ biến."""
-    if k < 1:
-        raise ValueError("k phải >= 1")
-    basket = set(context)
-    ctx = sorted(basket)
-    best: dict[int, tuple[float, float]] = {}
-    index: dict[tuple[int, ...], list[dict]] = defaultdict(list)
-    max_left = 0
-    for rule in rules:
-        antecedent = tuple(sorted(rule["antecedent"]))
-        if antecedent:
-            index[antecedent].append(rule)
-            max_left = max(max_left, len(antecedent))
-    for size in range(1, min(max_left, len(ctx)) + 1):
-        for antecedent in combinations(ctx, size):
-            for rule in index.get(antecedent, ()):
-                for item in rule["consequent"]:
-                    item = int(item)
-                    score = (float(rule["confidence"]), float(rule.get("lift", 0.0)))
-                    if item not in basket and score > best.get(item, (-1.0, -1.0)):
-                        best[item] = score
-    ranked = sorted(best, key=lambda item: (-best[item][0], -best[item][1], item))[:k]
-    for item in popular:
-        if len(ranked) >= k:
-            break
-        if item not in basket and item not in best and item not in ranked:
-            ranked.append(int(item))
-    return ranked
 
 
 def evaluate_holdout(
@@ -53,30 +25,41 @@ def evaluate_holdout(
     min_confidence: float = 0.0,
     catalog_size: int | None = None,
 ) -> dict[str, float | int]:
-    """Tính HitRate, Precision, Recall, order coverage và catalog coverage."""
+    """Tính chỉ số cho danh sách có bù popular và riêng danh sách chỉ dùng luật."""
     if not 0 <= min_confidence <= 1:
         raise ValueError("min_confidence phải nằm trong [0, 1]")
-    filtered_rules = [r for r in rules if float(r["confidence"]) >= min_confidence]
+    if k < 1:
+        raise ValueError("k phải >= 1")
+    filtered_rules = [rule for rule in rules if float(rule["confidence"]) >= min_confidence]
     popular = list(popular_items)
-    n_rows = hits = covered = precision_sum = recall_sum = 0.0
+    n_rows = hits = rule_hits = precision_sum = rule_precision_sum = recall_sum = rule_recall_sum = 0.0
+    covered = 0.0
     recommended_items: set[int] = set()
+    rule_items: set[int] = set()
     for row in holdout:
         context, targets = list(row["context"]), set(row["targets"])
         if not targets:
             continue
-        recommended = _recommend(context, filtered_rules, popular, k)
-        matched = len(set(recommended) & targets)
+        recs = recommend_indices(context, filtered_rules, popular, k=k, fill_popular=True)
+        rule_recs = recommend_indices(context, filtered_rules, k=k, fill_popular=False)
+        matched = len(set(recs) & targets)
+        rule_matched = len(set(rule_recs) & targets)
         n_rows += 1
         hits += matched > 0
+        rule_hits += rule_matched > 0
         precision_sum += matched / k
+        rule_precision_sum += rule_matched / k
         recall_sum += matched / len(targets)
+        rule_recall_sum += rule_matched / len(targets)
+        context_set = set(context)
         covered += any(
-            tuple(sorted(rule["antecedent"])) == subset and any(i not in context for i in rule["consequent"])
+            tuple(sorted(rule["antecedent"])) == subset and any(item not in context_set for item in rule["consequent"])
             for rule in filtered_rules
-            for size in range(1, min(len(context), len(rule["antecedent"])) + 1)
-            for subset in combinations(sorted(set(context)), size)
+            for size in range(1, min(len(context_set), len(rule["antecedent"])) + 1)
+            for subset in combinations(sorted(context_set), size)
         )
-        recommended_items.update(recommended)
+        recommended_items.update(recs)
+        rule_items.update(rule_recs)
     if n_rows == 0:
         raise ValueError("holdout không có dòng với targets khác rỗng")
     denominator = catalog_size if catalog_size is not None else len(popular)
@@ -87,6 +70,10 @@ def evaluate_holdout(
         "recall_at_k": recall_sum / n_rows,
         "order_coverage": covered / n_rows,
         "catalog_coverage": len(recommended_items) / denominator if denominator else 0.0,
+        "rule_only_hit_rate_at_k": rule_hits / n_rows,
+        "rule_only_precision_at_k": rule_precision_sum / n_rows,
+        "rule_only_recall_at_k": rule_recall_sum / n_rows,
+        "rule_only_catalog_coverage": len(rule_items) / denominator if denominator else 0.0,
     }
 
 
@@ -120,7 +107,23 @@ def evaluate_popularity_baseline(
         "recall_at_k": recall_sum / n_rows,
         "order_coverage": 0.0,
         "catalog_coverage": len(recommended_items) / denominator if denominator else 0.0,
+        "rule_only_hit_rate_at_k": 0.0,
+        "rule_only_precision_at_k": 0.0,
+        "rule_only_recall_at_k": 0.0,
+        "rule_only_catalog_coverage": 0.0,
     }
+
+
+def _execute_eval_sql(
+    spark: SparkSession,
+    run_key: str,
+    min_confidence: float,
+    eval_part: str,
+    *,
+    sql_text: str | None = None,
+):
+    query = sql_text if sql_text is not None else EVAL_SQL.read_text(encoding="utf-8")
+    return spark.sql(query, args={"run_key": run_key, "min_conf": float(min_confidence), "part": eval_part}).first()
 
 
 def evaluate_run(spark: SparkSession, run_key: str, min_confidence: float, eval_part: str) -> dict:
@@ -129,8 +132,7 @@ def evaluate_run(spark: SparkSession, run_key: str, min_confidence: float, eval_
 
     if eval_part not in {"val", "test"}:
         raise ValueError("eval_part chỉ nhận val hoặc test")
-    query = EVAL_SQL.read_text(encoding="utf-8")
-    result = spark.sql(query, args={"run_key": run_key, "min_conf": float(min_confidence), "part": eval_part}).first()
+    result = _execute_eval_sql(spark, run_key, min_confidence, eval_part)
     if result is None or not result["n_eval"]:
         raise ValueError(f"Không có holdout {eval_part} để đánh giá")
     row = result.asDict(recursive=True)
@@ -158,10 +160,14 @@ def evaluate_run(spark: SparkSession, run_key: str, min_confidence: float, eval_
                     "recall_at_10": float(row["recall_at_k"]),
                     "order_coverage": float(row["order_coverage"]),
                     "catalog_coverage": float(row["catalog_coverage"]),
+                    "rule_only_hit_rate_at_10": float(row["rule_only_hit_rate_at_k"]),
+                    "rule_only_precision_at_10": float(row["rule_only_precision_at_k"]),
+                    "rule_only_recall_at_10": float(row["rule_only_recall_at_k"]),
+                    "rule_only_catalog_coverage": float(row["rule_only_catalog_coverage"]),
                 }
             )
-    except Exception:  # noqa: BLE001 - bảng Delta là nguồn sự thật
-        pass
+    except Exception as exc:  # noqa: BLE001 - cảnh báo ghi lại lỗi nhưng giữ Delta làm nguồn sự thật
+        LOGGER.warning("Không ghi được metrics holdout vào MLflow cho %s: %s", run_key, exc)
     return row
 
 
@@ -187,7 +193,7 @@ def main() -> None:
         evaluate_run(spark, "popularity", 0.0, "test")
     else:
         if not args.run_key or args.min_confidence is None:
-            parser.error("--run-key և --min-confidence потрібні nếu không dùng --all-e7")
+            parser.error("--run-key và --min-confidence là bắt buộc nếu không dùng --all-e7")
         evaluate_run(spark, args.run_key, args.min_confidence, args.part)
 
 

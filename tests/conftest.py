@@ -17,7 +17,7 @@ def spark() -> SparkSession:
         .config("spark.sql.extensions", "io.delta.sql.DeltaSparkSessionExtension")
         .config("spark.sql.catalog.spark_catalog", "org.apache.spark.sql.delta.catalog.DeltaCatalog")
         .config("spark.databricks.delta.snapshotPartitions", "1")
-        .config("spark.jars.ivySettings", str(Path(__file__).parent / "fixtures/ivysettings.xml"))
+        .config("spark.jars.ivySettings", (Path(__file__).parent / "fixtures/ivysettings.xml").resolve().as_uri())
     )
     session = configure_spark_with_delta_pip(builder).getOrCreate()
     yield session
