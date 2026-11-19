@@ -102,10 +102,10 @@ SELECT :run_key AS run_key, CAST(:min_conf AS DOUBLE) AS min_confidence,
        avg(size(array_intersect(recs, targets)) / 10.0) AS precision_at_k,
        avg(size(array_intersect(recs, targets)) / size(targets)) AS recall_at_k,
        avg(has_rule) AS order_coverage,
-       size(array_distinct(flatten(collect_list(recs)))) / max(c.n_items) AS catalog_coverage,
+       size(array_distinct(flatten(collect_list(recs)))) / max(catalog.n_items) AS catalog_coverage,
        avg(CASE WHEN size(array_intersect(rule_recs, targets)) > 0 THEN 1.0 ELSE 0.0 END) AS rule_only_hit_rate_at_k,
        avg(size(array_intersect(rule_recs, targets)) / 10.0) AS rule_only_precision_at_k,
        avg(size(array_intersect(rule_recs, targets)) / size(targets)) AS rule_only_recall_at_k,
-       size(array_distinct(flatten(collect_list(rule_recs)))) / max(c.n_items) AS rule_only_catalog_coverage,
+       size(array_distinct(flatten(collect_list(rule_recs)))) / max(catalog.n_items) AS rule_only_catalog_coverage,
        current_timestamp() AS evaluated_at
 FROM per_order CROSS JOIN catalog;
