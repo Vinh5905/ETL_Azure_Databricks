@@ -1,6 +1,6 @@
 # 04 · GitHub Actions và CI/CD (giai đoạn P3)
 
-**Đầu vào:** bootstrap xong (đã có UAMI, các GitHub Variables, environment `dev`/`prod`); stack `10-core` đã apply ít nhất một lần từ máy P1.
+**Đầu vào:** bootstrap xong (đã có UAMI, các GitHub Secrets, environment `dev`/`prod`); stack `10-core` đã apply ít nhất một lần từ máy P1.
 **Đầu ra:** mọi thay đổi về hạ tầng, pipeline DE và Databricks job đi qua PR → kiểm tra → review → merge → tự động apply/deploy.
 **Xong khi:** một PR thử thay đổi tag trong `10-core` chạy đủ chuỗi: check, plan có comment trên PR, merge, apply được duyệt và chạy xong. Thêm một PR thay đổi job deploy được lên workspace.
 
@@ -186,11 +186,11 @@ jobs:
 | Chỗ | Nội dung |
 |---|---|
 | Comment trên PR | Dòng `Plan: X to add, Y to change, Z to destroy` (hoặc `No changes.`); danh sách `hành động  địa chỉ tài nguyên`, gồm cả tài nguyên bị lệch ngoài Terraform (`drift`); cảnh báo ⚠️ nếu có tài nguyên bị xóa hoặc tạo lại. Plan lỗi thì chỉ có các dòng `Error: …`. GUID và IPv4 còn sót bị thay bằng `<guid>`, `<ip>`. |
-| Log của job | Plan đầy đủ. Bước `mask_private_values.sh` chạy đầu tiên nên subscription, tenant, client ID, object ID và IP hiện thành `***`. |
+| Log của job | Plan đầy đủ. Subscription, tenant, client ID, object ID và IP nằm ở GitHub Secret nên hiện thành `***`; bước `mask_private_values.sh` che thêm từng giá trị bên trong Secret dạng JSON. |
 
 Người review cần xem thuộc tính cụ thể (ví dụ role nào, scope nào) thì mở log của job: link nằm cuối comment. Không đính kèm plan làm artifact, vì artifact của repo public ai cũng tải được.
 
-Biến không bí mật (Object ID của thành viên, IP...) được đọc từ GitHub Variables rồi chuyển thành `TF_VAR_*`, vì CI không có file `*.auto.tfvars`.
+Giá trị riêng (Object ID của thành viên, IP...) được đọc từ GitHub Secrets rồi chuyển thành `TF_VAR_*`, vì CI không có file `*.auto.tfvars`. Không dùng Variables cho các giá trị này: GitHub in khối `env:` ra log ở các bước chạy trước `mask_private_values.sh` (như checkout), và Variable hiện nguyên văn, còn Secret luôn thành `***`.
 
 ### 3.3 `tf-apply.yml`: apply sau khi merge (environment `prod`)
 
@@ -238,7 +238,7 @@ jobs:
           DATABRICKS_AUTH_TYPE: azure-cli     # dùng phiên đăng nhập của azure/login
 ```
 
-**PR từ fork:** GitHub không đưa Variables và token OIDC cho workflow của PR từ fork. Job `dev`, `dev-cleanup` bị skip, `pr-checks / bundle` chỉ in notice, `tf-plan` không có plan. Người làm trên fork phải tự `bundle validate` và `bundle deploy -t dev` từ máy mình, còn plan do P1 chạy hộ ([CONTRIBUTING.md](../../CONTRIBUTING.md) §3, mục "PR từ fork"). Nhánh đẩy thẳng lên repo gốc thì CI chạy đủ.
+**PR từ fork:** GitHub không đưa Secrets, Variables và token OIDC cho workflow của PR từ fork. Job `dev`, `dev-cleanup` bị skip, `pr-checks / bundle` chỉ in notice, `tf-plan` không có plan. Người làm trên fork phải tự `bundle validate` và `bundle deploy -t dev` từ máy mình, còn plan do P1 chạy hộ ([CONTRIBUTING.md](../../CONTRIBUTING.md) §3, mục "PR từ fork"). Nhánh đẩy thẳng lên repo gốc thì CI chạy đủ.
 
 UAMI phải được **thêm vào workspace** dưới dạng service principal (dùng application ID của UAMI) và được cấp quyền trong Unity Catalog. Việc này làm ở stack `30-databricks` ([05](05_databricks_platform.md)).
 
@@ -292,16 +292,18 @@ Chỉ làm khi đã dựng stack `50-serving` ([03 §5.1](03_terraform_azure.md)
 
 | Tên | Loại | Dùng ở |
 |---|---|---|
-| `AZURE_CLIENT_ID`, `AZURE_TENANT_ID` | Variable | Mọi workflow đăng nhập Azure |
-| `AZURE_SUBSCRIPTION_A`, `AZURE_SUBSCRIPTION_B` | Variable | Terraform, `stream-toggle` |
-| `TFSTATE_ACCOUNT` | Variable | `backend.hcl` / remote state |
-| `DATABRICKS_HOST` | Variable | `de-deploy` |
-| `TF_VAR_MEMBER_OBJECT_IDS` (JSON, map vai → object ID) | Variable, map vào `TF_VAR_member_object_ids` | Stack `10-core` (bước 3.6, 3.8), `30-databricks` |
-| `TF_VAR_DATABRICKS_APP_OBJECT_ID` (object ID của ứng dụng AzureDatabricks trong tenant, lấy bằng `az ad sp show --id 2ff814a6-3304-4ab8-85cb-cd0e6f879c1d --query id -o tsv`) | Variable, map vào `TF_VAR_databricks_app_object_id` | Stack `10-core` (role Key Vault Secrets User cho secret scope `kv`, [05 bước 7](05_databricks_platform.md)) |
-| `TF_VAR_MEMBER_IPS` (JSON, map vai → IP public) | Variable, map vào `TF_VAR_member_ips` | Stack `10-core` (firewall Azure SQL, bước 3.6) |
-| `TF_VAR_MEMBER_EMAILS` (JSON, map vai → email) | **Secret**, map vào `TF_VAR_member_emails` | Stack `10-core` (action group nhận cảnh báo budget, bước 3.9). Secret vì repo public và Variable hiện rõ trong log |
+| `AZURE_CLIENT_ID`, `AZURE_TENANT_ID` | **Secret** | Mọi workflow đăng nhập Azure |
+| `AZURE_SUBSCRIPTION_A`, `AZURE_SUBSCRIPTION_B` | **Secret** | Terraform, `stream-toggle` |
+| `TFSTATE_ACCOUNT` | **Secret** | `backend.hcl` / remote state |
+| `DATABRICKS_HOST` | Variable (dùng trong điều kiện `if:`, Secret không dùng được ở đó; URL workspace không phải ID riêng) | `de-deploy`, `pr-checks / bundle` |
+| `TF_VAR_MEMBER_OBJECT_IDS` (JSON, map vai → object ID) | **Secret**, map vào `TF_VAR_member_object_ids` | Stack `10-core` (bước 3.6, 3.8), `30-databricks` |
+| `TF_VAR_DATABRICKS_APP_OBJECT_ID` (object ID của ứng dụng AzureDatabricks trong tenant, lấy bằng `az ad sp show --id 2ff814a6-3304-4ab8-85cb-cd0e6f879c1d --query id -o tsv`) | **Secret**, map vào `TF_VAR_databricks_app_object_id` | Stack `10-core` (role Key Vault Secrets User cho secret scope `kv`, [05 bước 7](05_databricks_platform.md)) |
+| `TF_VAR_MEMBER_IPS` (JSON, map vai → IP public) | **Secret**, map vào `TF_VAR_member_ips` | Stack `10-core` (firewall Azure SQL, bước 3.6) |
+| `TF_VAR_MEMBER_EMAILS` (JSON, map vai → email) | **Secret**, map vào `TF_VAR_member_emails` | Stack `10-core` (action group nhận cảnh báo budget, bước 3.9). |
 | `TF_VAR_MEMBER_UPNS` (JSON, map vai → UPN Entra `<mssv>@ms.uit.edu.vn`) | **Secret**, map vào `TF_VAR_member_upns` | Stack `30-databricks` (`databricks_user`, bước 2). Phải là tài khoản đăng nhập Entra, không phải hộp thư `gm` ở `TF_VAR_MEMBER_EMAILS`; cùng key `p1`…`p4` |
 | `INFRACOST_API_KEY` | **Secret** | `pr-checks / cost`. Token của service account trên Infracost Cloud (dashboard → Org settings → Service accounts → Create, đặt hạn dùng có giới hạn). Token chỉ hiện một lần; đặt bằng `gh secret set INFRACOST_API_KEY` rồi dán vào |
+
+**Quy tắc:** mọi subscription ID, tenant ID, client ID, object ID, IP, email và tên storage account chứa state đặt ở **Secret**. Variable chỉ dùng cho giá trị công khai được, vì log của repo public ai cũng đọc được. Secret dạng JSON chỉ được che nguyên chuỗi, nên `mask_private_values.sh` che thêm từng giá trị bên trong.
 
 Không có client secret, PAT hay connection string nào nằm trong GitHub. Mọi bí mật lúc chạy đều nằm trong Key Vault.
 

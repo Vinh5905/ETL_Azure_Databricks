@@ -114,3 +114,130 @@ uv run --extra ingest python scripts/check_retail_sql.py --seed
   Chạy wave 0, chạy lại wave 0, rồi chạy wave 1 và đối soát CDC trên Azure.
 
 Tham chiếu driver: [pymssql](https://pymssql.readthedocs.io/en/stable/ref/pymssql.html).
+
+## OFF crawler (AD-DE-10)
+
+Job DAB `off_crawler` (`instacart-off-crawler`) chạy hai task `off_crawler → off_images`
+trên **cùng** classic single-node theo policy của repo/G0: DBR 15.4, 0 worker, SINGLE_USER.
+Không schedule, queue tắt, `max_concurrent_runs=1`, không tự retry task, timeout job 4 giờ.
+Không chạy cùng seed, pipeline batch, stream hay DS đang chiếm quota 4 vCPU. `requests` pin theo lockfile.
+
+### Cấu hình và quyền
+
+| Phần | Dev | Prod |
+|---|---|---|
+| Nguồn mặc định | `<catalog>.<user>_bronze.products/order_products_prior` | `<catalog>.bronze.products/order_products_prior` |
+| Bảng trạng thái | `<catalog>.<user>_ops.off_crawl_state` | `<catalog>.landing_meta.off_crawl_state` |
+| `off_root` | `/Volumes/<catalog>/landing_meta/raw/dev/<user>/off_api` | `/Volumes/<catalog>/landing_meta/raw/off_api` |
+
+Bundle truyền cùng `off_root` cho crawler và bronze; chỉ nhánh OFF của dev được tách, nguồn CSV/CDC
+vẫn ở landing raw chung. Pipeline cũ chưa có cấu hình này dùng fallback `landing_root/off_api`.
+Không chuyển đường đọc của một bảng OFF đã có checkpoint mà chưa có kế hoạch chuyển dữ liệu/pipeline riêng.
+
+P1 phải chuẩn bị catalog, volume raw, policy, các schema và quyền UC. Người chạy cần USE CATALOG/SCHEMA,
+SELECT trên hai bảng nguồn, READ/WRITE VOLUME, CREATE TABLE trên schema trạng thái và MODIFY/SELECT
+trên bảng trạng thái đã tồn tại. Code chỉ tạo bảng Delta nếu chưa có; không tạo schema hay tự cấp grant.
+Bảng mới gồm `product_id,status,attempts,off_code,batch_file,last_error,updated_at,batch_id`;
+nếu đã dựng bảng theo bản minh họa cũ không có `batch_id`, cần migration được review trước khi chạy.
+
+### Chọn lô và gọi API
+
+- Mặc định đọc **bronze**, đếm tần suất từ món **prior**, chọn top 2.000, tie-break product_id.
+  Mỗi lượt lấy tối đa 300 sản phẩm chưa có trạng thái hoặc `retry` còn dưới 5 lần thử.
+  Không tra lại `done`, `no_result`, `failed`; không lấy train/test làm tín hiệu phổ biến.
+- `attempts` đếm lần xử lý sản phẩm trong lô, không phải từng request HTTP. Mỗi lần xử lý có
+  tối đa 5 HTTP request cho timeout/kết nối/429/5xx. Sau 5 lần xử lý vẫn lỗi thì `failed`;
+  HTTP 3xx/4xx khác 429 không retry; riêng 401/403 dừng cả lô và giữ plan để xử lý truy cập,
+  không đánh failed toàn bộ danh mục. Phản hồi sai cấu trúc/timeout không bị coi là no_result.
+- Endpoint Search-a-licious dùng `q`, `fields`, `page_size=5`, `langs=en`; tên hàng được escape
+  để không bị diễn giải thành toán tử Lucene. User-Agent có URL repo. Mọi search request, kể cả retry, cách nhau ít nhất
+  6,5 giây; Retry-After dạng giây/HTTP date được tôn trọng, fallback backoff tăng dần.
+- Cả job/API chỉ có một writer cho mỗi bộ state/off_root. Không chạy thêm script thủ công hay
+  job dev/prod đồng thời dùng chung nguồn/IP. Giới hạn trong client không phải distributed rate limiter.
+
+### Landing và phục hồi
+
+1. Ghi active plan ở `off_root/_staging/off/active.json`, lưu danh sách sản phẩm/tên tra/attempt hiện tại.
+2. Sau mỗi kết quả API, lưu journal riêng từng sản phẩm. Restart đọc journal trước, chỉ tra phần chưa có.
+   Nếu process chết ngay sau HTTP nhưng trước khi journal được ghi, request đó có thể lặp lại.
+3. Dựng JSONL, metadata `_product_id`/`_search_query` do crawler gắn; giữ code dạng chuỗi và payload lồng nhau.
+   Batch ID hash từ nội dung plan, gồm attempt, không từ ngày/run ID; tên file còn có hash JSONL:
+   `products/batch=<plan_hash>/batch_<content_hash>.json`.
+4. Ghi `_staging` rồi rename trong cùng volume, không fallback copy. File đã công bố phải trùng byte
+   nếu gặp lại; khác nội dung thì dừng. Chỉ sau publish mới MERGE trạng thái với attempts **tuyệt đối**.
+   MERGE không lùi trạng thái terminal và không cộng thêm attempts khi replay cùng plan.
+5. Sau MERGE thành công mới xóa active pointer; giữ journal để điều tra. Lỗi publish/MERGE thì chạy lại
+   cùng job/configuration để phục hồi plan cũ, không tạo lô mới/đổi ngày/tra lại phần đã có journal.
+
+Một lô toàn no_result/retry/failed vẫn cập nhật trạng thái nhưng **không** công bố JSONL rỗng.
+Summary cuối task có số done/no_result/retry/failed; hoàn tất job không có nghĩa đủ 300 terminal.
+Hit lỗi được bỏ riêng và đếm trong `invalid_hits`. Ảnh lỗi vĩnh viễn được ghi vào `_staging/images/failed.json` theo mã và hash URL. Lỗi quyền dịch vụ hoặc hết retry vẫn dừng task.
+
+Không xóa journal/reset bảng để ép tra lại sản phẩm terminal. Giữ nguyên state, off_root, logic chọn nguồn
+trong lúc phục hồi active plan; nếu cần chuyển cấu hình phải xử lý plan cũ xong trước.
+
+`Path.replace/rename` cần được nghiệm thu thực tế trên UC Volume Azure; test local chỉ xác nhận hành vi
+trên filesystem local. Nếu backend không hỗ trợ rename thì task dừng, giữ staging, không thay bằng
+`dbutils.fs.mv`: lệnh đó copy rồi xóa, không bảo đảm publish nguyên tử. Dừng ingestion trong lúc kiểm
+publish; không dùng một update pipeline song song làm bằng chứng atomicity của source chưa nghiệm thu.
+
+### Ảnh
+
+`off_images` đọc JSONL đã công bố từ `batch_file` của các dòng done, kiểm hash, lấy mọi image_url
+và loại trùng mã vạch. Không cần `bronze.off_products`, nên ảnh có thể được chuẩn bị trước update LDP.
+Chỉ nhận HTTPS trên images.openfoodfacts.org, không follow redirect. CDN ảnh giãn 1 giây/request,
+retry vẫn qua limiter; search có limiter riêng. JPEG tối đa 10 MiB, kiểm Content-Type và marker đầu/cuối.
+Ảnh hoàn chỉnh công bố thành `images/<code>.jpg` qua staging/rename, không chuyển byte ảnh vào JSONL.
+
+Ảnh đã tồn tại được kiểm marker và bỏ qua mà không gửi HTTP request. Ảnh lỗi vĩnh viễn hoặc sai
+định dạng được ghi vào journal để lượt sau bỏ qua cùng URL. Lỗi quyền dịch vụ hoặc hết retry làm
+task lỗi. Repair tiếp tục các ảnh chưa xử lý. Giữ nguyên nội dung và tên ảnh đã công bố.
+
+### Bootstrap và nghiệm thu trên workspace
+
+Sau khi có CLI và profile **người dùng đã chọn**, chạy từ `bundles/`:
+
+```bash
+databricks bundle validate --strict -t dev --profile <profile>
+databricks bundle deploy -t dev --profile <profile>
+databricks bundle run -t dev --profile <profile> off_crawler
+```
+
+Nếu bronze chưa được khởi tạo vì OFF còn rỗng, có thể bootstrap có chủ đích từ CSV landing đã công bố:
+
+```bash
+databricks bundle run -t dev --profile <profile> off_crawler --params source=landing,batch_size=300,top=2000
+```
+
+Chế độ này vẫn chỉ đọc products và món prior với schema cố định; không ghi bảng bronze thay LDP.
+Sau khi OFF/ảnh có nguồn, chạy `instacart_batch` theo AD-DE-09; những nguồn CDC khác cũng phải sẵn sàng.
+Từ lượt sau dùng mặc định source=bronze. Không tự bootstrap bằng fixture hoặc dữ liệu nghiệp vụ giả trên prod.
+
+Nghiệm thu issue #46 cần: ít nhất **300 done/no_result**, link job run/state dev đã resolve, JSONL/ảnh đã
+công bố, số request lượt chạy lại cho terminal bằng 0 và ảnh đã có không tải lại, số dòng bronze OFF/ảnh
+khác 0 sau update pipeline. Tách kiểm repair từng task khỏi chạy lô mới: nếu vẫn còn sản phẩm trong top,
+chạy job mới sẽ chọn sản phẩm **khác**, không nhất thiết là no-op toàn job.
+
+Lô dev đã xác nhận MERGE Delta và rename trên UC Volume Azure với 5 sản phẩm, 1 JSONL và 17 ảnh.
+Pipeline batch mặc định `enable_off=false` để chạy được trước lượt crawl đầu. Khi dev có JSONL và
+nhánh ảnh, chạy từ `bundles/`:
+
+```bash
+BUNDLE_VAR_enable_off=true databricks bundle deploy -t dev
+BUNDLE_VAR_enable_off=true databricks bundle run -t dev instacart_batch
+```
+
+Trên prod, sau lượt crawl đầu tiên tạo dữ liệu, mở PR đặt `enable_off: "true"` trong
+`targets.prod.variables` của [bundles/databricks.yml](../../bundles/databricks.yml).
+CI triển khai cấu hình prod sau khi PR được duyệt và merge.
+
+Đối soát số dòng OFF và ảnh theo update. Log crawler có `search_requests`, gồm các lần retry.
+Log ảnh có `image_requests` và `downloaded`. Kiểm chạy lại với cùng giới hạn top đã nghiệm thu.
+
+Kiểm local: `uv run pytest tests/test_off_crawler.py tests/test_off_state.py tests/test_bronze.py -q`.
+Tests dùng HTTP giả lập/filesystem local/Spark thật cho chọn lô/bootstrap; SQL MERGE chỉ được parse và
+kiểm cleanup sau lỗi, chưa chứng minh transaction/concurrency Delta trên workspace.
+
+Tham khảo: [API search](https://openfoodfacts.github.io/search-a-licious/users/ref-openapi/),
+[giới hạn API](https://openfoodfacts.github.io/openfoodfacts-server/api/),
+[dbutils mv](https://docs.databricks.com/aws/en/dev-tools/databricks-utils#mv-command-dbutilsfsmv).

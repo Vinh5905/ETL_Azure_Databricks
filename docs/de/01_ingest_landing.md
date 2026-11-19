@@ -247,82 +247,37 @@ Hợp đồng ADF, lệnh kiểm local/CI và checklist nghiệm thu Azure nằm
 - Cần đọc độ phổ biến sản phẩm từ `bronze.order_products_prior` để chọn sản phẩm nào tra trước.
 - ADF chỉ việc gọi job (`pl_ingest_off`).
 
-**Bảng trạng thái** (Delta, quản lý bằng MERGE):
+**Bản triển khai AD-DE-10:** [hướng dẫn OFF](../../src/ingest/README.md#off-crawler-ad-de-10),
+[`off_crawler.py`](../../src/ingest/off_crawler.py), [`off_state.py`](../../src/ingest/off_state.py)
+và [`off_images.py`](../../src/ingest/off_images.py). Job DAB nằm ở
+[`jobs_ingest.yml`](../../bundles/resources/jobs_ingest.yml), hai task chạy nối tiếp, không có lịch tự động.
 
-```sql
-CREATE TABLE IF NOT EXISTS instacart.landing_meta.off_crawl_state (
-  product_id   INT,
-  status       STRING,      -- done | no_result | retry | failed
-  attempts     INT,
-  off_code     STRING,
-  batch_file   STRING,
-  last_error   STRING,
-  updated_at   TIMESTAMP
-);
-```
+**Bảng trạng thái** Delta: prod dùng `instacart.landing_meta.off_crawl_state`, dev dùng
+`instacart.<user>_ops.off_crawl_state`. Các cột là `product_id, status, attempts, off_code,
+batch_file, last_error, updated_at, batch_id`. Code tạo bảng khi chưa có; schema và quyền do P1 cấp.
 
-```python
-# src/ingest/off_crawler.py  (rút gọn)
-import hashlib, json, time, requests
-from pyspark.sql import SparkSession
+- Chọn top 2.000 theo số lần xuất hiện trong prior, mỗi lô tối đa 300; tie-break bằng product_id.
+  Bỏ qua done/no_result/failed, chỉ retry khi attempts < 5. Mặc định đọc bronze; bootstrap có chủ đích
+  `source=landing` đọc products và món prior từ CSV đã công bố để khởi tạo OFF trước update LDP đầu tiên.
+- Search dùng endpoint Search-a-licious và User-Agent của dự án, tối đa 5 HTTP request/lần tra;
+  timeout/429/5xx có backoff và Retry-After. Mọi search request, kể cả retry, cách nhau ≥ 6,5 giây.
+  Không biến phản hồi lỗi hoặc sai cấu trúc thành no_result.
+- Plan và kết quả từng sản phẩm nằm trong journal `_staging/off`. Batch ID từ danh sách sản phẩm,
+  tên tra và attempt; JSONL có tên hash nội dung, không có ngày/run ID trong tên:
+  `off_api/products/batch=<plan_hash>/batch_<content_hash>.json`.
+- Publish trước MERGE, attempts là giá trị tuyệt đối để replay không cộng thêm. Chạy lại phục hồi
+  active plan/journal trước, không tra lại phần đã lưu. Không ghi đè landing hay công bố JSONL rỗng.
+  Vẫn có thể lặp một request nếu process chết giữa HTTP response và ghi journal.
+- Ảnh lấy từ JSONL đã công bố, không cần chờ bronze.off_products; chỉ tải JPG còn thiếu vào
+  `off_api/images/<code>.jpg`. Ảnh đã có không phát request; kiểm host, Content-Type, kích thước và JPEG.
 
-SEARCH = "https://search.openfoodfacts.org/search"
-FIELDS = "code,product_name,brands,categories_tags,countries_tags,nutriscore_grade,nova_group,nutriments,image_url"
-HEADERS = {"User-Agent": "InstacartCourseProject/1.0 (student project, non-commercial)"}
-VOL = "/Volumes/instacart/landing_meta/raw/off_api"
+**Công bố file:** dùng rename trong cùng volume, dừng nếu backend không hỗ trợ; không fallback copy.
+`dbutils.fs.mv` là copy rồi xóa, không nên coi là rename nguyên tử. Test local chưa chứng minh hành vi
+rename trên UC Volume Azure; phải nghiệm thu trước khi dùng ingestion song song.
 
-def pick_batch(spark, n=300, top=2000):
-    return [r.product_id for r in spark.sql(f"""
-        WITH pop AS (
-          SELECT product_id, count(*) AS cnt FROM instacart.bronze.order_products_prior
-          GROUP BY product_id ORDER BY cnt DESC LIMIT {top})
-        SELECT p.product_id FROM pop p
-        LEFT JOIN instacart.landing_meta.off_crawl_state s USING (product_id)
-        WHERE s.status IS NULL OR (s.status = 'retry' AND s.attempts < 5)
-        ORDER BY p.cnt DESC LIMIT {n}""").collect()]
-
-def search(name: str, max_retry=5):
-    for i in range(max_retry):
-        r = requests.get(SEARCH, params={"q": name, "fields": FIELDS, "page_size": 5},
-                         headers=HEADERS, timeout=30)
-        if r.status_code == 429 or r.status_code >= 500:
-            time.sleep(int(r.headers.get("Retry-After", 2 ** i * 10))); continue
-        r.raise_for_status()
-        return r.json().get("hits", [])
-    raise RuntimeError("retry exhausted")
-
-def run(spark):
-    ids = pick_batch(spark)
-    if not ids:
-        print("hết sản phẩm cần tra"); return
-    names = {r.product_id: r.product_name for r in spark.table("instacart.bronze.products")
-             .where(f"product_id IN ({','.join(map(str, ids))})").collect()}
-    lines, state = [], []
-    for pid in ids:
-        try:
-            hits = search(names[pid])
-            for h in hits:
-                lines.append(json.dumps({**h, "_product_id": pid, "_search_query": names[pid]}))
-            state.append((pid, "done" if hits else "no_result", hits[0]["code"] if hits else None, None))
-        except Exception as e:                          # lỗi một sản phẩm không làm hỏng cả lô
-            state.append((pid, "retry", None, str(e)[:500]))
-        time.sleep(6.5)                                 # ≤ 10 request/phút
-
-    batch_id = hashlib.sha1(",".join(map(str, sorted(ids))).encode()).hexdigest()[:12]
-    day = time.strftime("%Y-%m-%d")
-    final = f"{VOL}/products/ingest_date={day}/batch_{batch_id}.json"
-    tmp = f"{VOL}/_staging/off/batch_{batch_id}.json"
-    dbutils.fs.put(tmp, "\n".join(lines), overwrite=True)
-    dbutils.fs.mv(tmp, final)                           # đổi tên trên ADLS HNS là thao tác nguyên tử
-    upsert_state(spark, state, final)                   # MERGE INTO off_crawl_state, attempts = attempts + 1
-```
-
-**Ảnh sản phẩm:** task `off_images` chạy sau. Với mỗi `off_code` có `image_url`, nếu `off_api/images/<code>.jpg` **chưa có** thì tải. File đã có thì bỏ qua, nên chạy lại không tải lại.
-
-**Chạy lại an toàn:**
-- Sản phẩm `done` / `no_result` không bị tra lại.
-- Tên file lô được tính từ danh sách `product_id`. Chạy lại cùng lô thì ghi đè **cùng tên**, và Auto Loader không nạp lại file đã nạp.
-- Nếu crawler chết sau khi ghi file nhưng trước khi MERGE trạng thái, lần sau sẽ tra lại đúng các sản phẩm đó. Silver vẫn chỉ giữ **một** kết quả mỗi `_product_id`, lấy bản có `_ingest_ts` mới nhất ([03 §5](03_silver_cdc_scd_dq.md)).
+Dev dùng off_root riêng dưới `raw/dev/<user>/off_api`, cùng giá trị được truyền cho bronze;
+prod vẫn đọc `raw/off_api`. Không chạy đồng thời nhiều writer/crawler dùng chung state, off_root hoặc
+IP gọi API; không đổi cấu hình hay xóa journal trong lúc phục hồi. Chi tiết và checklist ở hướng dẫn OFF.
 
 ## 5. ADF `pl_master` và nhật ký chạy
 

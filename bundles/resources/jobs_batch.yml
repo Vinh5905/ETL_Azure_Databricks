@@ -1,5 +1,87 @@
-# AD-DE-01 bỏ job Python tạm; chưa có job batch để deploy ở G0.
-# AD-DE-08 khai báo pipeline instacart_batch; AD-DE-18 bổ sung job thật
-# instacart-batch-medallion theo docs/de/06, không đặt lịch vì ADF gọi job.
+# ADF pl_master gọi job này theo ID sau khi dữ liệu landing đã công bố.
 resources:
-  jobs: {}
+  jobs:
+    batch_medallion:
+      name: instacart-batch-medallion
+      max_concurrent_runs: 1
+      queue:
+        enabled: true
+      tags:
+        cost_owner: p2
+        task: AD-DE-18
+      parameters:
+        - name: adf_run_id
+          default: manual
+      health:
+        rules:
+          - metric: RUN_DURATION_SECONDS
+            op: GREATER_THAN
+            value: 3600
+      email_notifications: ${var.batch_email_notifications}
+      tasks:
+        - task_key: pipeline_batch
+          pipeline_task:
+            pipeline_id: ${resources.pipelines.instacart_batch.id}
+            full_refresh: false
+
+        - task_key: resolve_pipeline_update
+          depends_on:
+            - task_key: pipeline_batch
+          run_if: ALL_DONE
+          max_retries: 2
+          min_retry_interval_millis: 10000
+          sql_task:
+            file:
+              path: ../../src/tasks/resolve_pipeline_update.sql
+              source: WORKSPACE
+            warehouse_id: ${var.warehouse_id}
+            parameters:
+              catalog: ${var.catalog}
+              ops_schema: ${var.schema_prefix}ops
+              pipeline_id: ${resources.pipelines.instacart_batch.id}
+              pipeline_task_run_id: "{{tasks.pipeline_batch.run_id}}"
+
+        - task_key: collect_dq
+          depends_on:
+            - task_key: resolve_pipeline_update
+          sql_task:
+            file:
+              path: ../../src/tasks/collect_dq.sql
+              source: WORKSPACE
+            warehouse_id: ${var.warehouse_id}
+            parameters:
+              catalog: ${var.catalog}
+              ops_schema: ${var.schema_prefix}ops
+              event_log_table: event_log_batch
+              update_id: "{{tasks.resolve_pipeline_update.output.first_row.update_id}}"
+
+        - task_key: init_reconciliation
+          depends_on:
+            - task_key: pipeline_batch
+            - task_key: collect_dq
+          sql_task:
+            file:
+              path: ../../src/tasks/init_reconciliation.sql
+              source: WORKSPACE
+            warehouse_id: ${var.warehouse_id}
+            parameters:
+              catalog: ${var.catalog}
+              ops_schema: ${var.schema_prefix}ops
+
+        - task_key: reconcile
+          depends_on:
+            - task_key: init_reconciliation
+          sql_task:
+            file:
+              path: ../../src/tasks/reconcile.sql
+              source: WORKSPACE
+            warehouse_id: ${var.warehouse_id}
+            parameters:
+              catalog: ${var.catalog}
+              ops_schema: ${var.schema_prefix}ops
+              bronze_schema: ${var.schema_prefix}bronze
+              silver_schema: ${var.schema_prefix}silver
+              gold_schema: ${var.schema_prefix}gold
+              profile: instacart_2017
+              run_id: "{{job.run_id}}"
+              check_date: "{{job.start_time.iso_date}}"

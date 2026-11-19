@@ -103,7 +103,7 @@ landing/
 ├── instacart/<bảng>/release=2017/<bảng>.csv              # một lần, tất định
 ├── retail_db/<bảng>/window=<from_lsn>_<to_lsn>/part-*.parquet
 ├── retail_db/<bảng>/snapshot=<to_lsn>/part-*.parquet     # lần đầu
-├── off_api/products/ingest_date=YYYY-MM-DD/batch_<n>.json
+├── off_api/products/batch=<plan_hash>/batch_<content_hash>.json
 ├── off_api/images/<code>.jpg
 └── _staging/...                                          # ADF ghi tạm, Auto Loader KHÔNG đọc
 ```

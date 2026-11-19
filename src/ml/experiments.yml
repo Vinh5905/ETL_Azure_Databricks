@@ -1,0 +1,38 @@
+defaults:
+  platform: databricks
+  max_k: null
+  algo_version: fim-v1
+  data_version: v1
+  reps: 3
+  timeout_min: 30
+  cores: [4]
+  top_n: [null]
+  persist: false
+experiments:
+  E1:
+    reps: 1
+    runs:
+      - {algo: all, grain: product, scale_pct: 10, min_support: [0.005], max_k: 3}
+      - {algo: all, grain: aisle, scale_pct: 10, min_support: [0.05]}
+      - {algo: all, grain: department, scale_pct: 10, min_support: [0.1]}
+  E2:
+    runs:
+      - {algo: [dapriori, datid, fpgrowth], grain: product, scale_pct: 25, min_support: [0.01, 0.005, 0.002, 0.001], max_k: 3}
+      - {algo: [dapriori, datid, fpgrowth], grain: aisle, scale_pct: 100, min_support: [0.1, 0.05, 0.02, 0.01]}
+      - {algo: [dapriori, datid, fpgrowth], grain: department, scale_pct: 100, min_support: [0.2, 0.1, 0.05]}
+  E3:
+    runs:
+      - {algo: [dapriori, datid, fpgrowth], grain: product, scale_pct: [10, 25, 50, 100, 200], min_support: [0.002], max_k: 3}
+  E4:
+    runs:
+      - {algo: [dapriori, datid, fpgrowth], grain: product, scale_pct: 25, top_n: [100, 1000, 10000, null], min_support: [0.002], max_k: 3}
+  E5:
+    cores: [1, 2, 4]
+    runs:
+      - {algo: [dapriori, datid, fpgrowth], grain: product, scale_pct: 25, min_support: [0.002], max_k: 3}
+      - {algo: [dapriori, datid, fpgrowth], grain: aisle, scale_pct: 100, min_support: [0.02]}
+  E7:
+    reps: 1
+    persist: true
+    runs:
+      - {algo: fpgrowth, grain: product, scale_pct: 100, min_support: [0.001, 0.002, 0.005], min_confidence: [0.1, 0.2, 0.3], max_k: 3}

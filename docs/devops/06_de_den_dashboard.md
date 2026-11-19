@@ -58,19 +58,13 @@
 
 Nhóm đã chọn **Lakeflow Declarative Pipelines** (LDP, edition Advanced) cho bronze → silver → gold. Job chỉ còn điều phối pipeline và các task phụ trợ:
 
-`pipeline_batch (LDP instacart_batch) → create_views → collect_dq ∥ reconcile → refresh_bi`
+`pipeline_batch → resolve_pipeline_update → collect_dq → init_reconciliation → reconcile`
 
-Phần DS **không** gắn vào job này mà tách thành các job DS chạy tay (hình kiến trúc 2, dải Lakeflow Jobs) ([de/06 §2](../de/06_van_hanh_chay_lai.md), [ds/04 §5](../ds/04_thuc_nghiem_danh_gia.md)).
-
-| Task | Loại | Ghi chú triển khai |
-|---|---|---|
-| `seed_retail_db --wave N` (job riêng) | Python | Sinh dữ liệu và các đợt thay đổi cho CDC; đọc mật khẩu từ secret scope `kv` ([de/01 §3.4](../de/01_ingest_landing.md)) |
-| `off_crawler → off_images` (job riêng, ADF `pl_ingest_off` gọi) | Python | [de/01 §4](../de/01_ingest_landing.md) |
-| `pipeline_batch` | `pipeline_task` | Auto Loader → bronze, `AUTO CDC`/expectations → silver, MV → gold. LDP tự quản lý checkpoint ([de/02](../de/02_bronze_ldp.md), [de/03](../de/03_silver_cdc_scd_dq.md), [de/05](../de/05_gold_serving.md)) |
-| `create_views`, `collect_dq`, `reconcile` | `sql_task` trên serverless warehouse (không tốn quota) | [de/06 §2–4](../de/06_van_hanh_chay_lai.md) |
-| `refresh_bi` | Python | Chỉ chạy khi `reconcile` đạt ([de/07 §7](../de/07_power_bi.md)) |
-
-DAB đầy đủ của job ở [de/06 §2](../de/06_van_hanh_chay_lai.md); pipeline ở [de/02 §2](../de/02_bronze_ldp.md) và [de/04 §3.1](../de/04_streaming.md).
+Các task SQL chạy trên warehouse serverless hiện có. `resolve_pipeline_update` dùng event log để
+truyền đúng update ID cho collector, kể cả khi repair sinh task run ID mới. Job gọi pipeline theo ID,
+giữ tham số `adf_run_id` cho ADF và chạy đối soát batch. Phần hợp nhất view, kiểm G3/G4 và refresh BI
+được nối sau khi có đủ nguồn stream/Gold và task AD-DE-25. Job DS vẫn chạy riêng.
+Xem [cấu hình job](../../bundles/resources/jobs_batch.yml) và [runbook batch](../de/06_van_hanh_chay_lai.md#2-job-điều-phối-batch).
 
 ### 2.2 Pipeline streaming `instacart_stream`
 

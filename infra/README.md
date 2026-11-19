@@ -21,7 +21,7 @@ terraform plan -var-file=../../envs/10-core.tfvars
 ```
 
 Giá trị riêng (subscription ID, `tfstate_account`…) đặt trong `terraform.auto.tfvars` ngay trong thư mục stack.
-File `*.auto.tfvars` đã nằm trong `.gitignore`. CI truyền các giá trị này qua `TF_VAR_*` lấy từ GitHub Variables.
+File `*.auto.tfvars` đã nằm trong `.gitignore`. CI truyền các giá trị này qua `TF_VAR_*` lấy từ GitHub Secrets.
 
 ## Trạng thái khung
 

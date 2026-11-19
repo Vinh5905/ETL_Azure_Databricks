@@ -45,6 +45,15 @@ resource "databricks_cluster_policy" "pipeline_single_node" {
 
 Runtime của pipeline do `channel` (`CURRENT` / `PREVIEW`) quyết định, không cố định `spark_version` trong policy.
 
+**Bảo trì bảng (OPTIMIZE, VACUUM) không cần cluster riêng.** Kết quả kiểm AD-OPS-21c ngày 2026-11-19:
+- Predictive optimization bật ở metastore, catalog `instacart` kế thừa, mọi bảng silver đều có cờ hiệu lực `ENABLE`.
+- Sau các update của pipeline dev và prod (update prod gần nhất 01:32 UTC), workspace **không** có cluster `dlt-maintenance-*` nào. Event log của hai pipeline cũng không có sự kiện bảo trì. Mọi cluster pipeline đều là `dlt-execution-*`, chạy `Standard_D4ds_v4`, có tag `cost_owner`.
+- `DESCRIBE HISTORY instacart.silver.order_items_prior` có `OPTIMIZE` và `LIQUID TAGGING` lúc 02:23 UTC, khoảng 35 phút sau `MERGE` của pipeline. Người chạy là principal của dịch vụ predictive optimization, không phải danh tính chạy pipeline.
+
+Vì vậy bảo trì chạy bằng predictive optimization trên serverless. Policy `dlt` ở trên không áp vào bước này. Bundle không cần thêm cluster `label: maintenance`.
+
+Tiền bảo trì tính vào SKU serverless của predictive optimization, không mang tag `cost_owner`, nên không chia được theo người như cluster pipeline. P1 không có quyền đọc `system.storage.predictive_optimization_operations_history` hay `system.billing`, nên chưa tách được con số này. Nếu sau này tắt predictive optimization, LDP sẽ quay lại tạo cluster bảo trì; khi đó phải kiểm lại cluster đó có nhận policy không.
+
 ### 2.2 Resource pipeline
 
 **Bản đang triển khai ở AD-DE-08:** [bundle và hướng dẫn nghiệm thu](../../bundles/README.md).
@@ -217,12 +226,18 @@ for _table in ("product_prices", "promotions"):
 
 ### 3.3 Open Food Facts: JSON lồng nhau và ảnh
 
+`OFF_ROOT` dùng cùng đường dẫn với crawler. Pipeline mặc định `enable_off=false`.
+Trên dev, truyền `BUNDLE_VAR_enable_off=true` sau khi đã có JSONL và nhánh ảnh trên landing.
+Trên prod, sau lượt crawl đầu tiên tạo dữ liệu, mở PR đặt `enable_off: "true"` trong
+`targets.prod.variables` của [bundles/databricks.yml](../../bundles/databricks.yml).
+CI triển khai cấu hình prod sau khi PR được duyệt và merge.
+
 ```python
 @dp.table(name=f"{BRONZE}.off_products",
           comment="Bronze: kết quả search OFF (mỗi dòng = một hit), JSON lồng nhau",
           table_properties=BRONZE_PROPS)
 def off_products():
-    return autoload(f"{LANDING}/off_api/products/", "json",
+    return autoload(f"{OFF_ROOT}/products/", "json",
                     **{"cloudFiles.schemaEvolutionMode": "addNewColumns",
                        "cloudFiles.inferColumnTypes": "true",
                        # nutriments có hàng trăm khóa và kiểu lẫn lộn → giữ dạng map, silver mới lấy khóa cần
@@ -236,7 +251,7 @@ def product_images():
     return (spark.readStream.format("cloudFiles")
             .option("cloudFiles.format", "binaryFile")
             .option("pathGlobFilter", "*.jpg")
-            .load(f"{LANDING}/off_api/images/")
+            .load(f"{OFF_ROOT}/images/")
             .select(F.regexp_extract("path", r"/([^/]+)\.jpg$", 1).alias("off_code"),
                     "path", "length", "modificationTime",
                     F.current_timestamp().alias("_ingest_ts")))

@@ -60,3 +60,83 @@ resources:
           libraries:
             - pypi:
                 package: pymssql==2.4.6
+
+    off_crawler:
+      name: instacart-off-crawler
+      max_concurrent_runs: 1
+      timeout_seconds: 14400
+      queue:
+        enabled: false
+      tags:
+        cost_owner: p2
+        task: AD-DE-10
+      parameters:
+        - name: source
+          default: bronze
+        - name: batch_size
+          default: "300"
+        - name: top
+          default: "2000"
+      tasks:
+        - task_key: off_crawler
+          job_cluster_key: off_ingest
+          max_retries: 0
+          spark_python_task:
+            python_file: ../../src/ingest/off_crawler.py
+            parameters:
+              - --mode
+              - crawl
+              - --source
+              - "{{job.parameters.source}}"
+              - --landing-root
+              - /Volumes/${var.catalog}/landing_meta/raw
+              - --catalog
+              - ${var.catalog}
+              - --bronze-schema
+              - ${var.schema_prefix}bronze
+              - --state-schema
+              - ${var.off_state_schema}
+              - --off-root
+              - ${var.off_root}
+              - --batch-size
+              - "{{job.parameters.batch_size}}"
+              - --top
+              - "{{job.parameters.top}}"
+          libraries:
+            - pypi:
+                package: requests==2.34.2
+        - task_key: off_images
+          depends_on:
+            - task_key: off_crawler
+          job_cluster_key: off_ingest
+          max_retries: 0
+          spark_python_task:
+            python_file: ../../src/ingest/off_crawler.py
+            parameters:
+              - --mode
+              - images
+              - --catalog
+              - ${var.catalog}
+              - --bronze-schema
+              - ${var.schema_prefix}bronze
+              - --state-schema
+              - ${var.off_state_schema}
+              - --off-root
+              - ${var.off_root}
+          libraries:
+            - pypi:
+                package: requests==2.34.2
+      job_clusters:
+        - job_cluster_key: off_ingest
+          new_cluster:
+            policy_id: ${var.policy_id}
+            spark_version: 15.4.x-scala2.12
+            node_type_id: ${var.node_type_id}
+            num_workers: 0
+            data_security_mode: SINGLE_USER
+            spark_conf:
+              spark.databricks.cluster.profile: singleNode
+              spark.master: "local[*]"
+            custom_tags:
+              ResourceClass: SingleNode
+              cost_owner: p2

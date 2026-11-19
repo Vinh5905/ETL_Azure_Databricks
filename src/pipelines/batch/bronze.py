@@ -1,4 +1,4 @@
-"""Nạp landing vào streaming table bronze (6 CSV Instacart, 2 CDC retail); checkpoint và schema store do LDP quản lý."""
+"""Nạp CSV, CDC và OFF vào bronze. LDP quản lý checkpoint và schema store."""
 
 from pyspark import pipelines as dp
 from pyspark.sql import SparkSession
@@ -8,6 +8,7 @@ spark = SparkSession.active()
 CATALOG = spark.conf.get("catalog")
 BRONZE_SCHEMA = spark.conf.get("bronze")
 LANDING = spark.conf.get("landing_root").rstrip("/")
+OFF_ROOT = spark.conf.get("off_root", f"{LANDING}/off_api").rstrip("/")
 BRONZE_PROPS = {"pipelines.reset.allowed": "false", "quality": "bronze"}
 
 # Tên bảng UC khác tên file ở hai bảng món hàng; schema chỉ chứa cột nghiệp vụ.
@@ -113,3 +114,41 @@ def make_cdc_table(table: str):
 
 for _table in CDC_TABLES:
     make_cdc_table(_table)
+
+
+if spark.conf.get("enable_off", "false").lower() == "true":
+
+    @dp.table(
+        name=table_name("off_products"),
+        comment="Bronze OFF: một dòng JSONL là một hit, giữ JSON lồng nhau và metadata crawler.",
+        table_properties=BRONZE_PROPS,
+    )
+    def off_products():
+        return with_ingest_metadata(
+            landing_stream("json")
+            .option("rescuedDataColumn", "_rescued_data")
+            .option("pathGlobFilter", "*.json")
+            .option("mode", "FAILFAST")
+            .option("cloudFiles.schemaEvolutionMode", "addNewColumns")
+            .option("cloudFiles.inferColumnTypes", "true")
+            .option("cloudFiles.schemaHints", "code STRING, nutriments MAP<STRING,STRING>, nova_group INT")
+            .load(f"{OFF_ROOT}/products/")
+        )
+
+    @dp.table(
+        name=table_name("product_images"),
+        comment="Bronze metadata ảnh JPG; không sao chép cột content vào Delta.",
+        table_properties=BRONZE_PROPS,
+    )
+    def product_images():
+        return with_ingest_metadata(
+            landing_stream("binaryFile").option("pathGlobFilter", "*.jpg").load(f"{OFF_ROOT}/images/")
+        ).select(
+            F.regexp_extract("path", r"/([^/]+)\.jpg$", 1).alias("off_code"),
+            "path",
+            "length",
+            "modificationTime",
+            "_source_file",
+            "_file_mtime",
+            "_ingest_ts",
+        )

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import csv
 import datetime as dt
+import json
 import shutil
 import sys
 from pathlib import Path
@@ -41,6 +42,16 @@ class LocalReader:
 
     def load(self, path):
         self.plans.append({"path": path, "options": self.options.copy(), "schema": self.ddl})
+        fmt = self.options["cloudFiles.format"]
+        if fmt in ("json", "binaryFile"):
+            reader = self.spark.read.format(fmt)
+            for key, value in self.options.items():
+                if not key.startswith("cloudFiles.") and key != "rescuedDataColumn":
+                    reader = reader.option(key, value)
+            result = reader.load(path)
+            if fmt == "json":
+                result = result.withColumn("_rescued_data", F.lit(None).cast("string"))
+            return result
         if self.options["cloudFiles.format"] == "parquet":
             # Parquet tự mang schema; reader batch dùng đúng các tùy chọn không thuộc cloudFiles.
             reader = self.spark.read.format("parquet")
@@ -59,7 +70,7 @@ class LocalReader:
 
 
 @pytest.fixture
-def bronze(spark, monkeypatch, tmp_path):
+def bronze(spark, monkeypatch, tmp_path, request):
     definitions = {}
 
     def table(**kwargs):
@@ -72,6 +83,8 @@ def bronze(spark, monkeypatch, tmp_path):
 
     monkeypatch.setitem(sys.modules, "pyspark.pipelines", SimpleNamespace(table=table))
     settings = {"catalog": "test_catalog", "bronze": "qa-de_bronze", "landing_root": f"{tmp_path}/"}
+    if getattr(request, "param", None):
+        settings.update(enable_off="true", off_root=f"{tmp_path}/dev/alice/off_api")
     previous = {key: spark.conf.get(key, None) for key in settings}
     try:
         for key, value in settings.items():
@@ -243,3 +256,72 @@ def test_cdc_reads_snapshot_and_windows_without_path_columns(bronze, spark):
     assert plan["options"]["cloudFiles.schemaEvolutionMode"] == "addNewColumns"
     assert plan["options"]["pathGlobFilter"] == "*.parquet"
     assert plan["schema"] is None
+
+
+@pytest.mark.parametrize("bronze", ["personal_off"], indirect=True)
+def test_off_keeps_nested_json_and_crawler_fields_and_ignores_other_extensions(bronze):
+    root = bronze.landing / "dev/alice/off_api/products/batch=fixture"
+    root.mkdir(parents=True)
+    record = {
+        "code": "0012345",
+        "_product_id": 7,
+        "_search_query": "Green Tea",
+        "nova_group": 1,
+        "nutriments": {"sugars_100g": "0.2", "energy-kcal_100g": "10"},
+        "countries_tags": ["en:united-states"],
+        "extra": {"nested": "giữ nguyên"},
+    }
+    (root / "batch_1.json").write_text(json.dumps(record) + "\n" + json.dumps(record) + "\n")
+    (root / "ignore.txt").write_text("không phải JSON")
+    frame = dataset(bronze, "off_products")
+    actual = frame.collect()
+    assert len(actual) == 2  # Bronze giữ bản sao, không khử trùng theo mã vạch.
+    assert actual[0].code == "0012345"
+    assert actual[0]._product_id == 7 and actual[0]._search_query == "Green Tea"
+    assert actual[0].extra.nested == "giữ nguyên"
+    assert actual[0].countries_tags == ["en:united-states"]
+    options = bronze.plans[-1]["options"]
+    assert options["cloudFiles.schemaEvolutionMode"] == "addNewColumns"
+    assert options["cloudFiles.inferColumnTypes"] == "true"
+    assert "code STRING" in options["cloudFiles.schemaHints"]
+    assert "nutriments MAP<STRING,STRING>" in options["cloudFiles.schemaHints"]
+
+
+@pytest.mark.parametrize("bronze", ["personal_off"], indirect=True)
+def test_images_publish_metadata_only_and_preserve_barcode_zero_prefix(bronze):
+    root = bronze.landing / "dev/alice/off_api/images"
+    root.mkdir(parents=True)
+    (root / "0012345.jpg").write_bytes(b"\xff\xd8\xff\xd9")
+    (root / "ignore.png").write_bytes(b"not ingested")
+    frame = dataset(bronze, "product_images")
+    actual = frame.collect()
+    assert "content" not in frame.columns
+    assert len(actual) == 1 and actual[0].off_code == "0012345" and actual[0].length == 4
+    assert actual[0].path == actual[0]._source_file
+    assert actual[0].modificationTime == actual[0]._file_mtime
+    assert actual[0]._ingest_ts is not None
+    assert "rescuedDataColumn" not in bronze.plans[-1]["options"]
+
+
+@pytest.mark.parametrize("bronze", ["personal_off"], indirect=True)
+def test_off_configuration_routes_only_to_personal_landing(bronze):
+    personal = bronze.landing / "dev/alice/off_api/products"
+    personal.mkdir(parents=True)
+    (personal / "batch_1.json").write_text('{"code":"00123"}\n')
+    shared = bronze.landing / "off_api/products"
+    shared.mkdir(parents=True)
+    (shared / "batch_wrong.json").write_text('{"code":"99999"}\n')
+    actual = dataset(bronze, "off_products").collect()
+    assert len(actual) == 1 and actual[0].code == "00123"
+    assert bronze.plans[-1]["path"] == str(personal) + "/"
+
+
+@pytest.mark.parametrize("bronze", ["personal_off"], indirect=True)
+def test_off_opt_in_preserves_existing_csv_cdc_and_reset_protection(bronze):
+    expected = (*CSV_NAMES, *CDC_NAMES, "off_products", "product_images")
+    assert set(bronze.definitions) == {f"`test_catalog`.`qa-de_bronze`.`{name}`" for name in expected}
+    assert all(
+        definition["table_properties"]["pipelines.reset.allowed"] == "false"
+        for _, definition in bronze.definitions.values()
+    )
+    assert not bronze.plans

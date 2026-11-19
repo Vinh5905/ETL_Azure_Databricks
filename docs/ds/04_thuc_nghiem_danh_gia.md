@@ -367,47 +367,19 @@ Với mỗi đơn trong `ds_data.holdout_eval`:
 | HitRate@k | Tỉ lệ đơn có ít nhất 1 món gợi ý thuộc `targets` | Gợi ý có "trúng" không |
 | Precision@k | trung bình \|topk ∩ targets\| / k | Độ chính xác của danh sách |
 | Recall@k | trung bình \|topk ∩ targets\| / \|targets\| | Bắt được bao nhiêu phần giỏ còn lại |
-| Coverage (đơn) | Tỉ lệ đơn có ít nhất 1 luật kích hoạt | MinSupp cao → ít luật → nhiều đơn không có gợi ý |
-| Coverage (danh mục) | Số món khác nhau từng được gợi ý / 49.688 | Luật có chỉ xoay quanh vài món phổ biến không |
+| Coverage (đơn) | Tỉ lệ đơn có ít nhất 1 luật kích hoạt, không tính bù phổ biến | MinSupp cao → ít luật → ít đơn có luật |
+| Coverage (danh mục) | Số món khác nhau được gợi ý / số món trong `item_index` | Luật có chỉ xoay quanh vài món phổ biến không |
 
-**Baseline bắt buộc:** gợi ý **top-k món phổ biến nhất** không nằm trong `context`. Luật kết hợp phải **hơn baseline** thì mới có ý nghĩa. Nếu không hơn, báo cáo phải nói thẳng như vậy.
+**Fallback khi không đủ luật:** danh sách gợi ý được bù bằng top-k món phổ biến nhất không nằm trong `context`, để API luôn có thể trả đủ món. Để đánh giá riêng đóng góp của luật, `ml.holdout_metrics` lưu thêm các cột `rule_only_*`, tính trên các luật mà không bù popular. Baseline `run_key = 'popularity'` chỉ dùng top-k món phổ biến. **Baseline bắt buộc:** luật kết hợp phải hơn baseline ở các cột `rule_only_*` thì mới có ý nghĩa; nếu không hơn, báo cáo phải nói thẳng như vậy. Báo cáo cũng nêu metric đã bù fallback để phản ánh hành vi API.
 
 **Chống "chọn trên tập kiểm tra":** chọn cấu hình champion bằng `eval_part = 'val'`, báo cáo số cuối trên `eval_part = 'test'`.
 
 ### 7.2 SQL đánh giá (k = 10)
 
-```sql
--- src/ml/sql/eval_holdout.sql — evaluate_holdout.py chạy bằng spark.sql(sql, args={...}) với :run_key, :min_conf, :part.
--- Luật lấy từ ml.association_rules của run E7.
-WITH r AS (SELECT antecedent, consequent[0] AS item, confidence, lift
-           FROM instacart.ml.association_rules
-           WHERE run_key = :run_key AND confidence >= :min_conf AND size(consequent) = 1),
-h AS (SELECT order_id, context, targets FROM instacart.ds_data.holdout_eval
-      WHERE data_version = 'v1' AND eval_part = :part),
--- mọi tập con kích thước 1..2 của context (k ≤ 3 nên vế trái tối đa 2 món)
-sub AS (SELECT order_id, array(a) AS antecedent FROM h LATERAL VIEW explode(context) e AS a
-        UNION ALL
-        SELECT h.order_id, array(a, b) FROM h
-          LATERAL VIEW posexplode(context) e1 AS i, a
-          LATERAL VIEW posexplode(context) e2 AS j, b
-        WHERE i < j),
-cand AS (SELECT s.order_id, r.item, max(r.confidence) AS conf, max(r.lift) AS lift
-         FROM sub s JOIN r ON s.antecedent = r.antecedent
-         GROUP BY s.order_id, r.item),
-ranked AS (SELECT c.*, row_number() OVER (PARTITION BY c.order_id ORDER BY conf DESC, lift DESC, item) AS rk
-           FROM cand c JOIN h USING (order_id)
-           WHERE NOT array_contains(h.context, c.item)),
-top AS (SELECT order_id, collect_list(item) AS recs FROM ranked WHERE rk <= 10 GROUP BY order_id)
-SELECT :run_key AS run_key, :min_conf AS min_confidence, :part AS eval_part, 10 AS k,
-       avg(CASE WHEN size(array_intersect(coalesce(t.recs, CAST(array() AS ARRAY<INT>)), h.targets)) > 0 THEN 1 ELSE 0 END) AS hit_rate,
-       avg(size(array_intersect(coalesce(t.recs, CAST(array() AS ARRAY<INT>)), h.targets)) / 10.0)                AS precision_at_k,
-       avg(size(array_intersect(coalesce(t.recs, CAST(array() AS ARRAY<INT>)), h.targets)) / size(h.targets))      AS recall_at_k,
-       avg(CASE WHEN t.recs IS NULL THEN 0 ELSE 1 END)                                         AS order_coverage
-FROM h LEFT JOIN top t USING (order_id);
-```
+Truy vấn nguồn tại [`src/ml/sql/eval_holdout.sql`](../../src/ml/sql/eval_holdout.sql) tạo hai danh sách: gợi ý luật có bù popular để khớp hành vi serving và gợi ý chỉ từ luật để đo riêng chất lượng luật. Trường hợp `run_key = 'popularity'` chạy baseline độc lập. Popularity được xếp theo `item_index.idx` (chỉ số mã hóa), không dùng `item_key`.
 
-- Mảng `antecedent` trong `ml.association_rules` và mảng tập con ở `sub` đều **tăng dần** (vì `context` tăng dần theo `idx`), nên so `=` giữa hai mảng là đúng. `holdout_eval.context` được DE sắp sẵn ([de/08 §4](../de/08_du_lieu_cho_ds.md)).
-- Kết quả ghi vào `ml.holdout_metrics` (khóa: `run_key`, `min_confidence`, `eval_part`, `k`), có thêm một dòng cho baseline (`run_key = 'popularity'`).
+- Mảng `antecedent` trong `ml.association_rules` và mảng tập con ở CTE `subsets` đều **tăng dần** (vì `context` tăng dần theo `idx`), nên so `=` giữa hai mảng là đúng. `holdout_eval.context` được DE sắp sẵn ([de/08 §4](../de/08_du_lieu_cho_ds.md)).
+- Kết quả ghi vào `ml.holdout_metrics` (khóa: `run_key`, `min_confidence`, `eval_part`, `k`), có thêm một dòng cho baseline (`run_key = 'popularity'`). Test Spark chạy truy vấn trên bảng toy để kiểm tra cả run luật và baseline: [`tests/ml/test_evaluate_holdout.py`](../../tests/ml/test_evaluate_holdout.py).
 
 ## 8. Phân tích kết quả
 

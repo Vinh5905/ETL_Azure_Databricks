@@ -493,14 +493,15 @@ resource "databricks_secret_acl" "kv_ci" {
 # Bước 8 · Serverless SQL warehouse cho Power BI (docs/devops/05 bước 8)
 # ---------------------------------------------------------------------------
 # Serverless không chạy VM trong Sub A nên không tính vào quota 4 vCPU. Spike 3.4: wh-spike 2X-Small
-# lên RUNNING sau 6 giây. Một cluster, tự tắt sau 5 phút không có truy vấn (mức thấp nhất UI cho phép).
-# Giảm từ 10 xuống 5 phút vì serverless SQL chiếm khoảng 2/3 chi phí tuần đầu (docs/devops/chi_phi_quota.md §5).
+# lên RUNNING sau 6 giây. Một cluster, tự tắt sau 2 phút không có truy vấn. UI chỉ cho chọn từ 5 phút,
+# API/Terraform cho serverless đặt thấp hơn. Giảm 10 → 5 → 2 phút vì serverless SQL chiếm khoảng 2/3
+# chi phí tuần đầu (docs/devops/chi_phi_quota.md §5); khởi động lại chỉ mất vài giây.
 resource "databricks_sql_endpoint" "bi" {
   name                      = "wh-instacart-bi"
   cluster_size              = "2X-Small"
   min_num_clusters          = 1
   max_num_clusters          = 1
-  auto_stop_mins            = 5
+  auto_stop_mins            = 2
   enable_serverless_compute = true
   warehouse_type            = "PRO"
 

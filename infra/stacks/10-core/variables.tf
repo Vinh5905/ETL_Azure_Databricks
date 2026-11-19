@@ -19,7 +19,7 @@ variable "tfstate_account" {
 }
 
 variable "member_object_ids" {
-  description = "Map tên vai → Entra Object ID của 4 thành viên, ví dụ { p1 = \"…\" }. Bước 3.6 cần key p1. Local: terraform.auto.tfvars; CI: GitHub Variable TF_VAR_MEMBER_OBJECT_IDS."
+  description = "Map tên vai → Entra Object ID của 4 thành viên, ví dụ { p1 = \"…\" }. Bước 3.6 cần key p1. Local: terraform.auto.tfvars; CI: GitHub Secret TF_VAR_MEMBER_OBJECT_IDS."
   type        = map(string)
 
   validation {
@@ -29,7 +29,7 @@ variable "member_object_ids" {
 }
 
 variable "member_ips" {
-  description = "Map tên vai → IP public của thành viên, mở firewall Azure SQL để chạy seed và đăng nhập tay. Local: terraform.auto.tfvars; CI: GitHub Variable TF_VAR_MEMBER_IPS (JSON)."
+  description = "Map tên vai → IP public của thành viên, mở firewall Azure SQL để chạy seed và đăng nhập tay. Local: terraform.auto.tfvars; CI: GitHub Secret TF_VAR_MEMBER_IPS (JSON)."
   type        = map(string)
 
   validation {
@@ -39,7 +39,7 @@ variable "member_ips" {
 }
 
 variable "member_emails" {
-  description = "Map tên vai → email nhận cảnh báo budget (bước 3.9). Local: terraform.auto.tfvars; CI: GitHub Secret TF_VAR_MEMBER_EMAILS (JSON). Repo public nên không để ở Variable."
+  description = "Map tên vai → email nhận cảnh báo budget (bước 3.9). Local: terraform.auto.tfvars; CI: GitHub Secret TF_VAR_MEMBER_EMAILS (JSON)."
   type        = map(string)
   sensitive   = true
 
@@ -50,7 +50,7 @@ variable "member_emails" {
 }
 
 variable "databricks_app_object_id" {
-  description = "Object ID của service principal ứng dụng AzureDatabricks trong tenant (az ad sp show --id 2ff814a6-3304-4ab8-85cb-cd0e6f879c1d --query id -o tsv). Dùng để cấp Key Vault Secrets User cho secret scope kv (30-databricks bước 7). Local: terraform.auto.tfvars; CI: GitHub Variable TF_VAR_DATABRICKS_APP_OBJECT_ID."
+  description = "Object ID của service principal ứng dụng AzureDatabricks trong tenant (az ad sp show --id 2ff814a6-3304-4ab8-85cb-cd0e6f879c1d --query id -o tsv). Dùng để cấp Key Vault Secrets User cho secret scope kv (30-databricks bước 7). Local: terraform.auto.tfvars; CI: GitHub Secret TF_VAR_DATABRICKS_APP_OBJECT_ID."
   type        = string
 
   validation {

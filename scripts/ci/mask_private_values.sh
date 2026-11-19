@@ -2,6 +2,9 @@
 # Che giá trị riêng trong log GitHub Actions. Repo public nên log của job ai cũng xem được.
 # Gọi ở bước đầu job (sau checkout): mọi bước sau in *** thay cho subscription, tenant,
 # client ID, object ID, IP và email của thành viên. Chỉ che log, không đổi nội dung file trên đĩa.
+# Các giá trị này phải đặt ở GitHub Secret, không phải Variable: GitHub in khối env: của các bước
+# chạy trước script này (checkout và chính bước này), nên Variable vẫn lộ ở đó (docs/devops/04 §4).
+# GitHub tự che Secret nguyên chuỗi; script này che thêm từng giá trị bên trong Secret dạng JSON.
 set -euo pipefail
 
 mask() {
