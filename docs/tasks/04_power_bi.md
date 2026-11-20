@@ -33,8 +33,8 @@ Phép thử Power BI thuộc cổng G0. Kết quả quyết định lớp servin
 
 **Việc cần làm**
 
-1. Kiểm giấy phép Pro của cả 4 người (M365 trường hoặc trial 60 ngày); ghi ngày hết hạn để bật trial đúng giai đoạn làm dashboard.
-2. Tạo workspace instacart-bi và thêm 3 thành viên còn lại.
+1. Kiểm giấy phép Pro của P3 (M365 trường hoặc trial 60 ngày). Kiểm giấy phép của P1, P2, P4 chuyển sang [AD-BI-02](#ad-bi-02).
+2. Tạo workspace instacart-bi. Việc thêm 3 thành viên còn lại chuyển sang [AD-BI-02](#ad-bi-02).
 3. Trong Power BI Desktop, nối connector Azure Databricks tới warehouse đã spike (host + HTTP path).
 4. Tạo thử một streaming/push semantic model bằng API và đẩy vài dòng.
 5. Bật auto page refresh trên một report DirectQuery, publish và ghi giới hạn thực tế.
@@ -43,7 +43,7 @@ Phép thử Power BI thuộc cổng G0. Kết quả quyết định lớp servin
 **Đầu ra**
 
 - Mục Power BI trong docs/devops/spike_results.md: kết quả từng phép thử, ảnh chụp, phương án dự phòng đã chọn
-- Workspace Power BI instacart-bi có đủ 4 thành viên
+- Workspace Power BI instacart-bi (P3 là Admin)
 
 **Xong khi**
 
@@ -71,16 +71,20 @@ Power BI đọc gold qua serverless SQL warehouse bằng Entra ID; nguồn repor
 3. Chọn bảng gold ở de/07 §2, không chọn fact_order_lines
 4. Lưu powerbi/instacart.pbip, thêm .pbi/localSettings.json và cache.abf vào .gitignore
 5. Nếu không có serverless: chọn dự phòng theo devops/06 §4
+6. Kiểm giấy phép Pro hoặc trial của P1, P2, P4, ghi ngày hết hạn. Trial chỉ có 60 ngày nên bật sao cho còn hạn tới buổi demo
+7. Thêm P1, P2, P4 vào instacart-bi với quyền Member theo devops/06 §5.1. Người xem dashboard nhận qua App ở AD-BI-09, không thêm vào workspace
 
 **Đầu ra**
 
 - powerbi/instacart.pbip (khung)
 - .gitignore cập nhật
+- Workspace Power BI instacart-bi có đủ 4 thành viên
 
 **Xong khi**
 
 - [ ] Desktop tải được dữ liệu gold qua warehouse
 - [ ] Git không chứa cache.abf hay thông tin đăng nhập
+- [ ] P1, P2, P4 là Member của instacart-bi và mở được report thử, ngày hết hạn giấy phép đã ghi
 
 ### AD-BI-03
 
