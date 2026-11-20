@@ -144,6 +144,7 @@ databricks bundle validate -t dev         # chạy trong bundles/, cần DATABRI
 **Chi phí và quota** (Azure for Students, khoảng 4 vCPU, 100 USD)
 - Chỉ dùng cluster single-node theo policy `instacart-single-node`, có tự tắt.
 - SQL warehouse phải là serverless.
+- Chỉ dùng warehouse `wh-instacart-bi` ở bước nghiệm thu, khi code đã xong. Lúc viết code kiểm bằng pytest và dữ liệu mẫu ở máy; trên cloud chỉ chạy pipeline, không chạy cả job batch. Agent không tự chạy truy vấn trên warehouse khi người dùng chưa nói là đang nghiệm thu. Chi tiết ở `docs/devops/chi_phi_quota.md` §6.
 - Không dùng instance pool, NAT gateway, VNet injection.
 
 **Sơ đồ**
