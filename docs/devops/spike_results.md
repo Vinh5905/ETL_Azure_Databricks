@@ -93,7 +93,7 @@ DirectQuery kiểm tra Power BI có gửi truy vấn tới warehouse và trả d
 | API model | Phương án A: Model Serving (`scale_to_zero`) + Azure Function Flex Consumption (Python 3.11) làm proxy | 3.4, 3.5 |
 
 > **Ghi chú G0 (AD-OPS-07):**
-> - Hai dòng còn chờ không chặn G1: region Sub B chỉ cần trước `20-stream` (G2) và theo dõi ở #131; lớp serving Power BI chỉ cần trước dashboard và theo dõi ở AD-OPS-07b (#147), cùng việc xóa `rg-spike` và đóng milestone G0.
+> - Còn chờ, không chặn G1: region Sub B chỉ cần trước `20-stream` (G2) và theo dõi ở #131. Việc xóa `rg-spike` và đóng milestone G0 theo dõi ở AD-OPS-07b (#147). Lớp serving Power BI đã chốt ở AD-BI-01 (#198).
 > - Tài liệu đã sửa theo kết quả spike: máy `Standard_D4ds_v4` (devops/00, 01, 05, de/02, de/05, ds/02, ds/04, tasks/01, sơ đồ 1 và 2), job cluster không dùng `apply_policy_default_values` (devops/05 §3 bước 6, de/06, de/08, ds/04, `bundles/AGENTS.md`), `pipelines.clusterShutdown.delay` (devops/05), account group (devops/05 bước 2), SQL auth + Entra admin (devops/03 §3.6, AD-OPS-12), không trial (devops/00, 03), mapping và retry của ADF (de/01 §2, devops/06, AD-DE-06).
 > - `no_public_ip = false` đã có sẵn ở devops/03 bước 3.5 và `infra/modules/dbx_workspace`.
 > - P1 báo đã dọn `dbw-spike` và `wh-spike` ngày 2026-11-19. Việc xác nhận dọn hết tài nguyên spike và đóng milestone G0 theo dõi tại #147.
