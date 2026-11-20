@@ -10,7 +10,7 @@ Ngày làm spike: 2026-11-16 → 2026-11-17 (Sub A) · Người tổng hợp: P1
 |---|---|---|---|---|---|---|---|---|
 | P1 | 2.91.0 | 1.16.5 | 0.66.0 | 1.26.0 | 2.104.0 | 0.9.21 (Python 3.11.14) | 29.1.3 | macOS arm64, kiểm ngày 2026-11-16. Thêm: trivy 0.76.2, pre-commit 4.7.0, AzCopy 10.34.2, Infracost 2.19.1. tflint cài từ GitHub release. Docker cấp 10 CPU, 15,6 GB RAM, thiếu một chút so với mốc 16 GB cho benchmark DS. `pre-commit run --all-files` chạy được |
 | P2 | | | | | | | | |
-| P3 | | | | | | | | |
+| P3 | | | | | | | | Windows, kiểm ngày 2026-11-18: Power BI Desktop 2.159.1231.0 (Microsoft Store) đã mở được. Đã xác nhận Codex có bộ skill Databricks chính thức v0.2.49 |
 | P4 | | | | | | | | |
 
 ## 2. Kết quả phép thử
@@ -46,12 +46,12 @@ Ngày làm spike: 2026-11-16 → 2026-11-17 (Sub A) · Người tổng hợp: P1
 | 3.5 | ADF activity "Databricks Job" | A | Đạt | Tạo factory bằng ARM REST (extension `az datafactory` không cài được trên az 2.91 vì lỗi pip). Linked service `AzureDatabricks` xác thực `MSI` (system identity của factory được gán `Contributor` trên workspace), không khai cluster. Pipeline có activity `type = DatabricksJob`, `jobId` = job serverless `spike_for_each`: chạy `Succeeded` sau 87 giây, ADF trả `runPageUrl` của job run. Không cần dự phòng activity Notebook |
 | 3.5 | ADF tải ZIP Zenodo (ZipDeflate) | A | Đạt · Instacart trên Zenodo là CSV không nén | Record Zenodo [2654444](https://zenodo.org/records/2654444) có đủ 6 file CSV Instacart **không nén** (`orders.csv` khoảng 109 MB, `order_products__prior.csv` khoảng 578 MB), tải bằng `api/records/2654444/files/<file>/content`. Nên luồng chính không cần ZipDeflate. Copy HTTP (anonymous) → ADLS Gen2 (MSI, `Storage Blob Data Contributor`) với `departments.csv`: 22 dòng (21 dòng dữ liệu + header). **Phải sửa de/01 §2:** copy DelimitedText → DelimitedText cùng định dạng mà không khai mapping thì ADF chép nguyên file và **không trả `rowsCopied`**; khai `translator` có `mappings` tường minh (lần thử có kèm `quoteAllText = true` ở sink, chưa tách riêng yếu tố nào quyết định) thì trả `rowsRead = rowsCopied = 21`. ZipDeflate thử với một ZIP nhỏ khác trên Zenodo (192 KB): Binary → Binary, `ZipDeflateReadSettings`, giải nén ra 66 file. **Chưa kiểm:** thời gian copy file 578 MB. Zenodo bảo trì sáng 2026-11-17 (HTTP 503 vài phút): pipeline thật cần retry trên activity Copy |
 | 3.5 | Azure Functions Flex Consumption | A | Đạt | `az functionapp create --flexconsumption-location eastasia --runtime python --runtime-version 3.11`: tạo plan `FC1` và Function App trong 228 giây, kèm Application Insights tự tạo. Deploy ZIP có remote build (191 giây), hàm HTTP `ping` trả HTTP 200 với Python 3.11.18. Theo danh sách runtime của Azure, Python 3.11 trên Flex hết hỗ trợ ngày 2027-10-31 (có sẵn 3.12, 3.13); đủ cho đồ án. Không cần dự phòng gói `Y1` |
-| 3.6 | Giấy phép Power BI Pro / trial | — | | |
-| 3.6 | Workspace `instacart-bi` + chia sẻ | — | | |
-| 3.6 | Connector Azure Databricks trong Desktop | — | | |
-| 3.6 | Push / streaming semantic model | — | | |
-| 3.6 | Auto page refresh trên Pro | — | | |
-| 3.6 | Service principal gọi Power BI REST API | — | | |
+| 3.6 | Giấy phép Power BI Pro / trial | — | Đạt với P3 (trial) · Bỏ qua kiểm P1, P2, P4 | Ngày 2026-11-18, Power BI Service hiển thị `Power BI Trial: 59 days left` trên tài khoản P3 dùng cho dự án. P3 bỏ qua xác minh giấy phép và hạn trial của ba thành viên còn lại trong lần spike này. |
+| 3.6 | Workspace `instacart-bi` + chia sẻ | — | Đã tạo workspace · Bỏ qua nghiệm thu chia sẻ | P3 đã mở được `instacart-bi` trong Fabric và xác nhận `Workspace type: Power BI Pro` (shared capacity). P3 bỏ qua việc thêm và kiểm tra truy cập của P1, P2, P4 trong lần spike này. |
+| 3.6 | Connector Azure Databricks trong Desktop | — | Đạt trên Desktop và Service | Ngày 2026-11-20, P3 kết nối DirectQuery tới `wh-instacart-bi` bằng tài khoản trường. Visual `Promotion Rows` hiển thị 3.810 dòng từ `instacart.silver.promotions`, khớp số P1 bàn giao. Report đã publish vào `instacart-bi` và hiển thị cùng kết quả sau khi P3 đăng nhập lại nguồn Databricks trong cài đặt semantic model. Ảnh minh chứng [Desktop](evidence/2026-11-20_ad-bi-01_directquery_visual.png) và [Service](evidence/2026-11-20_ad-bi-01_directquery_service.png). |
+| 3.6 | Push / streaming semantic model | — | Đạt | Lượt đầu gửi `order_count = 10` rồi `25`, cả hai yêu cầu trả HTTP 200. Lượt thử lại với `30` rồi `45`, P3 xác nhận Card tự đổi mà không tải lại dashboard và ước tính mất khoảng 0,5–1 giây để hiển thị giá trị mới. Ảnh minh chứng: [Card trống](evidence/2026-11-19_ad-bi-01_card_01_empty.png), [Card hiện 30](evidence/2026-11-19_ad-bi-01_card_02_value_30.png), [Card hiện 45](evidence/2026-11-19_ad-bi-01_card_03_value_45.png). |
+| 3.6 | Auto page refresh trong Power BI Service | — | Đạt trên workspace Power BI Pro | P3 cấu hình fixed interval 30 phút và mở report đã publish trong `instacart-bi`. Ngày 2026-11-20, Query History ghi hai lần Power BI chạy `COUNT(1)` trên `instacart.silver.promotions` qua `wh-instacart-bi`, lúc [01:20:25](evidence/2026-11-20_ad-bi-01_apr_01_012025.png) và [01:52:00](evidence/2026-11-20_ad-bi-01_apr_02_015200.png), đều thành công. Khoảng cách quan sát của một chu kỳ là **31 phút 35 giây**. P3 đã tắt APR trên report, lưu và đóng tab sau khi thử. |
+| 3.6 | Service principal gọi Power BI REST API | — | Bỏ qua xác minh UAMI · Dùng phương án dự phòng | P1 xác nhận UAMI `id-github-ci` ở cùng tenant trường với `instacart-bi`. `GET /v1.0/myorg/groups` trả HTTP 200 bằng token người dùng P1. UAMI chưa có quyền vào workspace và chưa được dùng để gọi thử API. P3 cũng không thấy `Tenant settings`. P3 chọn [publish thủ công](06_de_den_dashboard.md) và refresh thủ công theo đề xuất của P1. Khi triển khai `refresh_bi`, ghi `skipped` vào `ops.pipeline_runs` theo [de/07 §7](../de/07_power_bi.md#7-làm-mới-dữ-liệu-sau-mỗi-lần-pipeline-chạy). |
 
 > **Ghi chú 3.4 (AD-OPS-04, AD-OPS-05):**
 > - Account admin: chưa xác nhận hẳn vì `accounts.azuredatabricks.net` cần đăng nhập bằng email. Kết quả nhóm ở trên không phụ thuộc vào việc này.
@@ -61,6 +61,18 @@ Ngày làm spike: 2026-11-16 → 2026-11-17 (Sub A) · Người tổng hợp: P1
 > **Ghi chú 3.5 (AD-OPS-06):**
 > - Mọi phép thử 3.5 làm trên Sub A (`eastasia`). Event Hubs đúng thiết kế phải ở Sub B, khác region; phần đó chờ #131.
 > - Tài nguyên spike thêm trong `rg-spike` (dọn ở AD-OPS-07): namespace Event Hubs `evhns-spike-p1a` (Standard, tính tiền theo giờ, nên xóa sớm nhất), SQL server `sql-spike-p1a` kèm DB `retail_db_spike` (free offer, có firewall rule cho IP máy P1), data factory `df-spike-p1a`, storage `stspikep1a` (container `landing`), plan `ASP-rgspike-e597` + Function App `func-spike-p1a` + Application Insights cùng tên. Trên `dbw-spike`: secret scope `spike`, pipeline `spike_ldp_kafka`, bảng `dbw_spike.spike_ldp_sl.kafka_target`.
+
+### Bàn giao thử DirectQuery và Auto Page Refresh (3.6)
+
+P1 đã [bàn giao kết nối](https://github.com/Vinh5905/ETL_Azure_Databricks/pull/198#issuecomment-7002123527) và [xác nhận warehouse dùng để thử](https://github.com/Vinh5905/ETL_Azure_Databricks/pull/198#issuecomment-7002244635) ngày 2026-11-19. `dbw-spike` và `wh-spike` đã được dọn theo P1. Warehouse dự án `wh-instacart-bi` trong `dbw-instacart` bật serverless, cỡ 2X-Small. Auto Stop là 5 phút khi P1 bàn giao. Terraform trên `main` đã giảm xuống 2 phút trong [PR #216](https://github.com/Vinh5905/ETL_Azure_Databricks/pull/216). P3 có `CAN USE` và quyền đọc silver theo vai DE.
+
+DirectQuery kiểm tra Power BI có gửi truy vấn tới warehouse và trả dữ liệu theo tài khoản dự án. Auto Page Refresh (APR) kiểm tra chu kỳ thực tế mà Power BI Service truy vấn lại các visual của một trang báo cáo đang mở.
+
+1. Trong `dbw-instacart`, mở **SQL Warehouses → wh-instacart-bi → Connection details**, lấy **Server hostname** và **HTTP Path** qua kênh nội bộ. Chọn đúng warehouse 2X-Small của dự án.
+2. Trong Power BI Desktop, chọn **Get data → Azure Databricks**, nhập hai thông số, chọn **DirectQuery** và đăng nhập bằng **Microsoft Entra ID** với tài khoản trường. Chọn `instacart.silver.promotions` (3.810 dòng theo P1), rồi tạo một Card đếm số dòng để kiểm kết nối. P1 cũng bàn giao `instacart.silver.orders_batch` (3.289.874 dòng) để đo hiệu năng nếu cần. Tại thời điểm bàn giao chưa có bảng gold. Quyền đọc gold của vai BI cần kiểm riêng vì P3 đang dùng quyền của vai DE. [Hướng dẫn kết nối](https://learn.microsoft.com/en-us/azure/databricks/partners/bi/power-bi-desktop).
+3. Bỏ chọn visual, mở **Format page → Page refresh → On → Fixed interval**, đặt **30 phút** và publish report thử vào `instacart-bi`. Đóng report trong Desktop sau khi publish. Trong Power BI Service, mở cài đặt semantic model của report thử và đăng nhập nguồn Databricks bằng tài khoản trường nếu Service yêu cầu.
+4. Mở report thử trên Service và để trang Card hoạt động qua một chu kỳ, giữ nguyên trang và bộ lọc. Ghi chu kỳ đã cấu hình, thời điểm truy vấn lúc mở trang và thời điểm truy vấn tự động kế tiếp từ **Query History**, lọc theo `wh-instacart-bi`, tài khoản P3 và bảng `promotions`. Card có thể giữ nguyên số dòng nếu bảng không thay đổi. **Shared capacity** có tối thiểu 30 phút và chỉ hỗ trợ fixed interval. Chu kỳ quan sát có thể dài hơn mức tối thiểu. [Giới hạn và cách kiểm APR](https://learn.microsoft.com/en-us/power-bi/create-reports/desktop-automatic-page-refresh).
+5. Khi lấy đủ bằng chứng, mở bản report thử trong Service bằng **Edit**, đặt **Page refresh → Off**, lưu và đóng các tab xem report. Truy vấn mới có thể đánh thức warehouse. Xem **Status** trong danh sách **SQL Warehouses** để xác nhận warehouse đã tự tắt.
 
 ## 3. Quyết định G0
 
@@ -73,7 +85,7 @@ Ngày làm spike: 2026-11-16 → 2026-11-17 (Sub A) · Người tổng hợp: P1
 | Unity Catalog | External location (storage credential từ Access Connector) trên metastore tự gán; nhóm dùng **account group do workspace admin tạo**, quyền cấp rõ cho từng principal | 3.4 |
 | Nguồn `retail_db` | CDC theo LSN (`fn_cdc_get_all_changes`) trên DB free offer; không cần watermark `updated_at` | 3.5 |
 | Xác thực Azure SQL | SQL auth (login `sqladmin`, mật khẩu trong Key Vault) **cộng** Entra admin; không bật Entra-only. Lý do: seed job dùng `pymssql` + mật khẩu, lấy token Entra từ cluster chưa thử ([03 §3.6](03_terraform_azure.md)) | 3.5 |
-| Lớp serving Power BI | **Chờ AD-BI-01 (#74, P3), chốt ở AD-OPS-07b (#147).** Đề xuất serverless warehouse (`wh-spike` đạt `SELECT 1` trong 7 giây); chốt khi Power BI Desktop nối được tới warehouse | 3.4, 3.6 |
+| Lớp serving Power BI | Chọn serverless warehouse `wh-instacart-bi` cho báo cáo. DirectQuery đã đạt trên Desktop và Service. APR trên workspace Pro được cấu hình 30 phút và quan sát một chu kỳ 31 phút 35 giây. Chọn streaming/push semantic model cho tile real-time dựa trên phép thử Card tự cập nhật. Bàn giao kết quả cho P1 tại #147 | 3.4, 3.6 |
 | Compute | Single-node **`Standard_D4ds_v4`** (4 vCPU, 16 GB), DBR 15.4 LTS, `SINGLE_USER`. Sub A không mua được DS3_v2 | 3.2, 3.4 |
 | SKU workspace | `premium`, không trial: DBU tính vào credit từ ngày đầu. `no_public_ip = false` để không phát sinh NAT gateway | 3.4 |
 | Pipeline DE | LDP Advanced classic single-node, `pipelines.clusterShutdown.delay = 60s`; serverless pipeline làm dự phòng khi quota vCPU đang bận | 3.4 |
@@ -84,6 +96,6 @@ Ngày làm spike: 2026-11-16 → 2026-11-17 (Sub A) · Người tổng hợp: P1
 > - Hai dòng còn chờ không chặn G1: region Sub B chỉ cần trước `20-stream` (G2) và theo dõi ở #131; lớp serving Power BI chỉ cần trước dashboard và theo dõi ở AD-OPS-07b (#147), cùng việc xóa `rg-spike` và đóng milestone G0.
 > - Tài liệu đã sửa theo kết quả spike: máy `Standard_D4ds_v4` (devops/00, 01, 05, de/02, de/05, ds/02, ds/04, tasks/01, sơ đồ 1 và 2), job cluster không dùng `apply_policy_default_values` (devops/05 §3 bước 6, de/06, de/08, ds/04, `bundles/AGENTS.md`), `pipelines.clusterShutdown.delay` (devops/05), account group (devops/05 bước 2), SQL auth + Entra admin (devops/03 §3.6, AD-OPS-12), không trial (devops/00, 03), mapping và retry của ADF (de/01 §2, devops/06, AD-DE-06).
 > - `no_public_ip = false` đã có sẵn ở devops/03 bước 3.5 và `infra/modules/dbx_workspace`.
-> - Còn giữ cho P3 làm AD-BI-01: `dbw-spike` (kèm `rg-spike-dbw-managed`, warehouse `wh-spike`), `ac-spike`, `id-spike`, account group `spike-acct-grp`. NAT gateway của `dbw-spike` tốn khoảng 1,2 USD/ngày cho tới khi xóa.
+> - P1 báo đã dọn `dbw-spike` và `wh-spike` ngày 2026-11-19. Việc xác nhận dọn hết tài nguyên spike và đóng milestone G0 theo dõi tại #147.
 
 - [ ] Đã xóa `rg-spike` và workspace thử.
