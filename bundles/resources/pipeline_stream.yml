@@ -39,3 +39,23 @@ resources:
       libraries:
         - glob:
             include: ../../src/pipelines/stream/**
+
+  jobs:
+    stream_schedule:
+      name: instacart-stream-15m
+      max_concurrent_runs: 1
+      queue:
+        enabled: false
+      tags:
+        cost_owner: p3
+        task: AD-ST-03
+      schedule:
+        # Không lên lịch lượt mới trong khung batch 02:00–03:00 giờ Việt Nam.
+        quartz_cron_expression: "0 0/15 0-1,3-23 * * ?"
+        timezone_id: Asia/Ho_Chi_Minh
+        pause_status: ${var.stream_schedule_pause_status}
+      tasks:
+        - task_key: run_stream
+          pipeline_task:
+            pipeline_id: ${resources.pipelines.instacart_stream.id}
+            full_refresh: false

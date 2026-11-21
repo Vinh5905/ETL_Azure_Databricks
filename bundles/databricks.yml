@@ -55,6 +55,9 @@ variables:
   stream_continuous:
     description: Chạy pipeline stream liên tục khi demo, mặc định chạy từng đợt
     default: "false"
+  stream_schedule_pause_status:
+    description: Bật lịch prod khi Event Hubs đã sẵn sàng và pipeline chạy từng đợt
+    default: PAUSED
   eh_generation:
     description: Mã thế hệ của Event Hubs, giữ nguyên khi chạy lại và đổi khi hub được tạo lại
     default: g1
@@ -92,6 +95,10 @@ targets:
           configuration:
             pipelines.numUpdateRetryAttempts: "0"
             pipelines.maxFlowRetryAttempts: "0"
+      jobs:
+        stream_schedule:
+          schedule:
+            pause_status: PAUSED
 
   prod:
     mode: production
