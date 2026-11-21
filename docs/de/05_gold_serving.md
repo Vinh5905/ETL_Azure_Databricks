@@ -188,49 +188,54 @@ còn thời gian update gồm khởi tạo compute và các flow khác.
 
 > Tác vụ bảo trì của LDP trên classic compute cũng khởi động cluster, tức là cũng chiếm quota. Đặt lịch batch sao cho cửa sổ bảo trì không trùng buổi demo.
 
-### 5.1 Notebook benchmark → `ops.benchmark_results`
+### 5.1 Job benchmark định dạng (AD-DE-26)
 
-```python
-# src/tasks/benchmark_formats.py  (chạy trên job cluster single-node theo policy → cấu hình cố định)
-import time, uuid
-from pyspark.sql import functions as F
+[`benchmark_formats.py`](../../src/tasks/benchmark_formats.py) chạy trong job
+`instacart-benchmark-formats` trên `Standard_D4ds_v4`, DBR 15.4 LTS, 4 vCPU và 0 worker.
+Job chạy tay với policy `instacart-single-node`. Đợi batch, crawler và stream rảnh trước khi chạy.
 
-SRC  = "instacart.silver.order_items_prior"
-BASE = "/Volumes/instacart/ops/checkpoints/bench"     # hoặc một volume riêng trong instacart_sandbox
-run  = str(uuid.uuid4())[:8]
-df   = spark.table(SRC).select("order_id", "product_id", "add_to_cart_order", "reordered")
-rows = []
+Trong `bundles/`:
 
-
-def timed(fn):
-    t = time.time(); fn(); return round(time.time() - t, 2)
-
-
-def size_mb(path):
-    return round(sum(f.size for f in dbutils.fs.ls(path) if not f.name.startswith("_")) / 2**20, 1)
-
-
-for fmt in ["csv", "parquet", "delta", "delta_optimized"]:
-    path = f"{BASE}/{run}/{fmt}"
-    w = "delta" if fmt.startswith("delta") else fmt
-    t_write = timed(lambda: df.write.format(w).mode("overwrite").option("header", "true").save(path))
-    if fmt == "delta_optimized":
-        t_write += timed(lambda: spark.sql(f"OPTIMIZE delta.`{path}` ZORDER BY (product_id)"))
-    reader = lambda: spark.read.format(w).option("header", "true").schema(df.schema).load(path)
-    t_scan = timed(lambda: reader().agg(F.count("*")).collect())
-    t_filter = timed(lambda: reader().where("product_id = 24852").agg(F.count("*")).collect())
-    rows.append((run, fmt, df.count(), t_write, t_scan, t_filter, size_mb(path)))
-
-(spark.createDataFrame(rows, "run_id string, format string, n_rows long, write_s double, "
-                             "scan_s double, filter_s double, size_mb double")
-      .withColumn("measured_at", F.current_timestamp())
-      .write.mode("append").saveAsTable("instacart.ops.benchmark_results"))
-dbutils.fs.rm(f"{BASE}/{run}", recurse=True)          # dọn dữ liệu thử
+```bash
+databricks bundle validate --strict -t dev
+databricks bundle deploy -t dev --select jobs.benchmark_formats
+databricks bundle run -t dev benchmark_formats
 ```
 
-- Đường dẫn `delta.` cho phép `OPTIMIZE ... ZORDER BY` trên bảng không đăng ký trong catalog. Muốn thử liquid clustering thì ghi thành bảng trong `instacart_sandbox` với `CLUSTER BY (product_id)`.
-- Chạy task **3 lần** (mỗi lần một `run_id`), báo cáo lấy trung vị theo định dạng. Ghi cấu hình máy (`Standard_D4ds_v4`, runtime) vào báo cáo.
-- `size_mb` chỉ đếm file ở thư mục gốc. Với Delta, file dữ liệu nằm ngay ở gốc nên đếm đúng; CSV và Parquet của Spark cũng vậy.
+- Chụp một bản Parquet của bốn cột từ `silver.order_items_prior` ngoài thời gian đo.
+  Cả ba vòng đọc cùng đầu vào. Mỗi vòng đo CSV có header, Parquet, Delta và Delta chạy
+  thêm `OPTIMIZE ZORDER BY product_id`.
+- Các phép đọc chạy cùng phép đếm và checksum trên cả bốn cột, với toàn bộ dữ liệu hoặc
+  sau khi lọc `product_id = 24852`. Job tắt Databricks disk cache và kiểm cả hai kết quả
+  với đầu vào. Thứ tự ghi xoay vòng giữa các lượt.
+- `write_s` đo ghi file; `optimize_s` đo riêng bước ZORDER. `scan_s` và `filter_s` là giây.
+  `size_mb` là MiB của file dữ liệu đang dùng, bỏ qua metadata và file Delta đã bị thay thế.
+- Đường dẫn tạm riêng nằm dưới `/Volumes/<catalog>/ops/checkpoints/bench/ad-de-26/`.
+  Job dọn từng vòng và bản đầu vào trước khi ghi kết quả. Nếu bị hủy giữa chừng,
+  dùng log để xác định đúng thư mục UUID của lượt chạy trước khi dọn thủ công.
+- Đích dev là `<catalog>.<user>_ops.benchmark_results`. Mỗi job run ghi 12 dòng.
+  Khóa MERGE là `(run_id, repetition, format)`, nên repair cùng run giữ nguyên số dòng.
+  Kết quả lưu thêm bảng nguồn, sản phẩm lọc, số dòng và cấu hình máy để đối chiếu.
+
+Lấy trung vị theo định dạng từ bảng đúng target. `median(write_s + optimize_s)`
+là tổng thời gian ghi và tối ưu tính trong từng vòng, rồi mới lấy trung vị.
+
+```sql
+SELECT format, count(*) AS repetitions, max(n_rows) AS n_rows,
+       round(median(write_s), 2) AS write_s, round(median(optimize_s), 2) AS optimize_s,
+       round(median(write_s + optimize_s), 2) AS write_total_s,
+       round(median(scan_s), 2) AS scan_s, round(median(filter_s), 2) AS filter_s,
+       round(median(size_mb), 2) AS size_mib
+FROM instacart.ops.benchmark_results
+WHERE run_id = :run_id
+GROUP BY format;
+```
+
+Với `order_items_prior_scd1`, `fact_order_lines` và `product_pair_counts`, lấy mốc đầu
+`STARTING` hoặc `RUNNING` đến `COMPLETED` theo cùng flow và update ID trong event log.
+Với SCD1, lưu thêm `num_upserted_rows` để nhận diện lượt nạp có dữ liệu. Các số đo flow
+được báo cáo riêng theo update và runtime của pipeline.
+[Pipeline event log](https://learn.microsoft.com/en-us/azure/databricks/ldp/monitor-event-logs).
 
 ## 6. Phục vụ Power BI
 
@@ -245,7 +250,7 @@ dbutils.fs.rm(f"{BASE}/{run}", recurse=True)          # dọn dữ liệu thử
 | Update gold lỗi | Chạy lại update (hoặc *Repair run* của job). MV tính lại, không có trạng thái dở |
 | Sửa logic một bảng gold | Deploy rồi `refresh_selection` bảng đó. Các bảng phía sau trong đồ thị cũng tự refresh |
 | Power BI đọc lúc gold đang refresh | Mỗi MV được thay bằng một commit Delta nguyên tử. Power BI thấy bản cũ hoặc bản mới, không thấy bản nửa vời |
-| Benchmark lỗi giữa chừng | Chạy lại. Mỗi lần có `run_id` riêng; dòng của lần lỗi không được ghi vì `append` ở cuối |
+| Benchmark lỗi giữa chừng | Repair cùng `run_id` để đo lại đủ ba vòng. Bảng kết quả chỉ nhận các phép đo sau khi cả ba vòng và dọn thư mục hoàn tất |
 
 ## 8. Checklist (phần DE của G4)
 

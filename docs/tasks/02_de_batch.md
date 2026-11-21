@@ -1039,6 +1039,35 @@ Bằng chứng rubric 3.1 và 3.4: tốc độ đọc ghi và dung lượng theo
 - [ ] Thư mục thử đã được dọn sau mỗi lần
 - [ ] Có bảng trung vị kèm cấu hình máy cho báo cáo
 
+#### Kết quả AD-DE-26
+
+Job dev `641573172868396` chạy trên một node `Standard_D4ds_v4` (4 vCPU, 0 worker),
+policy `instacart-single-node`, DBR 15.4 LTS (`15.4.x-scala2.12`) và tắt Databricks disk cache.
+Cả ba vòng dùng chung bản Parquet đầu vào với 32 phân vùng, lấy từ `silver.order_items_prior`.
+Mỗi phép quét đọc 32.434.489 dòng. Phép lọc `product_id = 24852` đọc 472.565 dòng.
+Bảng `instacart.23521394_ops.benchmark_results` có đủ 12 dòng của lượt chạy và thư mục tạm đã được dọn.
+[Lượt chạy benchmark trên Databricks](https://adb-7405615740735217.17.azuredatabricks.net/?o=7405615740735217#job/467651038577135/run/641573172868396).
+
+| Định dạng | Số vòng | Ghi (s) | Tối ưu (s) | Tổng ghi và tối ưu (s) | Quét (s) | Lọc (s) | Dung lượng (MiB) |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| CSV | 3 | 19,08 | 0,00 | 19,08 | 19,00 | 15,16 | 550,80 |
+| Parquet | 3 | 9,91 | 0,00 | 9,91 | 2,53 | 2,47 | 249,19 |
+| Delta | 3 | 15,81 | 0,00 | 15,81 | 3,21 | 2,43 | 249,01 |
+| Delta + OPTIMIZE/ZORDER | 3 | 14,83 | 45,40 | 60,23 | 3,79 | 2,51 | 250,65 |
+
+Mỗi số là trung vị của ba vòng. Cột tổng cộng thời gian ghi và tối ưu trong từng vòng rồi lấy trung vị.
+[Hợp đồng bảng kết quả](../data/data_dictionary.md#11-kết-quả-đo-định-dạng-opsbenchmark_results-ad-de-26).
+
+Các phép đo flow lấy từ event log của từng update dev, từ sự kiện `STARTING` hoặc `RUNNING`
+đầu tiên đến `COMPLETED`. Hai update Gold dùng dữ liệu train lấy từ Bronze và gán timestamp mô phỏng
+trong môi trường dev riêng.
+
+| Flow | Số dòng | Thời gian flow (s) | Update dev |
+| --- | ---: | ---: | --- |
+| `order_items_prior_scd1` (AUTO CDC upsert) | 32.434.489 | 718,38 | [Silver](https://adb-7405615740735217.17.azuredatabricks.net/#joblist/pipelines/4df2ff96-be27-4af6-8e87-e2e876da866e/updates/c1292e3c-2a52-4458-9752-04cea064b3c7) |
+| `fact_order_lines` | 33.819.106 | 202,47 | [Gold](https://adb-7405615740735217.17.azuredatabricks.net/#joblist/pipelines/d807a4b7-573e-4311-8e1f-f7a97f9cc5f8/updates/388a3ba7-49f5-4146-9e4c-514dbaf73222) |
+| `product_pair_counts` | 200.000 | 216,16 | [Gold](https://adb-7405615740735217.17.azuredatabricks.net/#joblist/pipelines/d807a4b7-573e-4311-8e1f-f7a97f9cc5f8/updates/aa6bc823-e815-4874-b948-f62ab110864c) |
+
 ### AD-DE-27
 
 **Viết runbook chạy lại và diễn tập 4 kịch bản lỗi**

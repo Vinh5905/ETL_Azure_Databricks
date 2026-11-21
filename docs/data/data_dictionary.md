@@ -556,3 +556,31 @@ Repair dùng MERGE theo cùng `run_id` để cập nhật dòng cũ khi cần. N
 nhận hoặc chưa rõ kết quả, task giữ trạng thái đó để tránh gửi trùng.
 
 [Xem cấu hình và cách kiểm tra refresh](../de/07_power_bi.md#7-làm-mới-dữ-liệu-sau-mỗi-lần-pipeline-chạy).
+
+## 11. Kết quả đo định dạng `ops.benchmark_results` (AD-DE-26)
+
+Bảng Delta lưu một dòng cho mỗi tổ hợp **`(run_id, repetition, format)`**. Một lượt job
+thành công ghi đủ 12 dòng (4 định dạng × 3 vòng). Repair cùng `run_id` cập nhật các dòng
+cùng khóa bằng MERGE.
+
+| Cột | Kiểu | Ý nghĩa |
+| --- | --- | --- |
+| `run_id` | STRING | ID lượt chạy job Databricks (`job.run_id`). |
+| `repetition` | INT | Số thứ tự vòng đo, từ 1 đến 3. |
+| `format` | STRING | `csv`, `parquet`, `delta` hoặc `delta_optimized` (Delta có `OPTIMIZE ZORDER BY product_id`). |
+| `n_rows` | BIGINT | Số dòng đọc được khi quét toàn bộ dữ liệu. |
+| `filter_rows` | BIGINT | Số dòng đọc được sau khi lọc theo `filter_product_id`. |
+| `filter_product_id` | BIGINT | Mã sản phẩm dùng trong phép lọc. |
+| `write_s` | DOUBLE | Thời gian ghi dữ liệu theo định dạng, tính bằng giây. |
+| `optimize_s` | DOUBLE | Thời gian chạy OPTIMIZE và ZORDER, tính bằng giây. Các định dạng còn lại ghi 0. |
+| `scan_s` | DOUBLE | Thời gian quét toàn bộ dữ liệu để đếm dòng và tính checksum, tính bằng giây. |
+| `filter_s` | DOUBLE | Thời gian lọc theo mã sản phẩm, đếm dòng và tính checksum, tính bằng giây. |
+| `size_mb` | DOUBLE | Dung lượng file dữ liệu đang dùng, tính bằng MiB (1 MiB = 2²⁰ byte). Bỏ qua metadata và file Delta đã bị thay thế. |
+| `source_table` | STRING | Tên đầy đủ của bảng Silver làm nguồn. |
+| `node_type_id` | STRING | Mã loại máy của job cluster. |
+| `runtime` | STRING | Phiên bản Databricks Runtime của job cluster. |
+| `input_partitions` | INT | Số phân vùng Spark cấu hình khi ghi bản Parquet đầu vào chung. |
+| `measured_at` | TIMESTAMP | Thời điểm ghi kết quả của lượt job. |
+
+[Cách chạy và truy vấn trung vị](../de/05_gold_serving.md#51-job-benchmark-định-dạng-ad-de-26) ·
+[Kết quả nghiệm thu dev](../tasks/02_de_batch.md#kết-quả-ad-de-26).
