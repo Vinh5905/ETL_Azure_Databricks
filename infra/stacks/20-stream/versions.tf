@@ -6,6 +6,10 @@ terraform {
       source  = "hashicorp/azurerm"
       version = "~> 4.0"
     }
+    azapi = {
+      source  = "Azure/azapi"
+      version = "~> 2.12"
+    }
     random = {
       source  = "hashicorp/random"
       version = "~> 3.6"
@@ -23,12 +27,21 @@ provider "azurerm" {
   subscription_id = var.subscription_id_b
 }
 
+# azapi là provider bắt buộc của module AVM Event Hubs. Đăng nhập cùng nguồn với azurerm.
+provider "azapi" {
+  subscription_id = var.subscription_id_b
+}
+
 # Sub A: chỉ để ghi SAS của Event Hubs vào Key Vault core.
-# Alias chưa có resource dùng tới cho đến bước ghi secret (AD-OPS-24), nên tạm tắt
-# rule unused của tflint. Xóa dòng ignore khi đã có resource `provider = azurerm.core`.
-# tflint-ignore: terraform_unused_declarations
+# Không purge khi destroy (giống 10-core): secret chỉ bị xóa mềm, lần apply sau
+# provider khôi phục lại (recover_soft_deleted_secrets mặc định true) rồi ghi giá trị mới.
 provider "azurerm" {
   alias = "core"
-  features {}
+  features {
+    key_vault {
+      purge_soft_delete_on_destroy = false
+      recover_soft_deleted_secrets = true
+    }
+  }
   subscription_id = var.subscription_id_a
 }

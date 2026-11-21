@@ -17,7 +17,7 @@ Ngày làm spike: 2026-11-16 → 2026-11-17 (Sub A) · Người tổng hợp: P1
 
 | # | Phép thử | Sub | Kết quả (Đạt / Không đạt) | Ghi chú / phương án dự phòng đã chọn |
 |---|---|---|---|---|
-| 3.1 | Region được phép | A, B, C, D | Đạt (Sub A) · Sub B, C, D hoãn sang #131 | Sub A, kiểm 2026-11-16: policy "Allowed resource deployment regions" chỉ cho `malaysiawest`, `eastasia`, `koreacentral`, `japaneast`, `indiasouthcentral`. Giao với Databricks: `eastasia`, `koreacentral`, `japaneast` (Event Hubs, SQL, ADF, Key Vault, Functions có ở cả 5). Ứng viên Sub A: `eastasia`. Region khác cho Event Hubs nếu Sub B cùng danh sách: `japaneast` hoặc `koreacentral`. Mỗi chủ Sub B/C/D tự chạy lệnh 3.1 |
+| 3.1 | Region được phép | A, B, C, D | Đạt (Sub A, Sub B) · Sub C, D hoãn sang #131 | Sub A, kiểm 2026-11-16: policy "Allowed resource deployment regions" chỉ cho `malaysiawest`, `eastasia`, `koreacentral`, `japaneast`, `indiasouthcentral`. Giao với Databricks: `eastasia`, `koreacentral`, `japaneast` (Event Hubs, SQL, ADF, Key Vault, Functions có ở cả 5). Ứng viên Sub A: `eastasia`. Sub B (P3 kiểm, 2026-11-21): chốt `koreacentral` cho Event Hubs, khác region Sub A. Chủ Sub C/D tự chạy lệnh 3.1 |
 | 3.2 | Quota vCPU (tổng / theo họ máy) | A | Đạt | Giống nhau ở `eastasia`, `koreacentral`, `japaneast`: tổng regional 6 vCPU (low-priority 3); DSv2 4, DSv3 4, Dv3 4, BS 4; DDSv5, DSv5, EDv4 bằng 0. Một `Standard_DS3_v2` (4 vCPU) dùng gần hết quota, còn 2 vCPU tổng nhưng không đủ cho node DSv2 thứ hai |
 | 3.3 | Tạo UAMI | A | Đạt | P1 là Owner của Sub A. Tạo `id-spike` trong `rg-spike` (`eastasia`) được |
 | 3.3 | Federated credential cho UAMI | A | Đạt | Subject `repo:<owner>/<repo>:ref:refs/heads/main`. Tên credential phải dài 3–120 ký tự: tên `gh` trong lệnh cũ bị từ chối, dùng `gh-main` |
@@ -79,7 +79,7 @@ DirectQuery kiểm tra Power BI có gửi truy vấn tới warehouse và trả d
 | Quyết định | Chốt | Lý do (phép thử) |
 |---|---|---|
 | Region Sub A | `eastasia` | 3.1: được phép và có Databricks. 3.4, 3.5: mọi dịch vụ đã thử đều chạy ở đây. Có máy 4 vCPU bán được và còn quota (`Standard_D4ds_v4`) |
-| Region Sub B (khác Sub A) | **Chờ #131 (G2).** Ứng viên `japaneast` hoặc `koreacentral` nếu Sub B cùng danh sách với Sub A. Event Hubs Standard + Kafka đã đạt trên Sub A, nên chỉ còn phải kiểm region và quyền chéo | 3.1, 3.5 |
+| Region Sub B (khác Sub A) | `koreacentral` (#131). Điền ở `infra/envs/20-stream.tfvars` | 3.1, 3.5 |
 | Region sandbox Sub C/D | Chọn **cùng region** với Sub A (`eastasia`), để workspace sandbox dùng chung metastore `eastasia`. Chủ Sub C/D xác nhận region được phép ở #131. Không được thì đi nhánh dự phòng của dòng "Nơi chạy job DS" | 3.1, metastore |
 | Cách CI đăng nhập | UAMI + OIDC cho Sub A. Sub B do P3 apply từ máy cho tới khi #131 thử xong quyền chéo | 3.3 |
 | Unity Catalog | External location (storage credential từ Access Connector) trên metastore tự gán; nhóm dùng **account group do workspace admin tạo**, quyền cấp rõ cho từng principal | 3.4 |
