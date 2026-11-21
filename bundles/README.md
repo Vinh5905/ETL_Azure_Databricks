@@ -120,5 +120,45 @@ Hợp đồng counters, khóa có dataset và cách nghiệm thu chạy hai lầ
 AD-DE-15 thêm `baskets` và views UC hợp nhất. Mặc định `enable_baskets=false`; chỉ bật
 khi hai bảng stream tồn tại đúng schema. Xem [nghiệm thu baskets](../docs/de/03f_nghiem_thu_baskets.md).
 
+## Nghiệm thu pipeline stream (AD-ST-03)
+
+[Cấu hình stream](resources/pipeline_stream.yml) tạo `instacart_stream` và job
+`stream_schedule` (tên hiển thị `instacart-stream-15m`). Pipeline dùng classic single-node,
+policy `instacart-pipeline-single-node` và tag chi phí `p3`. Event log là
+`<catalog>.<schema_prefix>ops.event_log_stream`. Glob chỉ nạp `src/pipelines/stream/`.
+View riêng tư `_stream_bootstrap` trả một dòng cấu hình để kiểm update và event log
+trước khi AD-ST-04 bổ sung nguồn Kafka.
+
+1. Trong `bundles/`, thay `<profile>` bằng profile Databricks đã chọn và chạy validate.
+
+   ```bash
+   databricks bundle validate --strict -t dev --profile <profile> -o json
+   ```
+
+2. Lấy `schema_prefix` từ kết quả JSON và tạo các schema dev cho cùng danh tính
+   theo [hướng dẫn ở trên](#tạo-schema-và-kiểm-tra). Sau đó deploy và chạy job bằng tay.
+
+   ```bash
+   databricks bundle deploy -t dev --profile <profile>
+   databricks bundle run -t dev --profile <profile> stream_schedule
+   ```
+
+3. Kiểm pipeline và job hiển thị với tiền tố `[dev <user>]`, lịch job ở `PAUSED`,
+   lượt chạy tay trả update thành công và event log có bản ghi trong schema `ops` dev.
+   Ghi ID pipeline, job, update và tên event log đã resolve trên [#66](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/66).
+
+Dev luôn tạm dừng lịch. Prod mặc định `PAUSED`. Job lên lịch mỗi 15 phút theo
+`Asia/Ho_Chi_Minh`, lượt 01:45 kế tiếp là 03:00. Job cho phép một lượt chạy tại một
+thời điểm và bỏ hàng đợi để tránh chạy dồn các lượt cũ. Lượt đang chạy cần được
+phối hợp với lịch batch theo quota 4 vCPU.
+
+Khi AD-OPS-24 bàn giao hub và AD-ST-04 đã có source Kafka, cấu hình CI prod với
+`eh_region` đúng region của Event Hubs, `dbx_region` đúng region workspace và
+`eh_generation` ứng với lần tạo hub. Mỗi lần hub được tạo lại, cấp mã thế hệ mới
+trong lần deploy tiếp theo. Đặt `stream_schedule_pause_status=UNPAUSED` khi hub hoạt
+động và pipeline chạy từng đợt. Tạm dừng lịch trước khi tắt hub hoặc trước khi CI triển khai
+`stream_continuous=true` để demo. Trước demo, phối hợp dừng lịch batch và xác nhận
+các lượt batch đã kết thúc.
+
 Tham khảo: [resource bundle chính thức](https://learn.microsoft.com/en-us/azure/databricks/dev-tools/bundles/resources),
 [event log pipeline](https://learn.microsoft.com/en-us/azure/databricks/ldp/monitor-event-logs).

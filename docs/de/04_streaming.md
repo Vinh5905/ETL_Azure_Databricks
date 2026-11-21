@@ -130,52 +130,11 @@ python src/streaming/simulator/simulate.py --data-dir ./data --run-id run-01 --t
 
 ### 3.1 Khai báo DAB
 
-```yaml
-# bundles/resources/pipeline_stream.yml
-variables:
-  stream_continuous: { default: false }      # demo: --var stream_continuous=true
-  eh_generation:     { default: "g1" }        # đổi mỗi lần Event Hubs được tạo lại (mục 3.2)
-
-resources:
-  pipelines:
-    instacart_stream:
-      name: instacart-stream
-      catalog: ${var.catalog}
-      schema: ${var.schema_prefix}bronze
-      edition: ADVANCED
-      channel: CURRENT
-      continuous: ${var.stream_continuous}
-      clusters:
-        - label: default
-          policy_id: ${var.pipeline_policy_id}
-          num_workers: 0
-          spark_conf: { spark.databricks.cluster.profile: singleNode }   # policy fixed, phải khai
-          custom_tags: { cost_owner: p3 }
-      configuration:
-        catalog: ${var.catalog}
-        bronze: ${var.schema_prefix}bronze
-        silver: ${var.schema_prefix}silver
-        gold:   ${var.schema_prefix}gold
-        ops:    ${var.schema_prefix}ops
-        eh_topic: orders-stream
-        eh_generation: ${var.eh_generation}
-        eh_region: <region B>                 # ghi nhãn cho ops.streaming_latency
-        dbx_region: <region A>
-        pipelines.clusterShutdown.delay: 60s
-      libraries:
-        - file: { path: ../../src/pipelines/stream/bronze_events.py }
-        - file: { path: ../../src/pipelines/stream/silver_events.py }
-        - file: { path: ../../src/pipelines/stream/gold_stream.py }
-
-  jobs:
-    stream_schedule:
-      name: instacart-stream-15m
-      schedule: { quartz_cron_expression: "0 0/15 3-23 * * ?", timezone_id: "Asia/Ho_Chi_Minh" }
-      tasks:
-        - task_key: run_stream
-          pipeline_task:
-            pipeline_id: ${resources.pipelines.instacart_stream.id}
-```
+[Bundle stream](../../bundles/resources/pipeline_stream.yml) dùng classic single-node
+và ghi event log vào `<catalog>.<schema_prefix>ops.event_log_stream`. Source được nạp
+từ `src/pipelines/stream/`. Các biến `eh_generation`, `eh_region` và `dbx_region`
+truyền mã thế hệ của hub và nhãn region cho các tầng streaming. Xem cách tạo schema,
+deploy và chạy smoke trong [README bundle](../../bundles/README.md#nghiệm-thu-pipeline-stream-ad-st-03).
 
 ### 3.2 Bronze: đọc Kafka, giữ nguyên bản tin
 
@@ -458,11 +417,11 @@ Gửi lại một batch (khi pipeline retry) chỉ làm tile nhận thêm một 
 
 | Chế độ | Khi nào | Lệnh |
 |---|---|---|
-| Triggered theo lịch 15 phút | Ngày thường, khi Event Hubs đang bật | Job `instacart-stream-15m` |
-| Chạy tay một lần | Kiểm thử | `databricks bundle run instacart_stream -t prod` |
-| **Continuous** | Buổi demo, đo độ trễ | `databricks bundle deploy -t prod --var stream_continuous=true` rồi start pipeline; xong thì deploy lại `false` |
+| Triggered theo lịch 15 phút | Khi Event Hubs hoạt động và lịch đã bật | Job `instacart-stream-15m` bỏ khung 02:00–03:00 giờ Việt Nam |
+| Chạy tay một lần | Kiểm thử dev rồi kiểm event log | `databricks bundle run -t dev stream_schedule` |
+| **Continuous** | Buổi demo, đo độ trễ | CI prod triển khai với `stream_continuous=true` và giữ lịch stream `PAUSED`. Sau demo, dừng pipeline rồi đưa cấu hình về triggered. |
 
-Trước khi chạy continuous phải **tạm dừng** schedule của `pl_master` và job batch để không vượt quota.
+Trước khi chạy continuous, tạm dừng lịch batch và xác nhận các lượt batch đang chạy đã kết thúc để giữ quota 4 vCPU.
 
 ## 6. Quy trình phát lại (replay)
 

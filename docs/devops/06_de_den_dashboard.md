@@ -71,9 +71,9 @@ Xem [cấu hình job](../../bundles/resources/jobs_batch.yml) và [runbook batch
 LDP `instacart_stream`: Kafka → `bronze.order_events` → `silver.stream_orders` / `stream_order_items` (`AUTO CDC` theo `order_id`) → `gold.stream_kpi_1m`, `stream_pair_counts_10m`, `ops.streaming_latency`. Chi tiết ở [de/04](../de/04_streaming.md).
 
 **Ràng buộc quota:** chỉ có 4 vCPU, nên **không chạy cùng lúc** với job batch trên Sub A.
-- **Mặc định:** pipeline ở chế độ *triggered*, job `instacart-stream-15m` chạy mỗi 15 phút. Mỗi update đọc hết sự kiện mới rồi dừng (tương đương `availableNow`), vẫn có checkpoint và upsert theo khóa.
-- **Lúc demo:** tạm dừng lịch batch, deploy với `--var stream_continuous=true` để pipeline chạy liên tục trong 30–60 phút.
-- **Mỗi lần Event Hubs được tạo lại:** `stream-toggle up` truyền `--var eh_generation=g<yyyymmdd>` để LDP dùng flow (checkpoint) mới ([de/04 §3.2](../de/04_streaming.md)).
+- **Mặc định:** pipeline ở chế độ *triggered* và lịch job ở `PAUSED`. Khi hub hoạt động và lịch được bật, job `instacart-stream-15m` chạy mỗi 15 phút ngoài khung 02:00–03:00. Mỗi update đọc hết sự kiện mới rồi dừng, giữ checkpoint và upsert theo khóa.
+- **Lúc demo:** tạm dừng lịch batch và stream, đợi các lượt batch kết thúc rồi dùng CI prod với `stream_continuous=true` để chạy pipeline liên tục trong 30–60 phút.
+- **Mỗi lần Event Hubs được tạo lại:** dùng mã `eh_generation` mới khi deploy để LDP dùng checkpoint mới cho flow Kafka. Xem [hướng dẫn bundle](../../bundles/README.md#nghiệm-thu-pipeline-stream-ad-st-03).
 - **Đo độ trễ (rubric 3.3):** bảng `ops.streaming_latency` gồm:
   - `event_ts` (simulator).
   - `enqueued_ts` (Event Hubs, region B).
