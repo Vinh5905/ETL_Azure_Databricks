@@ -17,11 +17,11 @@ Ngày làm spike: 2026-11-16 → 2026-11-17 (Sub A) · Người tổng hợp: P1
 
 | # | Phép thử | Sub | Kết quả (Đạt / Không đạt) | Ghi chú / phương án dự phòng đã chọn |
 |---|---|---|---|---|
-| 3.1 | Region được phép | A, B, C, D | Đạt (Sub A) · Sub B, C, D hoãn sang #131 | Sub A, kiểm 2026-11-16: policy "Allowed resource deployment regions" chỉ cho `malaysiawest`, `eastasia`, `koreacentral`, `japaneast`, `indiasouthcentral`. Giao với Databricks: `eastasia`, `koreacentral`, `japaneast` (Event Hubs, SQL, ADF, Key Vault, Functions có ở cả 5). Ứng viên Sub A: `eastasia`. Region khác cho Event Hubs nếu Sub B cùng danh sách: `japaneast` hoặc `koreacentral`. Mỗi chủ Sub B/C/D tự chạy lệnh 3.1 |
+| 3.1 | Region được phép | A, B, C, D | Đạt (Sub A, Sub B) · Sub C, D hoãn sang #131 | Sub A, kiểm 2026-11-16: policy "Allowed resource deployment regions" chỉ cho `malaysiawest`, `eastasia`, `koreacentral`, `japaneast`, `indiasouthcentral`. Giao với Databricks: `eastasia`, `koreacentral`, `japaneast` (Event Hubs, SQL, ADF, Key Vault, Functions có ở cả 5). Ứng viên Sub A: `eastasia`. Sub B (P3 kiểm, 2026-11-21): chốt `koreacentral` cho Event Hubs, khác region Sub A. Chủ Sub C/D tự chạy lệnh 3.1 |
 | 3.2 | Quota vCPU (tổng / theo họ máy) | A | Đạt | Giống nhau ở `eastasia`, `koreacentral`, `japaneast`: tổng regional 6 vCPU (low-priority 3); DSv2 4, DSv3 4, Dv3 4, BS 4; DDSv5, DSv5, EDv4 bằng 0. Một `Standard_DS3_v2` (4 vCPU) dùng gần hết quota, còn 2 vCPU tổng nhưng không đủ cho node DSv2 thứ hai |
 | 3.3 | Tạo UAMI | A | Đạt | P1 là Owner của Sub A. Tạo `id-spike` trong `rg-spike` (`eastasia`) được |
 | 3.3 | Federated credential cho UAMI | A | Đạt | Subject `repo:<owner>/<repo>:ref:refs/heads/main`. Tên credential phải dài 3–120 ký tự: tên `gh` trong lệnh cũ bị từ chối, dùng `gh-main` |
-| 3.3 | Gán role chéo subscription (Sub B → UAMI) | B | Hoãn (#131) | Chưa cần Sub B trước G2. Áp dụng dự phòng cho tới khi P3 thử: CI chỉ apply Sub A, Sub B do P3 apply từ máy |
+| 3.3 | Gán role chéo subscription (Sub B → UAMI) | B | Đạt | P3 gán Contributor trên Sub B cho UAMI `id-github-ci` (2026-11-21, #131). `tf-plan` của PR #222 đăng nhập OIDC vào Sub B và plan được `20-stream` (12 resource tạo mới): [run 44910239307](https://github.com/Vinh5905/ETL_Azure_Databricks/actions/runs/44910239307). Quyền ghi được xác nhận lần đầu ở `stream-toggle up` |
 | 3.3 | Tạo App Registration | — | Đạt | Tạo `spike-app` được. Thiết kế vẫn dùng UAMI |
 | 3.3 | Tạo nhóm Entra ID | — | Đạt | Tạo `spike-grp` được, nên có thể dùng nhóm Entra cho quyền |
 | 3.4 | Tạo workspace Premium | A | Đạt | Kiểm 2026-11-17: `dbw-spike` (Premium) trong `rg-spike`, `eastasia`, tạo bằng `az resource create` (ARM) mất khoảng 4,5 phút. Lệnh `az databricks` không dùng được vì extension cài lỗi (pip) |
@@ -79,9 +79,9 @@ DirectQuery kiểm tra Power BI có gửi truy vấn tới warehouse và trả d
 | Quyết định | Chốt | Lý do (phép thử) |
 |---|---|---|
 | Region Sub A | `eastasia` | 3.1: được phép và có Databricks. 3.4, 3.5: mọi dịch vụ đã thử đều chạy ở đây. Có máy 4 vCPU bán được và còn quota (`Standard_D4ds_v4`) |
-| Region Sub B (khác Sub A) | **Chờ #131 (G2).** Ứng viên `japaneast` hoặc `koreacentral` nếu Sub B cùng danh sách với Sub A. Event Hubs Standard + Kafka đã đạt trên Sub A, nên chỉ còn phải kiểm region và quyền chéo | 3.1, 3.5 |
+| Region Sub B (khác Sub A) | `koreacentral` (#131). Điền ở `infra/envs/20-stream.tfvars` | 3.1, 3.5 |
 | Region sandbox Sub C/D | Chọn **cùng region** với Sub A (`eastasia`), để workspace sandbox dùng chung metastore `eastasia`. Chủ Sub C/D xác nhận region được phép ở #131. Không được thì đi nhánh dự phòng của dòng "Nơi chạy job DS" | 3.1, metastore |
-| Cách CI đăng nhập | UAMI + OIDC cho Sub A. Sub B do P3 apply từ máy cho tới khi #131 thử xong quyền chéo | 3.3 |
+| Cách CI đăng nhập | UAMI + OIDC cho cả Sub A và Sub B (Contributor chéo, #131). `20-stream` apply qua `stream-toggle` | 3.3 |
 | Unity Catalog | External location (storage credential từ Access Connector) trên metastore tự gán; nhóm dùng **account group do workspace admin tạo**, quyền cấp rõ cho từng principal | 3.4 |
 | Nguồn `retail_db` | CDC theo LSN (`fn_cdc_get_all_changes`) trên DB free offer; không cần watermark `updated_at` | 3.5 |
 | Xác thực Azure SQL | SQL auth (login `sqladmin`, mật khẩu trong Key Vault) **cộng** Entra admin; không bật Entra-only. Lý do: seed job dùng `pymssql` + mật khẩu, lấy token Entra từ cluster chưa thử ([03 §3.6](03_terraform_azure.md)) | 3.5 |

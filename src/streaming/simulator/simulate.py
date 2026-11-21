@@ -15,6 +15,7 @@ from tempfile import TemporaryDirectory
 from typing import Any
 
 from common.sim_time import order_ts_sim
+from streaming.simulator.kafka_producer import KafkaSendError, publish_events
 
 ORDER_FIELDS = ("order_id", "user_id", "order_number", "order_dow", "order_hour_of_day")
 ITEM_FIELDS = ("product_id", "add_to_cart_order", "reordered")
@@ -45,6 +46,8 @@ def build_events(data_dir: str | Path) -> list[dict[str, Any]]:
             continue
         header = {field: int(row[field]) for field in ORDER_FIELDS}
         days = float(row["days_since_prior_order"].strip() or "nan")
+        if math.isinf(days):
+            raise ValueError(f"Đơn {header['order_id']}: days_since_prior_order phải hữu hạn hoặc để trống")
         # Train là đơn cuối cùng của khách nên dùng days_back = 0 của hàm dùng chung.
         event_time = order_ts_sim(header["user_id"], header["order_hour_of_day"])
         events.append(
@@ -71,6 +74,35 @@ def _fraction(value: str) -> Decimal:
     return fraction
 
 
+def _positive_integer(value: str) -> int:
+    number = int(value)
+    if number <= 0:
+        raise argparse.ArgumentTypeError("giá trị phải là số nguyên dương")
+    return number
+
+
+def _messages(events: list[dict[str, Any]], run_id: str, location: str) -> Iterator[tuple[str, str]]:
+    for event in events:
+        payload = {
+            **event,
+            "replay_run_id": run_id,
+            "produced_at": datetime.now(UTC).isoformat(timespec="milliseconds").replace("+00:00", "Z"),
+            "producer_location": location,
+        }
+        yield str(event["order_id"]), json.dumps(payload, ensure_ascii=False, allow_nan=False)
+
+
+def _write_dry_run(output: Path, messages: Iterator[tuple[str, str]]) -> None:
+    output.parent.mkdir(parents=True, exist_ok=True)
+    # Chỉ thay file đích sau khi đã ghi đủ mọi sự kiện.
+    with TemporaryDirectory(prefix=".simulator-", dir=output.parent) as temporary:
+        staged = Path(temporary) / "events.jsonl"
+        with staged.open("w", encoding="utf-8", newline="\n") as handle:
+            for _, value in messages:
+                handle.write(value + "\n")
+        staged.replace(output)
+
+
 def main(argv: list[str] | None = None) -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--data-dir", type=Path, required=True, help="Thư mục chứa CSV đơn hàng và món train")
@@ -78,13 +110,19 @@ def main(argv: list[str] | None = None) -> None:
     parser.add_argument("--location", default="laptop", help="Nơi chạy simulator")
     parser.add_argument("--from-frac", type=_fraction, default=Decimal(0), help="Tỷ lệ bắt đầu, mặc định 0")
     parser.add_argument("--to-frac", type=_fraction, default=Decimal(1), help="Tỷ lệ kết thúc, mặc định 1")
-    parser.add_argument("--dry-run", type=Path, metavar="FILE", required=True, help="Ghi sự kiện dạng JSON Lines")
+    parser.add_argument("--limit", type=_positive_integer, help="Số sự kiện tối đa trong khoảng được chọn")
+    mode = parser.add_mutually_exclusive_group(required=True)
+    mode.add_argument("--dry-run", type=Path, metavar="FILE", help="Ghi sự kiện dạng JSON Lines")
+    mode.add_argument("--send", action="store_true", help="Gửi sự kiện vào Event Hubs qua Kafka")
+    kafka = parser.add_argument_group("Gửi Kafka")
+    kafka.add_argument("--rate", type=_positive_integer, default=200, help="Số sự kiện tối đa mỗi giây, mặc định 200")
+    kafka.add_argument("--compression", choices=("none", "gzip"), default="none", help="Kiểu nén Kafka, mặc định none")
     args = parser.parse_args(argv)
     if args.from_frac > args.to_frac:
         parser.error("--from-frac phải nhỏ hơn hoặc bằng --to-frac")
 
     output = args.dry_run
-    if output.resolve() in {
+    if output is not None and output.resolve() in {
         (args.data_dir / "orders.csv").resolve(),
         (args.data_dir / "order_products__train.csv").resolve(),
     }:
@@ -94,24 +132,17 @@ def main(argv: list[str] | None = None) -> None:
         events = build_events(args.data_dir)
         start = int(len(events) * args.from_frac)
         stop = int(len(events) * args.to_frac)
-        output.parent.mkdir(parents=True, exist_ok=True)
-        # Chỉ thay file đích sau khi đã ghi đủ mọi sự kiện.
-        with TemporaryDirectory(prefix=".simulator-", dir=output.parent) as temporary:
-            staged = Path(temporary) / "events.jsonl"
-            with staged.open("w", encoding="utf-8", newline="\n") as handle:
-                for event in events[start:stop]:
-                    payload = {
-                        **event,
-                        "replay_run_id": args.run_id,
-                        "produced_at": datetime.now(UTC).isoformat(timespec="milliseconds").replace("+00:00", "Z"),
-                        "producer_location": args.location,
-                    }
-                    handle.write(json.dumps(payload, ensure_ascii=False, allow_nan=False) + "\n")
-            staged.replace(output)
-    except (OSError, ValueError, csv.Error) as error:
+        if args.limit is not None:
+            stop = min(stop, start + args.limit)
+        messages = _messages(events[start:stop], args.run_id, args.location)
+        if output is not None:
+            _write_dry_run(output, messages)
+            print(f"events_written={stop - start} total_events={len(events)}")
+        else:
+            acknowledged = publish_events(messages, rate=args.rate, compression=args.compression)
+            print(f"events_sent={acknowledged} total_events={len(events)}")
+    except (OSError, ValueError, csv.Error, KafkaSendError) as error:
         parser.exit(1, f"Lỗi: {error}\n")
-
-    print(f"events_written={stop - start} total_events={len(events)}")
 
 
 if __name__ == "__main__":

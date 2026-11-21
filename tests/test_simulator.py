@@ -1,15 +1,37 @@
 from __future__ import annotations
 
 import json
+import sys
 from datetime import UTC, datetime
 from pathlib import Path
+from types import SimpleNamespace
+from unittest.mock import Mock
 
 import pytest
 
 from common.sim_time import order_time_sim_sql
+from streaming.simulator import kafka_producer, simulate
 from streaming.simulator.simulate import build_events, main
 
 FIXTURE = Path(__file__).parent / "fixtures" / "instacart"
+SAS_TEST = "Endpoint=sb://unit-test.servicebus.windows.net/;SharedAccessKeyName=sim-send;SharedAccessKey=test-only=="
+
+
+class FakeKafkaException(Exception):
+    pass
+
+
+@pytest.fixture
+def kafka_client(monkeypatch):
+    producer = Mock()
+    producer.flush.return_value = 0
+    factory = Mock(return_value=producer)
+    monkeypatch.setitem(
+        sys.modules, "confluent_kafka", SimpleNamespace(Producer=factory, KafkaException=FakeKafkaException)
+    )
+    monkeypatch.setenv("EH_SEND_CONN", SAS_TEST)
+    monkeypatch.setattr(kafka_producer, "sleep", lambda _: None)
+    return factory, producer
 
 
 def test_build_events_joins_train_orders_and_sorts_ties(tmp_path):
@@ -91,6 +113,102 @@ def test_invalid_fraction_does_not_create_file(tmp_path, selection):
         main(["--data-dir", str(FIXTURE), "--run-id", "run-01", "--dry-run", str(output), *selection])
     assert error.value.code == 2
     assert not output.exists()
+
+
+def test_kafka_caps_replay_at_1000_and_counts_broker_acks(monkeypatch, capsys, kafka_client):
+    factory, producer = kafka_client
+    template = build_events(FIXTURE)[0]
+    events = [{**template, "order_id": order_id, "event_id": f"order-{order_id}"} for order_id in range(1, 1003)]
+    monkeypatch.setattr(simulate, "build_events", lambda _: events)
+
+    def acknowledge(_timeout):
+        for call in producer.produce.call_args_list:
+            call.kwargs["on_delivery"](None, None)
+        return 0
+
+    producer.flush.side_effect = acknowledge
+    main(["--data-dir", str(FIXTURE), "--run-id", "smoke-01", "--location", "codespace", "--limit", "1000", "--send"])
+
+    config = factory.call_args.args[0]
+    assert config["bootstrap.servers"] == "unit-test.servicebus.windows.net:9093"
+    assert config["security.protocol"] == "SASL_SSL"
+    assert config["sasl.mechanism"] == "PLAIN"
+    assert config["sasl.username"] == "$ConnectionString"
+    assert config["sasl.password"] == SAS_TEST
+    assert config["enable.idempotence"] is True
+    assert config["compression.type"] == "none"
+    assert [call.kwargs["key"] for call in producer.produce.call_args_list] == list(map(str, range(1, 1001)))
+    for call in producer.produce.call_args_list:
+        assert call.args == ("orders-stream",)
+        payload = json.loads(call.kwargs["value"])
+        assert payload["order_id"] == int(call.kwargs["key"])
+        assert payload["replay_run_id"] == "smoke-01"
+        assert payload["producer_location"] == "codespace"
+        assert datetime.fromisoformat(payload["produced_at"]).tzinfo is UTC
+    captured = capsys.readouterr()
+    assert captured.out == "events_sent=1000 total_events=1002\n"
+    assert not captured.err
+
+
+def test_kafka_retries_full_queue_and_allows_gzip(kafka_client):
+    factory, producer = kafka_client
+    producer.produce.side_effect = [BufferError(), None]
+
+    def poll(_timeout):
+        producer.produce.call_args.kwargs["on_delivery"](None, None)
+
+    producer.poll.side_effect = poll
+    assert kafka_producer.publish_events([("7", "{}")], rate=200, compression="gzip") == 1
+    assert factory.call_args.args[0]["compression.type"] == "gzip"
+    assert producer.produce.call_count == 2
+    assert producer.flush.call_count == 2
+
+
+@pytest.mark.parametrize("pending", [0, 1])
+def test_kafka_does_not_report_success_for_failed_or_pending_delivery(capsys, kafka_client, pending):
+    _, producer = kafka_client
+    producer.flush.return_value = pending
+    failure = SimpleNamespace(code=lambda: 10)
+    if not pending:
+        producer.poll.side_effect = lambda _: producer.produce.call_args.kwargs["on_delivery"](failure, None)
+
+    with pytest.raises(SystemExit) as error:
+        main(["--data-dir", str(FIXTURE), "--run-id", "smoke-02", "--limit", "1", "--send"])
+
+    assert error.value.code == 1
+    captured = capsys.readouterr()
+    assert not captured.out
+    assert "Broker xác nhận 0 sự kiện" in captured.err
+    assert f"{pending} chưa được xác nhận" in captured.err
+    assert SAS_TEST not in captured.err
+
+
+@pytest.mark.parametrize("connection", [None, "malformed-test-only", SAS_TEST + ";EntityPath=another-hub"])
+def test_kafka_rejects_bad_connection_without_logging_it(monkeypatch, capsys, connection):
+    monkeypatch.delenv("EH_SEND_CONN", raising=False)
+    if connection is not None:
+        monkeypatch.setenv("EH_SEND_CONN", connection)
+
+    with pytest.raises(SystemExit) as error:
+        main(["--data-dir", str(FIXTURE), "--run-id", "smoke-03", "--send"])
+
+    assert error.value.code == 1
+    captured = capsys.readouterr()
+    assert "EH_SEND_CONN" in captured.err
+    assert "test-only" not in captured.err
+
+
+def test_kafka_suppresses_credentials_from_native_errors(kafka_client, capsys):
+    factory, _ = kafka_client
+    factory.side_effect = FakeKafkaException(SAS_TEST)
+
+    with pytest.raises(SystemExit) as error:
+        main(["--data-dir", str(FIXTURE), "--run-id", "smoke-04", "--send"])
+
+    assert error.value.code == 1
+    captured = capsys.readouterr()
+    assert "Kafka producer gặp lỗi" in captured.err
+    assert "test-only" not in captured.err
 
 
 def test_event_time_matches_silver_sql(spark):
