@@ -62,8 +62,8 @@ variables:
     description: Mã thế hệ của Event Hubs, giữ nguyên khi chạy lại và đổi khi hub được tạo lại
     default: g1
   eh_region:
-    description: Region Azure thực tế của Event Hubs, điền sau khi Sub B bàn giao
-    default: ""
+    description: Region Azure của Event Hubs trên Sub B
+    default: koreacentral
   dbx_region:
     description: Region Azure của workspace Databricks để gắn nhãn độ trễ
     default: eastasia

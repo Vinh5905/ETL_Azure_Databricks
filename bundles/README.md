@@ -136,25 +136,31 @@ trước khi AD-ST-04 bổ sung nguồn Kafka.
    ```
 
 2. Lấy `schema_prefix` từ kết quả JSON và tạo các schema dev cho cùng danh tính
-   theo [hướng dẫn ở trên](#tạo-schema-và-kiểm-tra). Sau đó deploy và chạy job bằng tay.
+   theo [hướng dẫn ở trên](#tạo-schema-và-kiểm-tra). Sau đó deploy bundle.
 
    ```bash
    databricks bundle deploy -t dev --profile <profile>
-   databricks bundle run -t dev --profile <profile> stream_schedule
    ```
 
-3. Kiểm pipeline và job hiển thị với tiền tố `[dev <user>]`, lịch job ở `PAUSED`,
-   lượt chạy tay trả update thành công và event log có bản ghi trong schema `ops` dev.
-   Ghi ID pipeline, job, update và tên event log đã resolve trên [#66](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/66).
+3. Kiểm pipeline và job hiển thị với tiền tố `[dev <user>]` và lịch job ở `PAUSED`.
+   Ghi kết quả validate và deploy trên [#66](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/66).
+
+Khi nghiệm thu [AD-ST-04 (#67)](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/67),
+chạy job bằng tay để kiểm update, bản ghi event log trong schema `ops` dev và dữ liệu Kafka.
+
+```bash
+databricks bundle run -t dev --profile <profile> stream_schedule
+```
 
 Dev luôn tạm dừng lịch. Prod mặc định `PAUSED`. Job lên lịch mỗi 15 phút theo
 `Asia/Ho_Chi_Minh`, lượt 01:45 kế tiếp là 03:00. Job cho phép một lượt chạy tại một
 thời điểm và bỏ hàng đợi để tránh chạy dồn các lượt cũ. Lượt đang chạy cần được
 phối hợp với lịch batch theo quota 4 vCPU.
 
-Khi AD-OPS-24 bàn giao hub và AD-ST-04 đã có source Kafka, cấu hình CI prod với
-`eh_region` đúng region của Event Hubs, `dbx_region` đúng region workspace và
-`eh_generation` ứng với lần tạo hub. Mỗi lần hub được tạo lại, cấp mã thế hệ mới
+`eh_region` mặc định là `koreacentral`, region của Event Hubs Sub B theo
+[kết quả spike](../docs/devops/spike_results.md). Khi AD-ST-04 đã có source Kafka,
+cấu hình CI prod với `dbx_region` đúng region workspace và `eh_generation` ứng
+với lần tạo hub. Mỗi lần hub được tạo lại, cấp mã thế hệ mới
 trong lần deploy tiếp theo. Đặt `stream_schedule_pause_status=UNPAUSED` khi hub hoạt
 động và pipeline chạy từng đợt. Tạm dừng lịch trước khi tắt hub hoặc trước khi CI triển khai
 `stream_continuous=true` để demo. Trước demo, phối hợp dừng lịch batch và xác nhận
