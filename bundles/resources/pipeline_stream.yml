@@ -1,0 +1,41 @@
+# Classic single-node theo G0. Runtime do channel quản lý.
+resources:
+  pipelines:
+    instacart_stream:
+      name: instacart-stream
+      catalog: ${var.catalog}
+      schema: ${var.schema_prefix}bronze
+      edition: ADVANCED
+      channel: CURRENT
+      serverless: false
+      continuous: ${var.stream_continuous}
+      photon: false
+      clusters:
+        - label: default
+          policy_id: ${var.pipeline_policy_id}
+          node_type_id: ${var.node_type_id}
+          num_workers: 0
+          spark_conf:
+            spark.databricks.cluster.profile: singleNode
+          custom_tags:
+            cost_owner: p3
+      configuration:
+        catalog: ${var.catalog}
+        bronze: ${var.schema_prefix}bronze
+        silver: ${var.schema_prefix}silver
+        gold: ${var.schema_prefix}gold
+        ops: ${var.schema_prefix}ops
+        eh_topic: orders-stream
+        eh_generation: ${var.eh_generation}
+        eh_region: ${var.eh_region}
+        dbx_region: ${var.dbx_region}
+        spark.sql.session.timeZone: UTC
+        pipelines.clusterShutdown.delay: 60s
+      event_log:
+        catalog: ${var.catalog}
+        schema: ${var.schema_prefix}ops
+        name: event_log_stream
+      root_path: ../../src
+      libraries:
+        - glob:
+            include: ../../src/pipelines/stream/**
