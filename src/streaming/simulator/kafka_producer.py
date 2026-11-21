@@ -2,9 +2,10 @@
 
 import logging
 import os
-import re
 from collections.abc import Iterable
 from time import sleep
+
+from common.event_hubs import sas_endpoint
 
 TOPIC = "orders-stream"
 FLUSH_TIMEOUT_SECONDS = 125
@@ -21,17 +22,14 @@ def _producer_config(compression: str) -> dict[str, str | int | bool]:
 
     invalid_connection = "EH_SEND_CONN phải là chuỗi kết nối SAS hợp lệ cho Event Hubs"
     try:
-        fields = dict(part.split("=", 1) for part in connection.split(";") if part)
+        bootstrap_server, entity_path = sas_endpoint(connection)
     except ValueError:
         raise KafkaSendError(invalid_connection) from None
-    endpoint = re.fullmatch(r"sb://([a-zA-Z0-9-]+(?:\.[a-zA-Z0-9-]+)+)/?", fields.get("Endpoint", ""))
-    if not endpoint or not fields.get("SharedAccessKeyName") or not fields.get("SharedAccessKey"):
-        raise KafkaSendError(invalid_connection)
-    if fields.get("EntityPath", TOPIC) != TOPIC:
+    if entity_path is not None and entity_path != TOPIC:
         raise KafkaSendError(f"EH_SEND_CONN phải cấp quyền cho Event Hub {TOPIC}")
 
     return {
-        "bootstrap.servers": f"{endpoint[1]}:9093",
+        "bootstrap.servers": bootstrap_server,
         "security.protocol": "SASL_SSL",
         "sasl.mechanism": "PLAIN",
         "sasl.username": "$ConnectionString",
