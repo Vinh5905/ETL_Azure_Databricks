@@ -39,6 +39,10 @@ EVENT_RULES = {
     "known_type": "coalesce(event_type = 'order_placed', false)",
     "schema_v1": "coalesce(schema_version = 1, false)",
     "has_items": "coalesce(size(items) > 0, false)",
+    "valid_item_keys": (
+        "items IS NULL OR (forall(items, item -> item.product_id IS NOT NULL) "
+        "AND size(array_distinct(transform(items, item -> item.product_id))) = size(items))"
+    ),
     "id_matches": "coalesce(event_id = concat('order-', order_id), false)",
 }
 
