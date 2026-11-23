@@ -12,6 +12,7 @@ from pyspark.sql import types as T
 from common.dq import EVENT_RULES, ITEM_RULES, ORDER_RULES, PRICE_RULES, PROMO_RULES, dq_failed
 
 ITEM_SCHEMA = "order_id int, product_id int, add_to_cart_order int, reordered int, _rescued_data string"
+EVENT_NULL_FAILURES = ["parsed", "known_type", "schema_v1", "has_items", "id_matches"]
 
 # Mỗi ca chỉ thay các cột được ghi; kết quả kỳ vọng được viết tường minh.
 RULE_CASES = [
@@ -110,9 +111,10 @@ RULE_CASES = [
             ({"schema_version": None}, ["schema_v1"]),
             ({"items": []}, ["has_items"]),
             ({"items": None}, ["has_items"]),
+            ({"items": [(None, 1, 0)]}, ["valid_item_keys"]),
             (
                 {"event_id": None, "event_type": None, "schema_version": None, "order_id": None, "items": None},
-                list(EVENT_RULES),
+                EVENT_NULL_FAILURES,
             ),
         ],
         id="events",
@@ -198,7 +200,7 @@ def test_malformed_event_is_quarantined_with_original_payload(spark):
     rows = parsed.withColumn("_dq_failed", dq_failed(EVENT_RULES)).collect()
     assert rows[0]._dq_failed == []
     assert rows[1].value_json == "{bad json"
-    assert rows[1]._dq_failed == list(EVENT_RULES)
+    assert rows[1]._dq_failed == EVENT_NULL_FAILURES
 
 
 def test_dq_expression_works_in_local_stream(spark, tmp_path):
