@@ -1,0 +1,11 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/gitIntegration/platformProperties/2.0.0/schema.json",
+  "metadata": {
+    "type": "Report",
+    "displayName": "instacart"
+  },
+  "config": {
+    "version": "2.0",
+    "logicalId": "79a6ce11-8449-438f-86df-4f19719f6a31"
+  }
+}
