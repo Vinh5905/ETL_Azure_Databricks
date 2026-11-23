@@ -219,6 +219,9 @@ Bản ghi không parse được hoặc sai luật được giữ trong `silver.q
 payload `value_json` cùng tên các luật lỗi nằm ngay trong dòng quarantine.
 `EVENT_RULES` import từ `common.dq`, dùng chung cho `events_valid` và quarantine;
 NULL ở trường bắt buộc, sai loại/schema/id hoặc mảng món rỗng đều là lỗi.
+Luật `valid_item_keys` đưa cả sự kiện vào quarantine nếu có món thiếu `product_id`
+hoặc một `product_id` xuất hiện nhiều lần trong cùng đơn, vì `stream_order_items`
+upsert theo khóa `(order_id, product_id)`.
 Quy ước chi tiết ở [03 §4.2](03_silver_cdc_scd_dq.md).
 
 ### 4.2 Vì sao phát lại không nhân dòng
