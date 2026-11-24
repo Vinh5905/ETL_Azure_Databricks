@@ -62,9 +62,11 @@ def test_publish_gold_views_map_champion_rules_and_experiment_metrics(spark):
         ).write.saveAsTable(f"{schemas['ds_data']}.item_index")
         metric_rows = [
             ("E2", "databricks", "dapriori", "product", 25, None, 0.01, 1, "", "ok", 1.0, 100.0, 0.0, 10, 5, 6),
+            ("E2", "databricks", "dapriori", "product", 25, None, 0.01, 1, "", "ok", 2.0, 105.0, 0.5, 11, 5, 6),
             ("E2", "databricks", "dapriori", "product", 25, None, 0.01, 1, "", "timeout", None, 120.0, 0.0, 0, 0, 0),
             ("E2", "databricks", "dapriori", "product", 25, None, 0.01, 1, "", "ok", 3.0, 110.0, 1.0, 12, 6, 7),
             ("E2", "databricks", "dapriori", "product", 25, None, 0.01, 4, "", "ok", 4.0, 130.0, 2.0, 12, 6, 7),
+            ("E2", "databricks", "dapriori", "product", 25, None, 0.01, 4, "", "ok", 5.0, 135.0, 3.0, 13, 7, 8),
             ("E2", "databricks", "dapriori", "product", 25, None, 0.01, 4, "", "ok", 6.0, 140.0, 4.0, 14, 8, 9),
             ("E2", "databricks", "dapriori", "product", 25, None, 0.01, 4, "", "timeout", None, 150.0, 5.0, 0, 0, 0),
         ]
@@ -116,9 +118,9 @@ def test_publish_gold_views_map_champion_rules_and_experiment_metrics(spark):
         metrics = spark.table(f"{schemas['gold']}.experiment_metrics").collect()
         baseline = next(row for row in metrics if row.cores == 1)
         scaled = next(row for row in metrics if row.cores == 4)
-        assert (baseline.n_ok, baseline.n_timeout) == (2, 1)
+        assert (baseline.n_ok, baseline.n_timeout) == (3, 1)
         assert (baseline.wall_s, scaled.wall_s) == (2.0, 5.0)
-        assert (scaled.n_ok, scaled.n_timeout) == (2, 1)
+        assert (scaled.n_ok, scaled.n_timeout) == (3, 1)
         assert scaled.speedup == 0.4
         assert scaled.efficiency == 0.1
         assert spark.table(f"{schemas['gold']}.holdout_metrics").count() == 1
