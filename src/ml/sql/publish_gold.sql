@@ -1,4 +1,4 @@
--- Power BI chỉ đọc gold; view chạy theo quyền của chủ view trên các bảng ml và ds_data.
+-- Power BI chỉ đọc gold, view chạy theo quyền của chủ view trên các bảng ml và ds_data.
 CREATE OR REPLACE VIEW instacart.gold.association_rules
 COMMENT 'Luật kết hợp của champion cấp product, có tên và mã sản phẩm.'
 AS
