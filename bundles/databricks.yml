@@ -26,6 +26,10 @@ variables:
     description: Policy riêng loại dlt cho pipeline (AD-OPS-21), không dùng policy job cluster
     lookup:
       cluster_policy: instacart-pipeline-single-node
+  ds_policy_id:
+    description: Policy single-node dành riêng cho benchmark DS, cho phép local[1/2/4]
+    lookup:
+      cluster_policy: instacart-ds-benchmark
   schema_prefix:
     description: Tiền tố schema; dev riêng từng người, prod không có tiền tố
     default: ""
