@@ -54,7 +54,7 @@ def _same_freq(left: dict[tuple[int, ...], int], right: dict[tuple[int, ...], in
 
 def _rule_values(rows: list[Any]) -> dict[tuple[tuple[int, ...], tuple[int, ...]], tuple[float, float, float]]:
     return {
-        (tuple(row["antecedent"]), tuple(row["consequent"])): (
+        (tuple(sorted(row["antecedent"])), tuple(sorted(row["consequent"]))): (
             float(row["support"]),
             float(row["confidence"]),
             float(row["lift"]),
