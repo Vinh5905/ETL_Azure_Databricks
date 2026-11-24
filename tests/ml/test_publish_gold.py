@@ -61,12 +61,12 @@ def test_publish_gold_views_map_champion_rules_and_experiment_metrics(spark):
             "data_version string, grain string, idx int, item_key string, item_name string",
         ).write.saveAsTable(f"{schemas['ds_data']}.item_index")
         metric_rows = [
-            ("E2", "databricks", "dapriori", "product", 25, None, 0.01, 1, "", "ok", 1.0),
-            ("E2", "databricks", "dapriori", "product", 25, None, 0.01, 1, "", "timeout", None),
-            ("E2", "databricks", "dapriori", "product", 25, None, 0.01, 1, "", "ok", 3.0),
-            ("E2", "databricks", "dapriori", "product", 25, None, 0.01, 4, "", "ok", 4.0),
-            ("E2", "databricks", "dapriori", "product", 25, None, 0.01, 4, "", "ok", 6.0),
-            ("E2", "databricks", "dapriori", "product", 25, None, 0.01, 4, "", "timeout", None),
+            ("E2", "databricks", "dapriori", "product", 25, None, 0.01, 1, "", "ok", 1.0, 100.0, 0.0, 10, 5, 6),
+            ("E2", "databricks", "dapriori", "product", 25, None, 0.01, 1, "", "timeout", None, 120.0, 0.0, 0, 0, 0),
+            ("E2", "databricks", "dapriori", "product", 25, None, 0.01, 1, "", "ok", 3.0, 110.0, 1.0, 12, 6, 7),
+            ("E2", "databricks", "dapriori", "product", 25, None, 0.01, 4, "", "ok", 4.0, 130.0, 2.0, 12, 6, 7),
+            ("E2", "databricks", "dapriori", "product", 25, None, 0.01, 4, "", "ok", 6.0, 140.0, 4.0, 14, 8, 9),
+            ("E2", "databricks", "dapriori", "product", 25, None, 0.01, 4, "", "timeout", None, 150.0, 5.0, 0, 0, 0),
         ]
         run_schema = StructType(
             [
@@ -81,6 +81,11 @@ def test_publish_gold_views_map_champion_rules_and_experiment_metrics(spark):
                 StructField("sweep", StringType()),
                 StructField("status", StringType()),
                 StructField("wall_s", DoubleType()),
+                StructField("peak_mem_mb", DoubleType()),
+                StructField("spill_mb", DoubleType()),
+                StructField("n_itemsets", IntegerType()),
+                StructField("n_rules_single", IntegerType()),
+                StructField("n_rules_all", IntegerType()),
             ]
         )
         spark.createDataFrame(metric_rows, run_schema).write.saveAsTable(f"{schemas['ml']}.experiment_runs")
