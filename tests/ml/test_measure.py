@@ -26,6 +26,7 @@ def test_time_limit_cancels_spark_job_and_sets_expired(spark):
 
     assert expired is not None
     assert expired.is_set()
+    assert sc.getLocalProperty("spark.jobGroup.id") is None
 
 
 def test_time_limit_rejects_nonpositive_timeout(spark):
