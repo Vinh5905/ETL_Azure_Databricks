@@ -20,6 +20,9 @@ ingest = [
 
 [dependency-groups]
 dev = [
+    "azure-functions>=1.21,<2",
+    "azure-identity>=1.17,<2",
+    "azure-storage-blob>=12.22,<13",
     "delta-spark==3.3.3", # chạy kiểm thử MERGE thật trên Spark 3.5 local
     "numpy>=1.24,<3",
     "pyarrow>=17,<20", # thực thi pandas UDF trên Spark local, hỗ trợ NumPy 2
