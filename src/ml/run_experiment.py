@@ -297,15 +297,20 @@ def run_config(spark: SparkSession, cfg: dict[str, Any], *, log_mlflow: bool = T
         data_version=cfg.get("data_version", "v1"),
     )
     row, freq, rules = execute_run(spark, cfg, df)
-    if row["status"] == "ok" and cfg.get("persist"):
-        try:
-            _persist(spark, {**cfg, "n_tx": row["n_tx"]}, freq, rules)
-        except Exception as exc:  # noqa: BLE001
-            row["status"] = "failed"
-            row["error"] = str(exc)[:2000]
-    if log_mlflow:
-        row["mlflow_run_id"], row["mlflow_error"] = _log_mlflow(cfg, row)
-    _merge_result(spark, row)
+    try:
+        if row["status"] == "ok" and cfg.get("persist"):
+            try:
+                _persist(spark, {**cfg, "n_tx": row["n_tx"]}, freq, rules)
+            except Exception as exc:  # noqa: BLE001
+                row["status"] = "failed"
+                row["error"] = str(exc)[:2000]
+        if log_mlflow:
+            row["mlflow_run_id"], row["mlflow_error"] = _log_mlflow(cfg, row)
+        _merge_result(spark, row)
+    finally:
+        # Các lần chạy nối tiếp dùng chung driver: bỏ cache luật để peak_mem_mb của lần sau không bị cộng dồn.
+        if rules is not None:
+            rules.unpersist()
     if row["status"] == "failed":
         raise SystemExit(1)
     return row
