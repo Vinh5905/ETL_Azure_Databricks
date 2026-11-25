@@ -388,6 +388,71 @@ PYTHONPATH=src uv run --frozen --extra ingest python -m streaming.simulator.simu
 PYTHONPATH=src uv run --frozen --extra ingest python -m streaming.simulator.simulate --data-dir data/instacart --send --run-id demo-95-5 --from-frac 0.95 --to-frac 1.0 --rate 20
 ```
 
+### 6.2 Đổi thế hệ Event Hubs (AD-ST-08)
+
+#### Chuẩn bị mốc trước khi đổi namespace
+
+1. Chọn một pipeline dev đã chạy thành công với namespace cũ. Có thể dùng lại
+   [mốc AD-ST-07](evidence/ad-st-07/2026-11-25-train-replay.md) nếu vẫn còn pipeline,
+   các bảng và hai CSV đã dùng. Nếu phải dựng lại mốc, gửi một lô nhỏ ở namespace
+   đầu tiên, chạy update thường rồi ghi kết quả trước khi tắt namespace đó.
+2. Giữ nguyên pipeline ID, catalog và các schema Bronze/Silver trong cả hai mốc.
+   Giữ lịch stream ở `PAUSED` và chọn khung giờ không trùng lượt batch vì dùng
+   chung quota vCPU.
+3. Chọn `new_generation` chưa từng dùng trên pipeline này, chẳng hạn
+   `g20261125_120000z` (ngày giờ UTC của namespace mới). Chọn một
+   `replay_run_id` mới cho lượt phát ở namespace mới. Chạy [truy vấn đối
+   soát](stream_generation_reconciliation.sql) với hai mã này và gán
+   `bronze_events`, `silver_orders` cho tên đầy đủ của hai bảng dev.
+   Lưu kết quả mốc trước. Bronze và Silver cần có dữ liệu, còn số dòng của
+   `new_generation` và `replay_run_id` cần bằng 0.
+
+#### Tạo namespace mới và chạy update
+
+1. Sau khi namespace cũ đã tắt, chạy `stream-toggle up` và đợi hoàn tất.
+   Ghi link workflow và xác nhận lượt này tạo namespace mới. Lấy SAS Send
+   mới theo [README simulator](../../src/streaming/simulator/README.md).
+   Pipeline đọc bản Listen qua scope `kv`.
+2. Cập nhật pipeline dev tại chỗ. Với pipeline do bundle quản lý, dùng cùng profile,
+   cấu hình và thư mục triển khai đã tạo pipeline. Chạy trong `bundles/`:
+
+   ```bash
+   databricks bundle deploy -t dev --profile "<profile>" --var "eh_generation=<mã mới>"
+   ```
+
+   Với pipeline dev tạo riêng, sửa `configuration.eh_generation` trên pipeline hiện
+   có và giữ các cấu hình còn lại. Kiểm tra ID sau khi lưu.
+3. Từ gốc repo, phát lại một lô đã có ở Silver mốc trước. Ví dụ dưới đây phát
+   50 đơn đầu của cùng bộ CSV, phù hợp với mốc đã nạp toàn bộ train hoặc đã
+   nạp ít nhất 50 đơn đầu. Thay `ad-st-08-replay-01` bằng `replay_run_id` đã
+   chọn, dùng giá trị giống hệt trong truy vấn đối soát.
+
+   ```bash
+   PYTHONPATH=src uv run --frozen --extra ingest python -m streaming.simulator.simulate --data-dir data/instacart --send --limit 50 --run-id ad-st-08-replay-01
+   unset EH_SEND_CONN
+   ```
+
+4. Chạy update thường. Có thể dùng **Refresh selection** với cùng bốn bảng của
+   §6.1. Giữ `full_refresh` tắt và giữ nguyên checkpoint của các flow khác.
+   Trong event log, kiểm tra update hoàn tất và flow `kafka_<mã mới>` đã ghi dữ liệu.
+
+#### Tiêu chí và minh chứng
+
+Chạy lại truy vấn với cùng tham số. Với `N` là số sự kiện của lô replay đã
+được broker xác nhận, đối chiếu ba mục của [#71](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/71).
+
+| Tiêu chí | Kỳ vọng |
+|---|---|
+| Flow mới | Cùng pipeline ID, update ở trạng thái `COMPLETED`, có flow `kafka_<mã mới>` và `new_min_offset = 0` trên hub mới |
+| Bronze | `previous_bronze_rows` và `previous_bronze_checksum` giữ nguyên. `bronze_rows` tăng đúng `N`. `new_generation_rows`, `new_replay_rows` và `new_kafka_keys` đều bằng `N` |
+| Silver | `silver_rows = silver_order_keys` ở cả hai mốc và bằng số đơn mốc trước. `silver_replayed_orders = N` sau update xác nhận các đơn cũ được cập nhật |
+
+Lưu hai kết quả SQL, tên flow, hai mã thế hệ, update ID, giờ UTC, số xác nhận
+broker và link workflow trong `docs/de/evidence/ad-st-08/`. Tắt namespace thử
+nghiệm qua `stream-toggle down` khi buổi chạy kết thúc và ghi link lượt tắt.
+Nếu đổi flow lỗi, ghi lại lỗi, thống nhất phương án giữ một namespace suốt
+giai đoạn demo và ghi chi phí phát sinh vào báo cáo.
+
 ## 7. Diễn tập lỗi (bằng chứng cho báo cáo)
 
 Mỗi kịch bản cần ghi đủ 4 thứ: **ảnh lỗi**, **lệnh chạy lại**, **ảnh đối soát trước/sau**, **giải thích ngắn**.
