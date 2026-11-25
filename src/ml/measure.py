@@ -87,6 +87,6 @@ def time_limit(sc, minutes: float, group: str) -> Iterator[threading.Event]:
         yield expired
     finally:
         timer.cancel()
-        clear_job_group = getattr(sc, "clearJobGroup", None)
-        if clear_job_group is not None:
-            clear_job_group()
+        # PySpark không có clearJobGroup: gỡ các thuộc tính setJobGroup đã đặt để job sau không mang group cũ.
+        for key in ("spark.jobGroup.id", "spark.job.description", "spark.job.interruptOnCancel"):
+            sc.setLocalProperty(key, None)
