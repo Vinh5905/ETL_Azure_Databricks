@@ -34,7 +34,7 @@ variables:
     description: Tiền tố schema; dev riêng từng người, prod không có tiền tố
     default: ""
   warehouse_id:
-    description: Serverless SQL warehouse cho các task vận hành (AD-DE-18)
+    description: Serverless SQL warehouse cho ba sql_task của job DS (resources/jobs_ds.yml)
     lookup:
       warehouse: wh-instacart-bi
   batch_email_notifications:

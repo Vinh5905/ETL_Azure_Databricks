@@ -150,13 +150,15 @@ Nguyên tắc: làm mục 1–3 khi chạm mốc 50% (email budget 50 USD). Hi�
 | 4 | Job và pipeline classic giữ đúng policy single-node; pipeline dev không bật `continuous` | P2, P3 | Tránh chạy liên tục 4 vCPU (khoảng 0,5 USD/giờ, gồm DBU) |
 | 5 | Khi chạm 75%: tạm dừng job ADF theo lịch (`40-orchestration`), chỉ chạy tay lúc cần số liệu | P1 | Phí ADF và job cluster theo lịch |
 | 6 | **Áp dụng từ 2026-11-20:** chỉ dùng warehouse ở bước nghiệm thu, theo quy tắc ở §6 | Mọi người | Phần truy vấn tay, khoảng 3/4 thời gian chạy warehouse ngày 18–19/11 |
-| 7 | Đề xuất cho AD-DE-18 (#54): bốn task SQL của job batch chạy bằng Spark trên serverless job thay vì `sql_task`, hoặc bản dev được bỏ qua các task này (§6.3) | P2 | Phần của service principal, khoảng 22–30% thời gian chạy warehouse; chưa đo số thật |
+| 7 | AD-DE-18 (#54) chuyển bốn bước SQL của job batch sang Spark serverless (§6.3) | P2 | Loại bốn lượt gọi warehouse trên mỗi job run. Chưa đo chi phí thực tế sau chuyển đổi |
 
 ## 6. Quy tắc dùng SQL warehouse
 
 Áp dụng từ 2026-11-20. Lý do: warehouse `wh-instacart-bi` chiếm khoảng 2/3 chi phí tuần đầu (§3), và phần lớn là truy vấn tay rải rác trong ngày.
 
-Không chặn được bằng quyền: mọi thành viên đều là admin workspace, nên bỏ `CAN_USE` không có tác dụng. Cũng không xóa warehouse tới cuối kỳ được, vì bundle tra warehouse theo tên (`bundles/databricks.yml`, biến `warehouse_id`). Vì vậy quy tắc này dựa vào việc mọi người và mọi agent cùng làm theo.
+Mọi thành viên đều là admin workspace, nên bỏ `CAN_USE` không chặn được truy vấn. Giữ warehouse
+để phục vụ đối soát, BI và các `sql_task` của job DS; bundle tra warehouse theo tên (`bundles/databricks.yml`,
+biến `warehouse_id`) nên không xóa được tới cuối kỳ. Việc giới hạn thời gian chạy phụ thuộc vào cách nhóm sử dụng.
 
 ### 6.1 Cái gì bật warehouse
 
@@ -167,7 +169,8 @@ Không chặn được bằng quyền: mọi thành viên đều là admin works
 | Job `ds-prepare` | Không | Chạy SQL bằng Spark (`src/tasks/ds_prepare/run_sql.py`) |
 | Pipeline `instacart_batch` chạy riêng | Không | Tốn cluster pipeline, không tốn warehouse |
 | ADF `pl_master` | Chưa | Trigger đang tắt (`triggers_on = false`) |
-| Job `instacart-batch-medallion`, cả bản `[dev …]` | **Có** | Bốn `sql_task`: `resolve_pipeline_update`, `collect_dq`, `init_reconciliation`, `reconcile` |
+| Job `instacart-batch-medallion`, cả bản `[dev …]` | Không | `resolve_pipeline_update`, `collect_dq`, `init_reconciliation`, `reconcile` chạy trên Spark serverless |
+| Job `instacart-ds-benchmark` | **Có** | Ba `sql_task`: `ddl_ml`, `ingest_local`, `publish_gold` |
 | SQL editor, tab *Sample data* của Catalog Explorer, notebook gắn warehouse, dashboard, Power BI | **Có** | Mỗi truy vấn giữ warehouse sống thêm 2 phút |
 
 ### 6.2 Quy tắc
@@ -183,10 +186,7 @@ Không chặn được bằng quyền: mọi thành viên đều là admin works
 4. **Power BI:** làm mockup trên file xuất từ dữ liệu mẫu. Chỉ nối warehouse khi dựng semantic model thật, và theo §5 mục 2.
 5. **Agent** (Claude Code, Codex…) không tự chạy truy vấn trên warehouse khi người dùng chưa nói là đang nghiệm thu.
 
-### 6.3 Đề xuất thay đổi job batch (gửi P2 ở #54)
+### 6.3 Compute vận hành của job batch (AD-DE-18)
 
-Bốn task SQL của job batch đang bật warehouse mỗi lần job chạy, kể cả bản dev. Hai hướng:
-- Chạy các file SQL đó bằng Spark trên serverless job, theo cách `ds_prepare/run_sql.py` đang làm. Đơn giá serverless job là 0,52 USD/DBU, thấp hơn serverless SQL 0,95 USD/DBU (§3), và không có thời gian chờ tắt của warehouse.
-- Hoặc thêm biến bundle để bản dev bỏ qua bốn task này khi chỉ thử pipeline.
-
-Chưa đo số tiết kiệm thật. Quyết định thuộc P2, ghi vào AD-DE-18.
+Job chạy đủ bốn bước SQL trên Spark serverless. Compute của pipeline batch vẫn theo policy single-node.
+Chưa có số đo DBU hoặc chi phí thực tế sau chuyển đổi. Xem [runbook batch](../de/06_van_hanh_chay_lai.md#2-job-điều-phối-batch).

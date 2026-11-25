@@ -759,7 +759,7 @@ Thay khung spark_python_task bằng job thật: pipeline_task → create_views �
 **Việc cần làm**
 
 1. Viết lại bundles/resources/jobs_batch.yml theo de/06 §2 (giữ name instacart-batch-medallion, tham số adf_run_id)
-2. sql_task trên warehouse_id lookup wh-instacart-bi
+2. Chạy bốn bước SQL bằng notebook Spark serverless, không bật warehouse (chi_phi_quota §6.3)
 3. Thêm notification email khi lỗi hoặc chạy > 60 phút
 4. Deploy dev và chạy trọn job
 

@@ -35,12 +35,12 @@ resources:
           run_if: ALL_DONE
           max_retries: 2
           min_retry_interval_millis: 10000
-          sql_task:
-            file:
-              path: ../../src/tasks/resolve_pipeline_update.sql
-              source: WORKSPACE
-            warehouse_id: ${var.warehouse_id}
-            parameters:
+          notebook_task:
+            notebook_path: ../../src/tasks/run_batch_sql.py
+            source: WORKSPACE
+            base_parameters:
+              sql_dir: ${workspace.file_path}/src/tasks
+              sql_step: resolve_pipeline_update
               catalog: ${var.catalog}
               ops_schema: ${var.schema_prefix}ops
               pipeline_id: ${resources.pipelines.instacart_batch.id}
@@ -49,39 +49,39 @@ resources:
         - task_key: collect_dq
           depends_on:
             - task_key: resolve_pipeline_update
-          sql_task:
-            file:
-              path: ../../src/tasks/collect_dq.sql
-              source: WORKSPACE
-            warehouse_id: ${var.warehouse_id}
-            parameters:
+          notebook_task:
+            notebook_path: ../../src/tasks/run_batch_sql.py
+            source: WORKSPACE
+            base_parameters:
+              sql_dir: ${workspace.file_path}/src/tasks
+              sql_step: collect_dq
               catalog: ${var.catalog}
               ops_schema: ${var.schema_prefix}ops
               event_log_table: event_log_batch
-              update_id: "{{tasks.resolve_pipeline_update.output.first_row.update_id}}"
+              update_id: "{{tasks.resolve_pipeline_update.values.update_id}}"
 
         - task_key: init_reconciliation
           depends_on:
             - task_key: pipeline_batch
             - task_key: collect_dq
-          sql_task:
-            file:
-              path: ../../src/tasks/init_reconciliation.sql
-              source: WORKSPACE
-            warehouse_id: ${var.warehouse_id}
-            parameters:
+          notebook_task:
+            notebook_path: ../../src/tasks/run_batch_sql.py
+            source: WORKSPACE
+            base_parameters:
+              sql_dir: ${workspace.file_path}/src/tasks
+              sql_step: init_reconciliation
               catalog: ${var.catalog}
               ops_schema: ${var.schema_prefix}ops
 
         - task_key: reconcile
           depends_on:
             - task_key: init_reconciliation
-          sql_task:
-            file:
-              path: ../../src/tasks/reconcile.sql
-              source: WORKSPACE
-            warehouse_id: ${var.warehouse_id}
-            parameters:
+          notebook_task:
+            notebook_path: ../../src/tasks/run_batch_sql.py
+            source: WORKSPACE
+            base_parameters:
+              sql_dir: ${workspace.file_path}/src/tasks
+              sql_step: reconcile
               catalog: ${var.catalog}
               ops_schema: ${var.schema_prefix}ops
               bronze_schema: ${var.schema_prefix}bronze

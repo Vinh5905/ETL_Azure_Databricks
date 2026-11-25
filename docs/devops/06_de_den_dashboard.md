@@ -60,8 +60,8 @@ Nhóm đã chọn **Lakeflow Declarative Pipelines** (LDP, edition Advanced) cho
 
 `pipeline_batch → resolve_pipeline_update → collect_dq → init_reconciliation → reconcile`
 
-Các task SQL chạy trên warehouse serverless hiện có. `resolve_pipeline_update` dùng event log để
-truyền đúng update ID cho collector, kể cả khi repair sinh task run ID mới. Job gọi pipeline theo ID,
+Bốn bước SQL chạy bằng notebook Spark serverless. `resolve_pipeline_update` dùng event log và Jobs task value
+để truyền đúng update ID cho collector, kể cả khi repair sinh task run ID mới. Job gọi pipeline theo ID,
 giữ tham số `adf_run_id` cho ADF và chạy đối soát batch. Phần hợp nhất view, kiểm G3/G4 và refresh BI
 được nối sau khi có đủ nguồn stream/Gold và task AD-DE-25. Job DS vẫn chạy riêng.
 Xem [cấu hình job](../../bundles/resources/jobs_batch.yml) và [runbook batch](../de/06_van_hanh_chay_lai.md#2-job-điều-phối-batch).

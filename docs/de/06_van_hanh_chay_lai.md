@@ -43,12 +43,17 @@ lỗi, `record_failed_batch` ghi nhánh audit riêng. Hai nhánh ghi `ops.pipeli
 theo cùng job run ID và lưu `adf_run_id` để đối chiếu ADF. Cấu hình và trạng thái API
 nằm ở [07 §7](07_power_bi.md#7-làm-mới-dữ-liệu-sau-mỗi-lần-pipeline-chạy).
 
-Task SQL dùng serverless warehouse `wh-instacart-bi` đã có. Tại G3 hiện tại, bundle giữ
-`enable_baskets=false`. Hai view, kiểm G3/G4 và `refresh_bi` được nối vào khi có đủ nguồn và task
-phụ thuộc. Chạy batch tách thời gian với crawler, seed và stream để vừa quota 4 vCPU.
+Bốn bước SQL chạy trên Spark serverless qua [notebook](../../src/tasks/run_batch_sql.py).
+Mỗi bước đọc file SQL tương ứng và chạy tuần tự trong cùng SparkSession, bind tham số theo tên.
+`resolve_pipeline_update` công bố `update_id` qua Jobs task value để `collect_dq` nhận đúng lượt.
+Warehouse `wh-instacart-bi` phục vụ truy vấn nghiệm thu và BI.
+Bundle giữ `enable_baskets=false` cho lượt batch cơ bản. Phần hai view và kiểm G3/G4 đợi đủ nguồn.
+Chạy batch tách thời gian với crawler, seed và stream để vừa quota 4 vCPU.
 
 Khi repair task pipeline, dùng task run ID mới và chạy lại các task phụ thuộc. Khi chỉ repair
 `reconcile`, làm lại với cùng job run ID và ngày kiểm tra. Mục 4 mô tả khóa MERGE và cách đọc hàng lỗi.
+Khi gọi Jobs Repair API cho run từ ADF, truyền lại `job_parameters.adf_run_id` của run gốc
+để các task audit nhận đúng mã ADF.
 
 Cảnh báo lỗi và vượt 60 phút nhận danh sách email từ biến bundle `batch_email_notifications`.
 Ở dev, đặt giá trị trong `bundles/.databricks/bundle/dev/variable-overrides.json`. Giá trị của biến là
@@ -61,12 +66,30 @@ từ secret `DATABRICKS_BATCH_EMAIL_NOTIFICATIONS` trong environment `prod`.
 
 Lý do: dữ liệu DS là bản cố định nên không cần train lại mỗi đêm, và lưới thực nghiệm chạy hàng giờ sẽ chặn pipeline DE trên 4 vCPU. Các job này chạy ngoài giờ batch, và lịch `instacart-stream-15m` phải tạm dừng trong lúc chạy.
 
-`warehouse_id` là biến DAB, lấy bằng lookup:
+### Nghiệm thu AD-DE-18 trên dev
 
-```yaml
-variables:
-  warehouse_id: { lookup: { warehouse: wh-instacart-bi } }
-```
+Ngày 25/11/2026, strict bundle validate và deploy job dev cách ly đạt. Job dùng pipeline batch
+dev hiện có và cấu hình `enable_baskets=false`. Bốn bước vận hành là notebook Spark serverless.
+Các kiểm tra chạy trên release Instacart 2017.
+
+Lượt thường `613705116142905` hoàn tất từ `pipeline_batch` đến `reconcile` với đủ 22 check đạt.
+`collect_dq` nhận update `c13d36d3-059a-4b22-bb9e-4c3aed18818f` qua task value.
+Nhánh audit `refresh_bi` thành công với cờ refresh tắt.
+[Job dev](https://adb-7405615740735217.17.azuredatabricks.net/?o=7405615740735217#job/922536585964584/run/613705116142905).
+
+Lượt `453180129333029` chuyển `CANCELED` khi update `7e7c0f64-6e85-4bc3-8eef-33bf44fa27bc`
+đang chạy. Repair cùng job run tạo pipeline task run `384407223960327` và update mới
+`156e705e-42df-48a7-bf56-0f06033a402a`. Cả hai lượt hoàn tất có 22/22 check đạt,
+29 khóa DQ và 0 khóa trùng. Đối chiếu `create_update` xác nhận collector nhận đúng update ở mỗi lượt.
+[Job dev dừng và repair](https://adb-7405615740735217.17.azuredatabricks.net/?o=7405615740735217#job/922536585964584/run/453180129333029).
+
+Lần repair đầu bỏ qua `job_parameters` nên audit dùng `manual`. Repair riêng task audit với
+`adf_run_id` gốc đã cập nhật đúng bản ghi cùng run. Statement
+`01f1e8a1-f2be-1d07-b0ac-5f92b40b784f` xác nhận cả hai dòng audit `succeeded`, đủ 22 check
+đạt và đúng mã đầu vào của từng lượt.
+
+Nghiệm thu cuối của issue [#54](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/54)
+vẫn theo dõi AD-DE-15, AD-DE-16 và AD-DE-17. Phần tạo view và đối soát G3/G4 cần đủ nguồn stream.
 
 ## 3. Event log và `ops.dq_results`
 
