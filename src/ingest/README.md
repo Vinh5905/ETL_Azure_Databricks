@@ -33,6 +33,9 @@ Mã khuyến mãi không tái dùng. Các đợt sau chỉ chọn gia hạn/hủ
 
 - Lấy application lock theo transaction trước khi kiểm/tạo `etl.seed_wave` và ghi nguồn.
 - Bắt buộc chạy tuần tự 0 → 1 → 2 → 3 → 4. Wave 0 cần hai bảng nguồn trắng, không tự xóa dữ liệu cũ.
+- Trước wave 1, công bố snapshot giá sau wave 0. Seed kiểm nhật ký theo chế độ nguồn và yêu cầu
+  snapshot có đủ số dòng của danh mục, hoàn tất sau khi wave 0 đã áp dụng. Chạy ingest giữa các wave sau
+  để giữ từng phiên bản giá và khuyến mãi.
 - Ghi marker chứa wave, seed, hash danh mục/kế hoạch, chế độ nguồn và giờ áp dụng UTC.
 - DML theo lô tối đa 500 câu gửi SQL, **không commit từng lô**. Marker và toàn bộ DML cùng commit;
   lỗi ở giữa rollback tất cả. Không dùng bulk-copy tự commit theo batch.
@@ -91,6 +94,8 @@ tham số `products_csv` có thể trỏ CSV thật khác. Với nhánh dự ph�
 Không đưa fixture vào tham số job để vượt kiểm đủ danh mục.
 
 Sau wave 0 kiểm `COUNT(*) = 49688`, chạy lại và kiểm thông báo bỏ qua/marker không tăng.
+Chạy `pl_ingest_retail_db` để công bố snapshot wave 0 trước khi chạy wave 1. Với nhánh dự phòng,
+dùng pipeline timestamp tương ứng. Xem [runbook phục hồi giá gốc](../../docs/de/01_ingest_landing.md#khôi-phục-giá-gốc-issue-215).
 Sau wave 1 chờ CDC capture bắt kịp rồi kiểm op 4 của giá và op 1 của khuyến mãi trong cửa sổ mới.
 Chỉ cho ADF Lookup tiếp khi seed đã commit và CDC đã capture; không deploy prod bằng lệnh local.
 

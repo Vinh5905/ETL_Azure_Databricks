@@ -207,6 +207,8 @@ Run ID cha dùng để truy vết và retry setter, không xuất hiện trong �
 
 Snapshot đọc bảng hiện hành. Seed cần commit và CDC bắt kịp trước Lookup, sau đó không chạy seed
 đồng thời với lượt ingest. Một pipeline có concurrency 1 và là writer duy nhất cho đường dẫn này.
+Chạy ingest và xác nhận snapshot giá có đủ 49.688 dòng sau wave 0, trước khi chạy wave 1.
+Seed từ chối chạy wave 1 nếu chưa có bản ghi snapshot hợp lệ trong nhật ký của chế độ đang dùng.
 
 JSON, thứ tự nạp resource, quyền và các bước debug/rerun nằm ở
 [ADF retail CDC](../../adf/README_RETAIL_CDC.md).
@@ -219,6 +221,53 @@ JSON, thứ tự nạp resource, quyền và các bước debug/rerun nằm ở
 | Lỗi sau khi công bố, trước khi gọi SP | Dữ liệu đã ở `window=A_B`, watermark chưa tăng | Rerun dùng Lookup và ID cũ. Nếu ADF chạy lại cả nhánh Switch, đường dẫn vẫn là `window=A_B` |
 | Chạy lại **toàn bộ** pipeline sau lỗi như trên | `lk_window` tính lại: `from` cũ, `to` mới lớn hơn → thư mục `window=A_C` chứa lại các thay đổi của `A_B` | Bronze có **bản sao** của các thay đổi. Silver loại trùng theo `(_lsn, _seqval, khóa)` trước khi `AUTO CDC` ([03 §2.2](03_silver_cdc_scd_dq.md)) |
 | Pipeline dừng lâu hơn retention (7 ngày) | `increment(last_lsn) < min_lsn` → `mode = snapshot` | Chụp lại toàn bảng. Silver SCD2 xem như upsert; khoảng thay đổi bị mất được ghi nhận trong `etl.run_log` |
+
+#### Khôi phục giá gốc (issue #215)
+
+Snapshot giá ban đầu được chụp sau wave 1. Snapshot có đủ 49.688 sản phẩm, nhưng 2.484 khóa
+đã mang giá ngày `2026-03-01`. Giá từ `2015-01-01` của nhóm này cần được đưa lại vào nguồn
+landing để `product_prices_scd2` có thể tạo khoảng hiệu lực cũ.
+
+1. Tải `products.csv` của release đã dùng khi seed và một file Parquet từ snapshot giá ban đầu
+   trong `retail_db/product_prices/snapshot=<lsn>/`. Kiểm tra LSN do lần ingest đầu tiên ghi nhận.
+2. Dựng file ở thư mục staging local. Script tái lập wave 0 và wave 1 với seed 42, kiểm **mọi** khóa,
+   giá, đơn vị tiền tệ và timestamp trong snapshot trước khi xuất đúng 2.484 giá gốc có `updated_at`
+   bằng `2015-01-01`. LSN trong file phục hồi tham chiếu snapshot ban đầu và `_op` là `0`.
+
+   ```bash
+   uv run python scripts/recover_retail_baseline.py \
+     --products-csv "$PRODUCTS_CSV" --initial-snapshot "$SNAPSHOT_PARQUET" --output-dir "$STAGING_DIR"
+   ```
+
+3. Kiểm thử trước với landing và các bảng dev cách ly. Khi P1 duyệt chạy prod, công bố nguyên file
+   `recovery=<hash>/part-00000.parquet` vào dưới `landing/retail_db/product_prices/`. Đưa file vào
+   `_staging` ngoài cây đọc của Auto Loader, rồi dùng rename ADLS với điều kiện đích chưa tồn tại.
+   Nếu đích đã tồn tại, kiểm SHA-256 của file đã công bố trước khi tiếp tục. Giữ nguyên snapshot,
+   CDC watermark và checkpoint. Tham chiếu [điều kiện rename của ADLS](https://learn.microsoft.com/en-us/rest/api/storageservices/datalakestoragegen2/path/create).
+4. Chạy update batch thường để Bronze append file và Silver xử lý sự kiện đến muộn theo `updated_at`.
+   Kiểm file phục hồi chỉ xuất hiện một lần ở Bronze, đủ 2.484 dòng. Kiểm truy vấn dưới đây trên
+   Silver, rồi refresh Gold fact và kiểm `g4.fact.unpriced = 0` trên tập dữ liệu nghiệm thu của target.
+
+   ```sql
+   WITH history AS (
+     SELECT product_id, count_if(__START_AT = TIMESTAMP '2015-01-01 00:00:00') AS baseline_versions
+     FROM product_prices_history
+     GROUP BY product_id
+   )
+   SELECT count(*) AS products, count_if(baseline_versions <> 1) AS missing_or_duplicate_baselines
+   FROM history;
+   ```
+
+   Full release cần `products = 49688` và `missing_or_duplicate_baselines = 0`, chạy với UTC.
+   Chạy thêm một update thường trên cùng dữ liệu để kiểm số khóa và số phiên bản không tăng.
+
+Nghiệm thu dev cách ly ngày 23/11/2026 dùng các file CDC thật và tập train từ Bronze với timestamp mô phỏng.
+Lượt đối chứng tái hiện 2.484 sản phẩm thiếu giá gốc. Sau khi thêm đúng một file, Bronze nạp 2.484 dòng,
+Silver có đủ 49.688 giá gốc và Gold có **0 dòng thiếu giá trên 33.819.106 dòng**.
+Lượt chạy lại cho cùng 57.140 phiên bản giá ở Silver, với checksum và số khóa giữ nguyên.
+[Update đối chứng](https://adb-7405615740735217.17.azuredatabricks.net/#joblist/pipelines/8976818a-8bfe-4384-9c7e-97ddd1cb1611/updates/e3682e86-fc45-4f77-a272-372e44845792) ·
+[Update phục hồi](https://adb-7405615740735217.17.azuredatabricks.net/#joblist/pipelines/8976818a-8bfe-4384-9c7e-97ddd1cb1611/updates/057878be-0d09-4e7a-a694-bd200facaf4f) ·
+[Update chạy lại](https://adb-7405615740735217.17.azuredatabricks.net/#joblist/pipelines/8976818a-8bfe-4384-9c7e-97ddd1cb1611/updates/a763e6ec-afe0-49b3-9881-f6d702c45fcb).
 
 ### 3.7 Dự phòng nếu không bật được CDC
 

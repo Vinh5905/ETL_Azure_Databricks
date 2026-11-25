@@ -63,10 +63,34 @@ def check_database(credentials, mode):
         assert snapshot() == original
         print(f"PASS {mode}: 49.688 giá, 3.000 khuyến mãi, retry wave 0 không đổi dữ liệu", flush=True)
 
+        second = generate_wave(PRODUCTS, 1)
+        try:
+            apply_wave(writer, second, mode)
+            raise AssertionError("Không được đổi giá trước khi snapshot wave 0 đã công bố")
+        except ValueError as error:
+            assert "Phải công bố snapshot giá đầy đủ của wave 0" in str(error)
+        assert snapshot() == original
+        cur.execute("SELECT COUNT(*) FROM etl.seed_wave")
+        assert cur.fetchone()[0] == 1
+
+        # Mô phỏng ADF xác nhận Copy/publish sau wave 0, qua đúng setter của mode đang chạy.
+        if mode == "cdc":
+            cur.execute("EXEC sys.sp_cdc_scan @continuous = 0")
+            cur.execute("""
+                DECLARE @lsn varchar(22) = CONVERT(varchar(22), sys.fn_cdc_get_max_lsn(), 1);
+                EXEC etl.usp_set_cdc_watermark @capture_instance = N'dbo_product_prices', @to_lsn = @lsn,
+                    @adf_run_id = 'test-wave-0', @mode = 'snapshot', @rows = 49688;
+            """)
+        else:
+            cur.execute("""
+                EXEC etl.usp_set_ts_watermark @capture_instance = N'dbo_product_prices', @to_ts = '2015-01-01',
+                    @adf_run_id = 'test-wave-0', @mode = 'snapshot', @rows = 49688;
+            """)
+        print(f"PASS {mode}: wave 1 phải chờ snapshot giá wave 0 đã công bố đủ", flush=True)
+
         # Gây lỗi sau khi giá đã UPDATE để kiểm rollback dữ liệu và marker của cả đợt.
         cur.execute("""CREATE TRIGGER dbo.test_seed_reject ON dbo.promotions AFTER INSERT AS
                        THROW 51998, N'Lỗi tự dựng để kiểm rollback seed', 1;""")
-        second = generate_wave(PRODUCTS, 1)
         try:
             apply_wave(writer, second, mode)
             raise AssertionError("Phải nhận lỗi trigger")

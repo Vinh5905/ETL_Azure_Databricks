@@ -220,6 +220,21 @@ def apply_wave(connection, plan: Wave, source_mode: str = "cdc") -> bool:
             cursor.execute("SELECT COUNT(*) FROM dbo.product_prices")
             if cursor.fetchone()[0] != plan.product_count:
                 raise ValueError("Số sản phẩm nguồn không khớp kế hoạch seed")
+        if plan.wave == 1:
+            # Snapshot đọc bảng hiện hành. Sau UPDATE đầu tiên, giá wave 0 không còn ở bảng nguồn.
+            run_log = "etl.run_log" if source_mode == "cdc" else "etl.ts_run_log"
+            cursor.execute(
+                f"""
+                SELECT COUNT(*) FROM {run_log} AS log
+                CROSS JOIN etl.seed_wave AS seed
+                WHERE seed.wave = 0 AND log.capture_instance = N'dbo_product_prices'
+                  AND log.mode = 'snapshot' AND log.rows_copied = %s
+                  AND log.finished_at >= seed.applied_at;
+                """,
+                (plan.product_count,),
+            )
+            if cursor.fetchone()[0] == 0:
+                raise ValueError("Phải công bố snapshot giá đầy đủ của wave 0 trước khi chạy wave 1")
         _execute_batches(
             cursor,
             "INSERT INTO dbo.product_prices(product_id, unit_price, currency, updated_at) VALUES (%s, %s, %s, %s)",
