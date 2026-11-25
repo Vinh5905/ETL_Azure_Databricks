@@ -50,13 +50,13 @@ ranked AS (
 SELECT product_id, recommended_product_id, confidence, lift, rank FROM ranked WHERE rank <= 10;
 
 CREATE OR REPLACE VIEW instacart.gold.experiment_metrics
-COMMENT 'Trung vị phép đo, tốc độ tương đối và số lần thành công hoặc timeout theo cấu hình.'
+COMMENT 'Trung vị (chính xác) phép đo, tốc độ tương đối và số lần thành công hoặc timeout theo cấu hình.'
 AS
 WITH metrics AS (
   SELECT experiment, platform, algo, grain, scale_pct, top_n, min_support, cores, sweep,
-         percentile_approx(wall_s, 0.5) AS wall_s,
-         percentile_approx(peak_mem_mb, 0.5) AS peak_mem_mb,
-         percentile_approx(spill_mb, 0.5) AS spill_mb,
+         percentile(wall_s, 0.5) AS wall_s,
+         percentile(peak_mem_mb, 0.5) AS peak_mem_mb,
+         percentile(spill_mb, 0.5) AS spill_mb,
          max(n_itemsets) AS n_itemsets,
          max(n_rules_single) AS n_rules_single,
          max(n_rules_all) AS n_rules_all,

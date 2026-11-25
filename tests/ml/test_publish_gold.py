@@ -4,6 +4,7 @@ import re
 import uuid
 from pathlib import Path
 
+import pytest
 from pyspark.sql.types import (
     DoubleType,
     IntegerType,
@@ -69,6 +70,9 @@ def test_publish_gold_views_map_champion_rules_and_experiment_metrics(spark):
             ("E2", "databricks", "dapriori", "product", 25, None, 0.01, 4, "", "ok", 5.0, 135.0, 3.0, 13, 7, 8),
             ("E2", "databricks", "dapriori", "product", 25, None, 0.01, 4, "", "ok", 6.0, 140.0, 4.0, 14, 8, 9),
             ("E2", "databricks", "dapriori", "product", 25, None, 0.01, 4, "", "timeout", None, 150.0, 5.0, 0, 0, 0),
+            # 2 lần ok (số chẵn): trung vị chính xác là 3.0, percentile_approx sẽ trả 2.0.
+            ("E2", "databricks", "dapriori", "product", 25, None, 0.01, 2, "", "ok", 2.0, 100.0, 0.0, 12, 6, 7),
+            ("E2", "databricks", "dapriori", "product", 25, None, 0.01, 2, "", "ok", 4.0, 100.0, 0.0, 12, 6, 7),
         ]
         run_schema = StructType(
             [
@@ -123,6 +127,9 @@ def test_publish_gold_views_map_champion_rules_and_experiment_metrics(spark):
         assert (scaled.n_ok, scaled.n_timeout) == (3, 1)
         assert scaled.speedup == 0.4
         assert scaled.efficiency == 0.1
+        even = next(row for row in metrics if row.cores == 2)
+        assert even.wall_s == 3.0
+        assert even.speedup == pytest.approx(2 / 3)
         assert spark.table(f"{schemas['gold']}.holdout_metrics").count() == 1
     finally:
         for database in schemas.values():

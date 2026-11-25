@@ -216,7 +216,7 @@ QUALIFY rank <= 10;
 CREATE OR REPLACE VIEW instacart.gold.experiment_metrics
 COMMENT 'Trung vị 3 lần đo theo tổ hợp, kèm speedup và efficiency (Databricks + local)'
 AS
-WITH m AS (SELECT experiment, platform, algo, grain, scale_pct, top_n, min_support, cores,
+WITH m AS (SELECT experiment, platform, algo, grain, scale_pct, top_n, min_support, cores, sweep,
                   percentile(wall_s, 0.5) AS wall_s, percentile(peak_mem_mb, 0.5) AS peak_mem_mb,
                   percentile(spill_mb, 0.5) AS spill_mb, max(n_itemsets) AS n_itemsets,
                   max(n_rules_single) AS n_rules_single, max(n_rules_all) AS n_rules_all,
@@ -227,7 +227,7 @@ SELECT m.*, t1.wall_s / m.wall_s AS speedup, t1.wall_s / m.wall_s / m.cores AS e
 FROM m LEFT JOIN m t1
   ON t1.cores = 1 AND t1.experiment = m.experiment AND t1.platform = m.platform AND t1.algo = m.algo
  AND t1.grain = m.grain AND t1.scale_pct = m.scale_pct AND t1.min_support = m.min_support
- AND t1.top_n <=> m.top_n;
+ AND t1.top_n <=> m.top_n AND t1.sweep <=> m.sweep;
 
 CREATE OR REPLACE VIEW instacart.gold.holdout_metrics AS
 SELECT * FROM instacart.ml.holdout_metrics;
