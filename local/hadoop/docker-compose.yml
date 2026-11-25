@@ -1,0 +1,93 @@
+name: instacart-hadoop
+
+x-hadoop: &hadoop
+  build:
+    context: .
+  image: instacart-hadoop:3.3.6-spark-3.5.3
+  init: true
+  restart: unless-stopped
+
+services:
+  namenode:
+    <<: *hadoop
+    command: ["namenode"]
+    hostname: namenode
+    ports:
+      - "9870:9870"
+      - "8020:8020"
+    volumes:
+      - namenode:/hadoop/nn
+
+  datanode1:
+    <<: *hadoop
+    command: ["datanode"]
+    hostname: datanode1
+    depends_on:
+      - namenode
+    volumes:
+      - datanode1:/hadoop/dn
+
+  datanode2:
+    <<: *hadoop
+    command: ["datanode"]
+    hostname: datanode2
+    depends_on:
+      - namenode
+    volumes:
+      - datanode2:/hadoop/dn
+
+  resourcemanager:
+    <<: *hadoop
+    command: ["resourcemanager"]
+    hostname: resourcemanager
+    ports:
+      - "8088:8088"
+
+  nodemanager:
+    <<: *hadoop
+    command: ["nodemanager"]
+    hostname: nodemanager
+    depends_on:
+      - resourcemanager
+      - datanode1
+      - datanode2
+    cpus: 8.0
+    mem_limit: 14g
+    mem_reservation: 12g
+
+  historyserver:
+    <<: *hadoop
+    command: ["historyserver"]
+    hostname: historyserver
+    ports:
+      - "19888:19888"
+
+  sparkhistory:
+    <<: *hadoop
+    command: ["sparkhistory"]
+    hostname: sparkhistory
+    depends_on:
+      - namenode
+    ports:
+      - "18080:18080"
+
+  client:
+    <<: *hadoop
+    command: ["client"]
+    hostname: client
+    working_dir: /work
+    depends_on:
+      - namenode
+      - resourcemanager
+      - nodemanager
+    volumes:
+      - ../../data/ds:/data/ds:ro
+      - ../../src/mapreduce/target:/work/jars:ro
+      - ../../src/ml/local:/work/spark:ro
+      - ./scripts:/work/scripts:ro
+      - ./results:/work/results
+
+volumes:
+  namenode:
+  datanode1:
+  datanode2:
