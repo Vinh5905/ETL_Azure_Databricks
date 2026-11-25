@@ -22,7 +22,7 @@ def _credential():
 
 
 def _load_fallback_model():
-    """Đọc Parquet một lần bằng managed identity; dùng cùng BasketRules với model pyfunc."""
+    """Đọc Parquet một lần bằng managed identity; dùng cùng lõi xếp hạng với model pyfunc (không cần MLflow)."""
     global _fallback_model
     if _fallback_model is not None:
         return _fallback_model
@@ -30,8 +30,8 @@ def _load_fallback_model():
 
     account = os.environ["STORAGE_ACCOUNT_NAME"]
     container = os.environ.get("DS_CONTAINER_NAME", "ds-data")
-    rules_blob = os.environ.get("RULES_BLOB_NAME", "exports/serving/rules.parquet")
-    items_blob = os.environ.get("ITEMS_BLOB_NAME", "exports/serving/items.parquet")
+    rules_blob = os.environ.get("RULES_BLOB_NAME", "serving/rules.parquet")
+    items_blob = os.environ.get("ITEMS_BLOB_NAME", "serving/items.parquet")
     service = BlobServiceClient(f"https://{account}.blob.core.windows.net", credential=_credential())
     client = service.get_container_client(container)
     with tempfile.TemporaryDirectory() as temp_dir:
@@ -43,17 +43,16 @@ def _load_fallback_model():
         app_root = Path(__file__).resolve().parents[1]
         source_roots = (app_root, app_root / "src", Path(__file__).resolve().parents[2] / "src")
         for source_root in source_roots:
-            if (source_root / "ml" / "serving" / "basket_rules.py").is_file():
+            if (source_root / "ml" / "serving" / "basket_core.py").is_file():
                 if str(source_root) not in sys.path:
                     sys.path.insert(0, str(source_root))
                 break
         else:
-            raise RuntimeError("Function package thiếu src/ml/serving/basket_rules.py")
-        from ml.serving.basket_rules import BasketRules
+            raise RuntimeError("Function package thiếu gói ml (ml/serving/basket_core.py, ml/recommendations.py)")
+        from ml.serving.basket_core import BasketCore
 
-        model = BasketRules()
-        context = type("ModelContext", (), {"artifacts": {"rules": str(rules_path), "items": str(items_path)}})()
-        model.load_context(context)
+        model = BasketCore()
+        model.load(str(rules_path), str(items_path))
         # Giữ dữ liệu trong bộ nhớ trước khi thư mục tạm bị xóa.
         _fallback_model = model
     return _fallback_model

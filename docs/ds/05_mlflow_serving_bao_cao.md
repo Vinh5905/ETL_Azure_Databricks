@@ -45,7 +45,7 @@ Kết quả chọn ghi vào bảng `ml.champion (alias, run_key, min_confidence,
 
 Model Serving không chạy được model Spark (`FPGrowthModel`), vì endpoint phục vụ không có Spark. Vì vậy luật của champion được xuất ra file Parquet và bọc trong một model **`pyfunc` thuần Python**: tra luật theo vế trái, giống hệt logic SQL ở [04 §7.2](04_thuc_nghiem_danh_gia.md). Bản đầu của hình kiến trúc ghi "FPGrowthModel tốt nhất"; trên thực tế thứ được đăng ký là **luật của FP-Growth** đóng gói thành `pyfunc`.
 
-Code ở [`src/ml/serving/basket_rules.py`](../../src/ml/serving/basket_rules.py); phần xếp hạng nằm ở [`src/ml/recommendations.py`](../../src/ml/recommendations.py), dùng chung để không lệch với SQL đánh giá.
+Code ở [`src/ml/serving/basket_rules.py`](../../src/ml/serving/basket_rules.py), bọc lõi không phụ thuộc MLflow ở [`src/ml/serving/basket_core.py`](../../src/ml/serving/basket_core.py) (Function phương án B dùng lại lõi này, §3.3); phần xếp hạng nằm ở [`src/ml/recommendations.py`](../../src/ml/recommendations.py), dùng chung để không lệch với SQL đánh giá.
 
 - **Input:** cột `product_ids` (list[int]), tham số `k` (mặc định 10, trong khoảng 1..100).
 - **`load_context`:** đọc hai artifact Parquet: `rules` (`antecedent` list[int], `item`, `confidence`, `lift`) và `items` (`idx`, `product_id`, `product_name`). Danh sách món phổ biến giữ **cả danh mục** xếp theo `idx` (idx nhỏ = phổ biến nhất), để giỏ không kích hoạt luật nào vẫn đủ k món với mọi k ≤ 100.
@@ -176,7 +176,7 @@ def recommend(req: func.HttpRequest) -> func.HttpResponse:
 
 Function **tự chạy model**:
 - Lúc khởi động, đọc 2 file Parquet của champion (`rules`, `items`) từ container `ds-data/serving/` bằng managed identity (role *Storage Blob Data Reader* chỉ trên container `ds-data`).
-- Gọi thẳng `BasketRules._recommend`.
+- Gọi thẳng `BasketCore._recommend` (lõi của `BasketRules`, không cần MLflow nên Function không phải cài MLflow). Gói deploy phải kèm thư mục `ml/` (`ml/serving/basket_core.py`, `ml/recommendations.py`).
 
 Cách này vẫn có API thật và vẫn là FaaS, chỉ mất phần "model serving trong Databricks". Ghi rõ lựa chọn vào báo cáo.
 
