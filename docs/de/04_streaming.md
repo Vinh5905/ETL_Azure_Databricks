@@ -369,6 +369,8 @@ Trước khi chạy continuous, tạm dừng lịch batch và xác nhận các l
 ## 6. Quy trình phát lại (replay)
 
 Cây quyết định chạy lại (có nhánh replay) ở [06 §1](06_van_hanh_chay_lai.md).
+Các lệnh phát đủ tập train, truy vấn đối soát ba mốc và demo 95/5 nằm trong
+[runbook AD-ST-07](06_van_hanh_chay_lai.md#61-phát-lại-toàn-bộ-tập-train-ad-st-07).
 
 **Nguồn sự thật là file `order_products__train` trên landing, không phải Event Hubs.** Event Hubs chỉ giữ dữ liệu 1–7 ngày và bị xóa sau demo.
 
@@ -389,7 +391,8 @@ Cây quyết định chạy lại (có nhánh replay) ở [06 §1](06_van_hanh_c
 5. **Đối soát:**
    ```sql
    SELECT count(*) FROM instacart.silver.stream_orders;                 -- KHÔNG đổi (131.209)
-   SELECT replay_run_id, count(*) FROM instacart.bronze.order_events GROUP BY 1;   -- thêm một nhóm run mới
+   SELECT get_json_object(value_json, '$.replay_run_id') AS replay_run_id, count(*)
+   FROM instacart.bronze.order_events GROUP BY 1;                          -- thêm một nhóm run mới
    SELECT replay_run_id, count(*) FROM instacart.silver.stream_orders GROUP BY 1;  -- dòng chuyển sang run mới
    ```
 6. Ghi kết quả vào `ops.reconciliation`. Ảnh chụp bước 5 là bằng chứng "chạy lại không ghi đè, không nhân dữ liệu" cho báo cáo.

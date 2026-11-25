@@ -287,6 +287,65 @@ Hướng dẫn manifest/params, chạy hai lần, thử sai kỳ vọng, repair 
 | 14 | Ghi sai bảng thường (`ops.*`, `off_crawl_state`) | Số liệu lạ | `DESCRIBE HISTORY` → `RESTORE TABLE … TO VERSION AS OF n` | Delta giữ version cũ (mặc định 7 ngày) |
 | 15 | Job `ds-prepare` lỗi giữa chừng | Task đỏ; `_manifest.json` chưa có | Repair run | Snapshot chặn ghi lần hai; index/transactions tính lại tất định; manifest ghi sau cùng ([08 §8](08_du_lieu_cho_ds.md)) |
 
+### 6.1 Phát lại toàn bộ tập train (AD-ST-07)
+
+1. Chọn pipeline dev và schema riêng cho buổi nghiệm thu. Bật Event Hubs qua
+   `stream-toggle up` nếu namespace đang tắt. Mỗi namespace mới cần một
+   `eh_generation` mới. Deploy pipeline ở chế độ triggered, rồi chạy một update
+   thường khi hub còn trống để tạo bảng và ghi mốc ban đầu.
+2. Chạy các lệnh sau từ gốc repo, với `EH_SEND_CONN` đã nạp theo [README của
+   simulator](../../src/streaming/simulator/README.md). Dùng cùng hai CSV ở cả hai
+   lượt và đổi các `run-id` ví dụ bên dưới cho mỗi buổi.
+
+   ```bash
+   export PYTHONPATH=src
+   uv run --frozen --extra ingest python -m streaming.simulator.simulate --data-dir data/instacart --send --from-frac 0 --to-frac 1 --run-id train-initial
+   # Sau update và đối soát lượt đầu, phát lại nguyên tập:
+   uv run --frozen --extra ingest python -m streaming.simulator.simulate --data-dir data/instacart --send --from-frac 0 --to-frac 1 --run-id train-replay
+   unset EH_SEND_CONN
+   ```
+
+3. Sau mỗi lượt đủ 131.209 xác nhận từ broker, chạy update thường trên cùng pipeline
+   và checkpoint. Để đo riêng ST07 trên dev, chọn `order_events`, `stream_orders`,
+   `stream_order_items` và `quarantine_order_events` trong **Refresh selection**.
+   Ghi số ở ba mốc bằng [truy vấn đối soát](stream_replay_reconciliation.sql)
+   trên `wh-instacart-bi`. Gán `train_items` cho `instacart.bronze.order_products_train`.
+   Gán `bronze_events`, `silver_orders`, `silver_items` và `quarantine_events`
+   cho tên đầy đủ của các bảng tương ứng trên dev. Gán `first_run_id` và
+   `replay_run_id` theo hai lệnh gửi.
+4. Sau lượt đầu, Silver phải có 131.209 đơn và 1.384.617 dòng sản phẩm, bằng số
+   dòng bảng train batch. Sau replay, số dòng và số khóa phân biệt của Silver
+   giữ nguyên, mọi đơn mang `replay_run_id` mới, còn Bronze có hai nhóm 131.209
+   bản tin. Lưu kết quả ba mốc, ghi nhận đối soát G3 trong `ops.reconciliation`
+   theo [runbook đối soát](06c_nghiem_thu_reconciliation.md) ở môi trường chạy G3.
+   Tắt Event Hubs qua `stream-toggle down` khi buổi chạy kết thúc.
+
+**Khôi phục luồng stream**
+
+- Nếu update dừng trong khi hub và checkpoint còn nguyên, chạy lại update thường.
+  Xem offset và số dòng đã commit trước khi phát thêm. Nếu phải phát lại, dùng
+  `run-id` mới để truy vết. Silver upsert theo khóa, Bronze ghi lịch sử mỗi lần nhận.
+- Nếu namespace bị xóa, dùng `stream-toggle up`, nạp lại SAS và deploy cùng pipeline
+  với `eh_generation` mới. Flow Kafka mới đọc offset của namespace mới và giữ dữ
+  liệu trong Bronze. Phát lại phần thiếu từ hai CSV gốc. Nếu chưa xác định được
+  phần thiếu, phát lại cả tập rồi kiểm lại các khóa ở Silver.
+- Nếu checkpoint của flow Kafka hỏng, giữ nguyên bảng Bronze và trạng thái cũ để
+  điều tra. Đổi `eh_generation` để mở checkpoint Kafka mới rồi phát lại với
+  `run-id` mới. Flow mới cũng có thể đọc lại bản tin hub đang giữ từ `earliest`,
+  vì vậy khi đối soát hãy tách theo `replay_run_id`. Nếu lỗi thuộc flow Silver hoặc
+  Gold, tìm đúng flow trong event log và thống nhất cách dựng lại riêng từ Bronze
+  trước khi reset trạng thái của flow đó.
+
+**Demo 95/5**
+
+Trong một buổi demo riêng, dùng cùng bộ CSV và chung `run-id` cho hai phần.
+Chạy lệnh đầu trước buổi demo và lệnh thứ hai khi bắt đầu trình bày.
+
+```bash
+PYTHONPATH=src uv run --frozen --extra ingest python -m streaming.simulator.simulate --data-dir data/instacart --send --run-id demo-95-5 --to-frac 0.95
+PYTHONPATH=src uv run --frozen --extra ingest python -m streaming.simulator.simulate --data-dir data/instacart --send --run-id demo-95-5 --from-frac 0.95 --to-frac 1.0 --rate 20
+```
+
 ## 7. Diễn tập lỗi (bằng chứng cho báo cáo)
 
 Mỗi kịch bản cần ghi đủ 4 thứ: **ảnh lỗi**, **lệnh chạy lại**, **ảnh đối soát trước/sau**, **giải thích ngắn**.
