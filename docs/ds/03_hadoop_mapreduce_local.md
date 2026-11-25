@@ -733,8 +733,8 @@ azcopy copy local/hadoop/results/e6.jsonl \
 ```
 
 Task `ingest_local` của job `ds-benchmark` ([04 §5](04_thuc_nghiem_danh_gia.md)) nạp file này vào `ml.experiment_runs` theo hai bước:
-1. `COPY INTO` một bảng tạm. `COPY INTO` tự bỏ qua file đã nạp.
-2. `MERGE … ON run_key` vào `ml.experiment_runs`.
+1. `COPY INTO` bảng thô `ml.experiment_runs_local_raw` (`FILEFORMAT = TEXT`, mỗi dòng JSONL một dòng). `COPY INTO` tự bỏ qua file đã nạp.
+2. `from_json` theo schema cố định: trường `bench.py` chưa ghi thành `NULL`, `machine` giữ nguyên văn JSON, `measured_at` thành `finished_at`. Giữ dòng mới nhất của mỗi `run_key` rồi `MERGE … ON run_key` vào `ml.experiment_runs`.
 
 Hệ quả: upload lại cùng file, hoặc upload file mới có chứa cả các dòng cũ, cũng **không sinh dòng trùng**.
 

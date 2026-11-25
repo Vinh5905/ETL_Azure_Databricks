@@ -41,6 +41,9 @@ powerbi/**/.pbi/cache.abf
 *.csv
 !tests/fixtures/**/*.csv
 
+# --- Build Java (MapReduce) ---
+src/mapreduce/target/
+
 # --- OS / editor ---
 .DS_Store
 .idea/

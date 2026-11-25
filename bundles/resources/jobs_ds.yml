@@ -1,0 +1,169 @@
+# Lưới E1–E5 trên Databricks; E6 local được nạp ở ingest_local.
+resources:
+  jobs:
+    ds_benchmark:
+      name: instacart-ds-benchmark
+      max_concurrent_runs: 1
+      performance_target: STANDARD
+      tags:
+        cost_owner: p4
+        task: AD-DS-12
+      parameters:
+        - name: experiments
+          default: E1,E2,E3,E4,E5
+        - name: data_version
+          default: v1
+      tasks:
+        - task_key: ddl_ml
+          sql_task:
+            file:
+              path: ../../src/ml/sql/ddl_ml.sql
+              source: WORKSPACE
+            warehouse_id: ${var.warehouse_id}
+
+        - task_key: plan
+          depends_on:
+            - task_key: ddl_ml
+          job_cluster_key: c1
+          spark_python_task:
+            python_file: ../../src/ml/plan_grid.py
+            source: WORKSPACE
+            parameters:
+              - --experiments
+              - "{{job.parameters.experiments}}"
+              - --data-version
+              - "{{job.parameters.data_version}}"
+
+        - task_key: grid_c1
+          depends_on:
+            - task_key: plan
+          for_each_task:
+            inputs: "{{tasks.plan.values.queue_c1}}"
+            concurrency: 1
+            task:
+              task_key: grid_c1_iter
+              job_cluster_key: c1
+              max_retries: 2
+              min_retry_interval_millis: 180000
+              spark_python_task:
+                python_file: ../../src/ml/run_experiment.py
+                source: WORKSPACE
+                parameters:
+                  - --run-key
+                  - "{{input}}"
+
+        - task_key: grid_c2
+          depends_on:
+            - task_key: plan # đọc tasks.plan.values nên khai plan là upstream trực tiếp
+            - task_key: grid_c1
+          for_each_task:
+            inputs: "{{tasks.plan.values.queue_c2}}"
+            concurrency: 1
+            task:
+              task_key: grid_c2_iter
+              job_cluster_key: c2
+              max_retries: 2
+              min_retry_interval_millis: 180000
+              spark_python_task:
+                python_file: ../../src/ml/run_experiment.py
+                source: WORKSPACE
+                parameters:
+                  - --run-key
+                  - "{{input}}"
+
+        - task_key: grid_c4
+          depends_on:
+            - task_key: plan # đọc tasks.plan.values nên khai plan là upstream trực tiếp
+            - task_key: grid_c2
+          for_each_task:
+            inputs: "{{tasks.plan.values.queue_c4}}"
+            concurrency: 1
+            task:
+              task_key: grid_c4_iter
+              job_cluster_key: c4
+              max_retries: 2
+              min_retry_interval_millis: 180000
+              spark_python_task:
+                python_file: ../../src/ml/run_experiment.py
+                source: WORKSPACE
+                parameters:
+                  - --run-key
+                  - "{{input}}"
+
+        - task_key: ingest_local
+          depends_on:
+            - task_key: grid_c4
+          run_if: ALL_DONE
+          sql_task:
+            file:
+              path: ../../src/ml/sql/ingest_local.sql
+              source: WORKSPACE
+            warehouse_id: ${var.warehouse_id}
+
+        - task_key: publish_gold
+          depends_on:
+            - task_key: ingest_local
+          run_if: ALL_DONE
+          sql_task:
+            file:
+              path: ../../src/ml/sql/publish_gold.sql
+              source: WORKSPACE
+            warehouse_id: ${var.warehouse_id}
+
+      job_clusters:
+        - job_cluster_key: c1
+          new_cluster:
+            policy_id: ${var.ds_policy_id}
+            spark_version: 15.4.x-scala2.12
+            node_type_id: ${var.node_type_id}
+            num_workers: 0
+            data_security_mode: SINGLE_USER
+            spark_conf:
+              spark.databricks.cluster.profile: singleNode
+              spark.master: "local[1]"
+              spark.sql.shuffle.partitions: "16"
+              spark.default.parallelism: "16"
+              spark.sql.adaptive.enabled: "false"
+            spark_env_vars:
+              PYTHONPATH: ${workspace.file_path}/src
+            custom_tags:
+              ResourceClass: SingleNode
+              cost_owner: p4
+
+        - job_cluster_key: c2
+          new_cluster:
+            policy_id: ${var.ds_policy_id}
+            spark_version: 15.4.x-scala2.12
+            node_type_id: ${var.node_type_id}
+            num_workers: 0
+            data_security_mode: SINGLE_USER
+            spark_conf:
+              spark.databricks.cluster.profile: singleNode
+              spark.master: "local[2]"
+              spark.sql.shuffle.partitions: "16"
+              spark.default.parallelism: "16"
+              spark.sql.adaptive.enabled: "false"
+            spark_env_vars:
+              PYTHONPATH: ${workspace.file_path}/src
+            custom_tags:
+              ResourceClass: SingleNode
+              cost_owner: p4
+
+        - job_cluster_key: c4
+          new_cluster:
+            policy_id: ${var.ds_policy_id}
+            spark_version: 15.4.x-scala2.12
+            node_type_id: ${var.node_type_id}
+            num_workers: 0
+            data_security_mode: SINGLE_USER
+            spark_conf:
+              spark.databricks.cluster.profile: singleNode
+              spark.master: "local[4]"
+              spark.sql.shuffle.partitions: "16"
+              spark.default.parallelism: "16"
+              spark.sql.adaptive.enabled: "false"
+            spark_env_vars:
+              PYTHONPATH: ${workspace.file_path}/src
+            custom_tags:
+              ResourceClass: SingleNode
+              cost_owner: p4
