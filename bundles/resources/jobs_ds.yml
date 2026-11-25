@@ -6,7 +6,6 @@ resources:
       max_concurrent_runs: 1
       performance_target: STANDARD
       tags:
-        aidevkit_project: ai-dev-kit
         cost_owner: p4
         task: AD-DS-12
       parameters:
@@ -55,6 +54,7 @@ resources:
 
         - task_key: grid_c2
           depends_on:
+            - task_key: plan # đọc tasks.plan.values nên khai plan là upstream trực tiếp
             - task_key: grid_c1
           for_each_task:
             inputs: "{{tasks.plan.values.queue_c2}}"
@@ -73,6 +73,7 @@ resources:
 
         - task_key: grid_c4
           depends_on:
+            - task_key: plan # đọc tasks.plan.values nên khai plan là upstream trực tiếp
             - task_key: grid_c2
           for_each_task:
             inputs: "{{tasks.plan.values.queue_c4}}"
