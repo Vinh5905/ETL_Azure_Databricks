@@ -50,7 +50,7 @@ def plan_grid(
     if data_version is not None:
         defaults["data_version"] = data_version
     definitions = content.get("experiments", {})
-    chosen = experiments or list(definitions)
+    chosen = list(definitions) if experiments is None else experiments
     unknown = set(chosen) - definitions.keys()
     if unknown:
         raise ValueError(f"Mã experiment không tồn tại: {', '.join(sorted(unknown))}")

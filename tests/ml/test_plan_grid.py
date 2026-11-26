@@ -5,6 +5,8 @@ from ml.plan_grid import group_e7_by_support, make_run_key, pending_runs, plan_g
 
 def test_grid_counts_and_defaults():
     expected = {"E1": 3, "E2": 99, "E3": 45, "E4": 36, "E5": 54, "E7": 9}
+    assert len(plan_grid()) == sum(expected.values())
+    assert plan_grid(experiments=[]) == []
     for experiment, count in expected.items():
         rows = plan_grid(experiments=[experiment])
         assert len(rows) == count
