@@ -296,8 +296,9 @@ Chặn tạo cluster tự do: mọi principal do Terraform tạo đặt `allow_c
 **Policy có sẵn Personal Compute:** chặn bằng entitlement chưa đủ.
 - Cài đặt Personal Compute ở cấp account mặc định cấp policy `Personal Compute` cho mọi người dùng, không qua ACL của workspace. ACL của workspace chỉ ghi `admins`, nhưng ngày 2026-11-26 P2 (không phải admin) vẫn thấy policy này và nút "Create with Personal Compute" (AD-OPS-23, #25).
 - Bản gốc cho chọn máy tới 16 vCPU và tự tắt kiểu `unlimited`, mặc định 4.320 phút. Cả hai trái quota 4 vCPU và mục "tự tắt sau 20 phút".
-- Stack ghi đè policy này bằng `databricks_cluster_policy.personal_compute`, khai `policy_family_id = "personal-vm"`, `name = "Personal Compute"` và `policy_family_definition_overrides` bằng đúng luật của `instacart-single-node`.
-  - Luật này được áp lên định nghĩa của họ `personal-vm`. Luật nào của họ không bị ghi đè thì vẫn giữ, nên policy sau ghi đè chặt bằng hoặc hơn `instacart-single-node`.
+- Stack ghi đè policy này bằng `databricks_cluster_policy.personal_compute`, khai `policy_family_id = "personal-vm"`, `name = "Personal Compute"` và `policy_family_definition_overrides` lấy 4 luật của `instacart-single-node`: `spark_version`, `node_type_id`, `autotermination_minutes` (10–20 phút) và `custom_tags.cost_owner`.
+  - Databricks không cho sửa kiểu cluster, chế độ cluster và access mode của policy này. Bản đầu ghi đè cả bộ luật single-node và bị từ chối khi apply ("Overriding data_security_mode is forbidden for this default policy", 2026-11-26).
+  - Luật ghi đè được áp lên định nghĩa của họ `personal-vm`. Luật nào của họ không bị ghi đè thì vẫn giữ: họ đã khóa `num_workers = 0`, profile `singleNode` và cấm instance pool. Access mode giữ mặc định Auto của họ, ra Dedicated, tương đương `SINGLE_USER` của `instacart-single-node`.
   - Người dùng phải khai tag `cost_owner`, nên nút "Create with Personal Compute" có thể báo thiếu tag. Như vậy là đúng ý: tạo cluster phải qua form đầy đủ.
   - Giống mọi policy, phần ghi đè chỉ có tác dụng với người chưa là admin.
   - Provider nhận policy có sẵn theo cặp family + tên: lúc tạo thì sửa policy cũ, không cần import. Lúc destroy chỉ gỡ phần ghi đè.

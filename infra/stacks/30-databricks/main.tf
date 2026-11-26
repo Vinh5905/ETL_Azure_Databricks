@@ -378,7 +378,7 @@ locals {
 }
 
 locals {
-  # instacart-single-node đầy đủ; dùng lại để ghi đè policy Personal Compute bên dưới.
+  # instacart-single-node đầy đủ, gồm cả spark.master cho chế độ local.
   single_node_local_policy = merge(local.single_node_policy, {
     "spark_conf.spark.master" = { type = "fixed", value = "local[*]" }
   })
@@ -393,14 +393,21 @@ resource "databricks_cluster_policy" "single_node" {
 # Compute ở cấp account, nên P2 (không phải admin) vẫn chọn được dù ACL của workspace chỉ có admins
 # (AD-OPS-23, 2026-11-26). Bản gốc cho máy tới 16 vCPU và tự tắt "unlimited", mặc định 3 ngày.
 # Ghi đè bằng Terraform thay vì đặt Delegate ở account console: không phụ thuộc tài khoản account
-# admin và giữ được khi đổi tài khoản. Phần ghi đè áp cùng luật của instacart-single-node lên định
-# nghĩa của họ personal-vm, kể cả bắt khai tag cost_owner. Chỉ có tác dụng với người chưa là admin.
+# admin và giữ được khi đổi tài khoản. Chỉ có tác dụng với người chưa là admin.
+# Databricks không cho sửa kiểu cluster, chế độ cluster và access mode của policy này: ghi đè
+# data_security_mode bị từ chối khi apply ("Overriding data_security_mode is forbidden for this default
+# policy", tf-apply 2026-11-26). Vì vậy chỉ ghi đè máy, runtime, tự tắt và tag cost_owner. Phần còn lại
+# họ personal-vm đã tự khóa: num_workers = 0, profile singleNode, cấm instance pool. Access mode giữ
+# mặc định Auto của họ (ra Dedicated, tương đương SINGLE_USER).
 # Provider nhận policy có sẵn theo cặp policy_family_id + name: create sửa policy cũ (không cần
 # import), destroy chỉ gỡ phần ghi đè, không xóa policy.
 resource "databricks_cluster_policy" "personal_compute" {
-  name                               = "Personal Compute"
-  policy_family_id                   = "personal-vm"
-  policy_family_definition_overrides = jsonencode(local.single_node_local_policy)
+  name             = "Personal Compute"
+  policy_family_id = "personal-vm"
+  policy_family_definition_overrides = jsonencode({
+    for k, v in local.single_node_policy : k => v
+    if contains(["spark_version", "node_type_id", "autotermination_minutes", "custom_tags.cost_owner"], k)
+  })
 }
 
 # Thực nghiệm E5 của DS (ds/04) đo speedup theo số core nên cho chọn spark.master; máy và runtime
