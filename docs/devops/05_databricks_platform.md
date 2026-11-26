@@ -293,6 +293,17 @@ resource "databricks_permissions" "policy_use" {
 
 Chặn tạo cluster tự do: mọi principal do Terraform tạo đặt `allow_cluster_create = false` (bước 2), để ai không phải admin buộc phải dùng policy. Không quản entitlement của nhóm `users`: workspace của dự án từ chối sửa entitlement nhóm `users` và `admins` (lỗi khi apply AD-OPS-21), và nhóm này vốn không có entitlement nào, nên không cấp quyền tạo cluster cho ai.
 
+**Policy có sẵn Personal Compute:** chặn bằng entitlement chưa đủ.
+- Cài đặt Personal Compute ở cấp account mặc định cấp policy `Personal Compute` cho mọi người dùng, không qua ACL của workspace. ACL của workspace chỉ ghi `admins`, nhưng ngày 2026-11-26 P2 (không phải admin) vẫn thấy policy này và nút "Create with Personal Compute" (AD-OPS-23, #25).
+- Bản gốc cho chọn máy tới 16 vCPU và tự tắt kiểu `unlimited`, mặc định 4.320 phút. Cả hai trái quota 4 vCPU và mục "tự tắt sau 20 phút".
+- Stack ghi đè policy này bằng `databricks_cluster_policy.personal_compute`, khai `policy_family_id = "personal-vm"`, `name = "Personal Compute"` và `policy_family_definition_overrides` bằng đúng luật của `instacart-single-node`.
+  - Luật này được áp lên định nghĩa của họ `personal-vm`. Luật nào của họ không bị ghi đè thì vẫn giữ, nên policy sau ghi đè chặt bằng hoặc hơn `instacart-single-node`.
+  - Người dùng phải khai tag `cost_owner`, nên nút "Create with Personal Compute" có thể báo thiếu tag. Như vậy là đúng ý: tạo cluster phải qua form đầy đủ.
+  - Giống mọi policy, phần ghi đè chỉ có tác dụng với người chưa là admin.
+  - Provider nhận policy có sẵn theo cặp family + tên: lúc tạo thì sửa policy cũ, không cần import. Lúc destroy chỉ gỡ phần ghi đè.
+- Không chọn cách đặt **Delegate** ở account console, vì cách đó cần tài khoản account admin và không nằm trong code. Đổi tài khoản thì phải làm lại bằng tay.
+- Policy mặc định khác (Power User, Shared, Legacy Shared, Job Compute) chỉ cấp cho `admins`, thành viên không thấy, nên không cần ghi đè.
+
 **Job cluster dùng policy thế nào (kết quả spike 3.4):**
 - `autotermination_minutes` có cả `minValue = 10` và `maxValue = 20`. Thiếu `minValue` thì ai tạo cluster qua API hay CLI với giá trị `0` có cluster không bao giờ tự tắt, chiếm hết 4 vCPU. Thử ở AD-OPS-21b ngày 2026-11-18 trên policy tạm:
   - Cluster tương tác với `autotermination_minutes = 0` bị từ chối ("the value needs to be in range [10, 20]").
@@ -472,7 +483,7 @@ resources:
 - [ ] `terraform plan` của `30-databricks` báo *No changes* sau khi apply.
 - [ ] `SHOW SCHEMAS IN instacart` liệt kê đủ 8 schema (thêm `ds_data`); `DESCRIBE EXTERNAL LOCATION el-bronze` trả về đúng URL.
 - [ ] P2 (vai `de`) tạo được bảng trong `bronze`. P4 (vai `ds` + `bi`, không thuộc `de`) **không** đọc được `bronze` (lỗi PERMISSION_DENIED) nhưng đọc được `gold`. Không thử bằng P3 vì P3 thuộc `de`.
-- [ ] Không chọn được cấu hình cluster nào ngoài policy single-node; cluster tự tắt sau 20 phút. Thử bằng tài khoản **không** phải admin: thành viên có Contributor trên RG core là workspace admin nên bỏ qua được policy.
+- [ ] Không chọn được cấu hình cluster nào ngoài policy single-node; cluster tự tắt sau 20 phút. Thử bằng tài khoản **chưa** là admin: thành viên có Contributor trên RG core sẽ thành workspace admin nếu mở workspace từ Azure portal, khi đó bỏ qua được policy.
 - [ ] `dbutils.secrets.get("kv","sql-admin-password")` trả về `[REDACTED]` trong notebook.
 - [ ] `SELECT 1` chạy được trên `wh-instacart-bi` (hoặc đã chốt lớp serving dự phòng).
 - [ ] `databricks bundle deploy -t dev` từ máy P2 tạo được job `[dev p2] instacart-batch-medallion`.

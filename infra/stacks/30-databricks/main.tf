@@ -7,6 +7,7 @@
 # [x] 4. Catalog instacart, 8 schema, volume raw + checkpoints
 # [x] 5. Grants Unity Catalog (một khối databricks_grants cho mỗi securable)
 # [x] 6. Cluster policy (single-node, pipeline, ds-benchmark) + tắt unrestricted cluster creation
+#        + ghi đè policy có sẵn Personal Compute cho giống single-node (AD-OPS-23)
 # [x] 7. Secret scope dựa trên Key Vault (P1 apply từ máy local)
 # [x] 8. Serverless SQL warehouse wh-instacart-bi
 # [x] 9. Output cho DAB và Power BI
@@ -75,7 +76,8 @@ data "databricks_current_metastore" "this" {}
 # user theo var.roles, cộng SP CI và SP Function.
 #
 # force = true: danh tính đã có sẵn thì nhận vào state thay vì báo lỗi. UAMI CI và các thành viên
-# có role Azure trên workspace nên được Databricks tự thêm (làm admin) ngay lần đăng nhập đầu.
+# có role Azure trên workspace nên được Databricks tự thêm, và thành admin khi mở workspace bằng
+# nút Launch Workspace trên Azure portal.
 # Application ID bọc sensitive() để plan in ra log công khai không lộ client ID. Thuộc tính computed
 # home/acl_principal_id vẫn chứa client ID; chấp nhận vì client ID không phải bí mật, và của CI
 # đã được che qua ARM_CLIENT_ID.
@@ -110,9 +112,11 @@ resource "databricks_service_principal" "func" {
   force                 = true
 }
 
-# Thành viên nhóm. allow_cluster_create = false chỉ có tác dụng với người không phải admin: hiện
-# mọi thành viên có Contributor trên RG core nên là workspace admin và bỏ qua được entitlement
-# lẫn cluster policy (đánh đổi đã chấp nhận ở 10-core). Kỷ luật chi phí dựa vào policy + budget.
+# Thành viên nhóm. allow_cluster_create = false chỉ có tác dụng với người không phải admin. Kiểm
+# 2026-11-26 (AD-OPS-23): nhóm admins chỉ có P1 và hai SP, P2–P4 chưa là admin nên chỉ tạo được
+# cluster qua policy có CAN_USE. Nhưng thành viên có Contributor trên RG core (10-core), nên mở
+# workspace từ Azure portal là thành admin và bỏ qua được entitlement lẫn policy (đánh đổi đã chấp
+# nhận ở docs/devops/03). Kỷ luật chi phí vẫn dựa vào policy + budget.
 resource "databricks_user" "members" {
   for_each = local.members
 
@@ -230,7 +234,7 @@ resource "databricks_volume" "ml_inbox" {
 # thể có nhiều vai (p1: de + ds, p4: ds + bi): nếu viết mỗi vai một dynamic grant thì cùng principal
 # xuất hiện hai lần, API trả về một mục đã gộp và plan không bao giờ về No changes. Vì vậy quyền
 # được gộp theo người trước (local.grants_by_member), mỗi securable chỉ lặp một lần theo người.
-# Thành viên là workspace admin nhưng không phải owner hay metastore admin, nên vẫn bị chặn đọc
+# Thành viên dù là workspace admin (xem bước 2) cũng không phải owner hay metastore admin, nên vẫn bị chặn đọc
 # dữ liệu nếu không có grant ở đây.
 locals {
   all_privileges = ["ALL_PRIVILEGES"]
@@ -351,7 +355,7 @@ resource "databricks_grants" "volume" {
 # autotermination"), nên phải tự khai đủ mọi trường fixed dưới đây (bundles/AGENTS.md).
 # autotermination_minutes có minValue để cluster tương tác không tắt tự động (giá trị 0) bị từ chối. Job cluster
 # không khai trường này vẫn qua policy, cluster mang autotermination 0 và tắt khi job xong (thử ở AD-OPS-21b).
-# Admin workspace bỏ qua được policy và entitlement; hiện mọi thành viên là admin (xem bước 2).
+# Admin workspace bỏ qua được policy và entitlement. P2–P4 chưa thuộc admins (kiểm 2026-11-26, xem bước 2).
 # Tag người dùng của cluster là cost_owner, không phải owner: workspace mang Azure tag owner = p1 (naming_tags),
 # Databricks chép tag workspace xuống mọi cluster làm tag mặc định, nên custom_tags.owner bị đổi tên và policy
 # báo thiếu tag (lỗi de-deploy prod của job seed_retail_db, 2026-11-18).
@@ -373,11 +377,30 @@ locals {
   }
 }
 
-resource "databricks_cluster_policy" "single_node" {
-  name = "instacart-single-node"
-  definition = jsonencode(merge(local.single_node_policy, {
+locals {
+  # instacart-single-node đầy đủ; dùng lại để ghi đè policy Personal Compute bên dưới.
+  single_node_local_policy = merge(local.single_node_policy, {
     "spark_conf.spark.master" = { type = "fixed", value = "local[*]" }
-  }))
+  })
+}
+
+resource "databricks_cluster_policy" "single_node" {
+  name       = "instacart-single-node"
+  definition = jsonencode(local.single_node_local_policy)
+}
+
+# Policy có sẵn "Personal Compute" (họ personal-vm) được cấp cho mọi người dùng qua cài đặt Personal
+# Compute ở cấp account, nên P2 (không phải admin) vẫn chọn được dù ACL của workspace chỉ có admins
+# (AD-OPS-23, 2026-11-26). Bản gốc cho máy tới 16 vCPU và tự tắt "unlimited", mặc định 3 ngày.
+# Ghi đè bằng Terraform thay vì đặt Delegate ở account console: không phụ thuộc tài khoản account
+# admin và giữ được khi đổi tài khoản. Phần ghi đè áp cùng luật của instacart-single-node lên định
+# nghĩa của họ personal-vm, kể cả bắt khai tag cost_owner. Chỉ có tác dụng với người chưa là admin.
+# Provider nhận policy có sẵn theo cặp policy_family_id + name: create sửa policy cũ (không cần
+# import), destroy chỉ gỡ phần ghi đè, không xóa policy.
+resource "databricks_cluster_policy" "personal_compute" {
+  name                               = "Personal Compute"
+  policy_family_id                   = "personal-vm"
+  policy_family_definition_overrides = jsonencode(local.single_node_local_policy)
 }
 
 # Thực nghiệm E5 của DS (ds/04) đo speedup theo số core nên cho chọn spark.master; máy và runtime

@@ -156,7 +156,7 @@ Nguyên tắc: làm mục 1–3 khi chạm mốc 50% (email budget 50 USD). Hi�
 
 Áp dụng từ 2026-11-20. Lý do: warehouse `wh-instacart-bi` chiếm khoảng 2/3 chi phí tuần đầu (§3), và phần lớn là truy vấn tay rải rác trong ngày.
 
-Mọi thành viên đều là admin workspace, nên bỏ `CAN_USE` không chặn được truy vấn. Giữ warehouse
+Thành viên có Contributor trên RG core nên thành admin workspace khi mở workspace từ Azure portal, vì vậy bỏ `CAN_USE` không chặn chắc được truy vấn. Giữ warehouse
 để phục vụ đối soát, BI và các `sql_task` của job DS; bundle tra warehouse theo tên (`bundles/databricks.yml`,
 biến `warehouse_id`) nên không xóa được tới cuối kỳ. Việc giới hạn thời gian chạy phụ thuộc vào cách nhóm sử dụng.
 
