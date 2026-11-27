@@ -48,7 +48,7 @@
    4. **Container `landing`.** Đây là thứ đáng giữ nhất. Landing bất biến, nên nạp lại đúng các file cũ thì pipeline cho ra đúng số đối soát cũ. Không phải tải lại Zenodo, crawl lại Open Food Facts hay sinh lại CDC.
 
    Bronze không cần sao: dựng lại được từ landing.
-5. **Dọn Unity Catalog** theo mục 4, khi SP CI cũ còn đăng nhập được.
+5. **Unity Catalog:** kiểm P1 đã có `MANAGE` theo mục 4 bước 1, khi SP CI cũ còn đăng nhập được.
 6. **P1 tự sao container `tfstate`** sang Sub D để dự phòng. Không bắt buộc nếu các bước 2–3 đã xong. Agent không đụng file `*.tfstate`.
 
 ## 4. Unity Catalog trong metastore dùng chung
@@ -56,14 +56,52 @@
 Metastore `metastore_azure_eastasia` thuộc cấp account. Nó không mất khi Sub A tắt.
 - SP CI cũ là owner của catalog `instacart`, `cred-instacart-lake` và các `el-*`.
 - Theo spike 3.4, metastore admin là "System user" và không ai trong nhóm là metastore admin.
-- Vì vậy **chỉ SP CI cũ xóa được** các đối tượng này. Sub A tắt rồi thì có thể không còn ai xóa được.
+- Nếu Sub D ở `eastasia` và cùng tenant, workspace mới dùng lại metastore này. `30-databricks` sẽ báo trùng tên nếu các đối tượng cũ còn đó.
 
-Chọn một trong ba cách, **ghi quyết định vào #131 trước khi bắt đầu**:
+**Cách chính (khuyên dùng): cấp `MANAGE` cho P1 khi Sub A còn chạy, xóa sau khi chuyển.**
+
+Theo tài liệu Databricks, người có `MANAGE` xóa được đối tượng như owner. MANAGE đặt ở catalog thì áp xuống mọi schema, bảng, volume bên trong. Cách này giữ prod chạy tới khi hết credit. SP CI vẫn là owner, nên CI vẫn sửa được grant.
+
+1. **Khi Sub A còn chạy:**
+   - Biến `uc_managers` ở `infra/envs/30-databricks.tfvars` cấp `MANAGE` cho P1 trên catalog, credential và từng external location (PR #256).
+   - Sau khi `tf-apply` xong, kiểm (chỉ đọc API, không cần compute):
+
+     ```bash
+     databricks grants get-effective catalog instacart --profile <profile Sub A>
+     databricks grants get-effective storage-credential cred-instacart-lake --profile <profile Sub A>
+     databricks grants get-effective external-location el-landing --profile <profile Sub A>
+     ```
+
+     Kết quả phải có `MANAGE` cho tài khoản của P1.
+2. **Ở Sub D,** sau khi `10-core` tạo workspace và **trước khi** apply `30-databricks`:
+   - Đăng nhập CLI vào workspace mới, rồi kiểm workspace dùng metastore nào:
+
+     ```bash
+     databricks metastores current --profile <profile Sub D>
+     ```
+
+   - Nếu là `metastore_azure_eastasia`, P1 xóa theo thứ tự catalog → external location → credential:
+
+     ```bash
+     databricks catalogs delete instacart --force --profile <profile Sub D>
+     for c in landing bronze silver gold checkpoints mlflow ds-data; do databricks external-locations delete "el-$c" --force --profile <profile Sub D>; done
+     databricks storage-credentials delete cred-instacart-lake --force --profile <profile Sub D>
+     ```
+
+   - Sau đó mới cho CI apply `30-databricks`.
+3. **Chưa kiểm:**
+   - Xóa catalog có vướng các bảng do pipeline tạo (owner SP CI) không.
+   - Xóa có cần truy cập lake cũ (đã chết) không.
+   - Quyền xóa storage credential: chưa đọc trang tài liệu riêng.
+
+   Lỗi ở bước nào thì chuyển sang cách B hoặc C dưới đây.
+
+**Cách dự phòng.** Ghi lựa chọn vào #131.
 
 | Cách | Khi nào | Phải làm | Chưa kiểm |
 |---|---|---|---|
-| **A. Xóa đối tượng cũ rồi dựng lại cùng tên** (khuyên dùng nếu Sub D có `eastasia`) | Sub A còn chạy | Một PR vào `30-databricks` cho CI xóa catalog, external location, credential. Catalog còn bảng thì phải đặt `force_destroy = true` trước. Chỉ làm khi bước 3.4 đã xong, vì đây là bước phá dữ liệu prod | Thứ tự xóa của provider và thời gian chạy |
-| **B. Sub D ở region khác `eastasia`, và khác region của Sub B** | Sub A đã tắt, hoặc Sub D không có `eastasia` | Đổi `location` trong tfvars. Workspace mới nhận metastore của region đó, không trùng tên | Databricks có tự tạo và gán metastore cho region mới không (spike 3.4 mới kiểm `eastasia`) |
+| **A. Cho CI xóa ngay** | Sub A còn chạy, muốn chắc chắn trước khi chuyển | Một PR vào `30-databricks` cho CI xóa catalog, external location, credential. Catalog còn bảng thì phải đặt `force_destroy = true` trước. Prod ngừng ngay, chỉ làm khi đã sao dữ liệu xong | Thứ tự xóa của provider và thời gian chạy |
+| **B. Sub D ở region khác `eastasia`, và khác region của Sub B** | Không xóa được đối tượng cũ, hoặc Sub D không có `eastasia` | Đổi `location` trong tfvars. Workspace mới nhận metastore của region đó, không trùng tên | Databricks có tự tạo và gán metastore cho region mới không (spike 3.4 mới kiểm `eastasia`) |
 | **C. Đổi tên catalog** | Không xóa được đối tượng cũ và vẫn phải ở `eastasia` | Đổi tên ở `30-databricks`, biến `catalog` của bundle, các file `src/` và `powerbi/` đang ghi cứng `instacart.`, rồi đổi tên credential và external location | Số chỗ ghi cứng tên catalog ngoài code (tài liệu, Power BI) |
 
 ## 5. Dựng lại trên Sub D
