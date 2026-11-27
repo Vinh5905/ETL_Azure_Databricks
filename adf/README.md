@@ -26,7 +26,7 @@ Cha chọn object translator của từng bảng, gửi cả `type`, `mappings`,
 Copy đặt Expression **trên toàn bộ `translator`**, theo mẫu parameterize mapping của Microsoft.
 Không đặt Expression riêng trong mảng `mappings`.
 
-Stack `40-orchestration` (AD-OPS-25b) nạp mọi `pipelines/*.json` trừ `pl_ingest_off`, `pl_master` bằng
+Stack `40-orchestration` (AD-OPS-25b, AD-OPS-26) nạp mọi `pipelines/*.json` bằng
 `azapi_resource` và gửi:
 
 - `properties.activities` = nguyên mảng trong `pipelines/<name>.json`
@@ -34,7 +34,8 @@ Stack `40-orchestration` (AD-OPS-25b) nạp mọi `pipelines/*.json` trừ `pl_i
 - `properties.parameters` = mỗi khóa trong `parameters` thành `{type: String, defaultValue: <giá trị>}`
 
 Mỗi pipeline phải có đủ hai file cùng tên. Pipeline được tạo theo tầng Execute Pipeline (con trước cha),
-đọc từ `referenceName` bắt đầu bằng `pl_`; lồng tối đa 3 tầng và không gọi `pl_ingest_off`, `pl_master`.
+đọc từ `referenceName` bắt đầu bằng `pl_`; lồng tối đa 4 tầng (`pl_master` ở tầng 3). Tham số job ID của
+`pl_ingest_off`, `pl_master` được thay bằng ID job prod (mục "Điều phối batch").
 Mọi giá trị trong `parameters` phải là chuỗi. PR làm một pipeline đổi tầng (con gọi thêm pipeline mới) cần
 P1 thêm khối `moved` trong stack; plan của PR sẽ hiện cặp xóa và tạo cùng tên.
 

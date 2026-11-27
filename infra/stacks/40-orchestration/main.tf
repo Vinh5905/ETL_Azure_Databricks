@@ -1,14 +1,18 @@
 # Stack 40-orchestration: linked service, dataset, pipeline, trigger của ADF.
-# Xem docs/devops/06, mục 1. Pipeline gọi job theo ID nên phần pipeline/trigger apply SAU
-# lần `bundle deploy -t prod` đầu tiên. Linked service và dataset không cần job ID.
+# Xem docs/devops/06, mục 1. Pipeline gọi job theo ID nên stack chỉ plan được SAU lần
+# `bundle deploy -t prod` đầu tiên: data source databricks_job báo lỗi khi chưa có job prod.
 #
 # [x] Remote state core + resource group core
 # [x] Linked service: ls_adls, ls_kv, ls_sql_retail, ls_zenodo, ls_off_api, ls_dbx (MSI)
 # [x] Dataset: publish mọi file adf/datasets/*.json (P2 thêm file ở #144, #183)
-# [x] Pipeline ingest không gọi Databricks: mọi adf/pipelines/*.json trừ pl_ingest_off, pl_master,
-#     kèm adf/pipeline_settings/<tên>.json; xếp tầng theo Execute Pipeline (AD-OPS-25b)
-# [ ] Pipeline pl_ingest_off, pl_master (gọi job theo ID) và trigger schedule,
+# [x] Pipeline ingest không gọi Databricks: mọi adf/pipelines/*.json kèm adf/pipeline_settings/<tên>.json;
+#     xếp tầng theo Execute Pipeline (AD-OPS-25b)
+# [x] Pipeline pl_ingest_off, pl_master: job ID tra bằng data source databricks_job theo tên job prod,
+#     điền vào default của off_job_id, batch_job_id; pl_master ở tầng 3 (AD-OPS-26)
+# [x] Trigger tr_master_daily: pl_master 02:00 hằng ngày (SE Asia Standard Time),
 #     activated = var.triggers_on, mặc định false (AD-OPS-26)
+# [ ] PR đặt triggers_on = true trong infra/envs/40-orchestration.tfvars, chỉ mở sau khi pl_master
+#     chạy tay đạt (adf/README.md "Nghiệm thu sau khi P1 publish", docs/devops/06 mục 3 bước 8)
 
 data "terraform_remote_state" "core" {
   backend = "azurerm"
@@ -38,25 +42,32 @@ locals {
     trimsuffix(f, ".json") => jsondecode(file("${local.dataset_dir}/${f}"))
   }
 
-  # Pipeline ingest (AD-OPS-25b): adf/pipelines/<tên>.json là mảng activities, adf/pipeline_settings/<tên>.json
-  # là {concurrency, parameters}. pl_ingest_off, pl_master gọi job Databricks theo ID nên để AD-OPS-26.
+  # Pipeline (AD-OPS-25b, AD-OPS-26): adf/pipelines/<tên>.json là mảng activities,
+  # adf/pipeline_settings/<tên>.json là {concurrency, parameters}.
   pipeline_dir      = "${path.module}/../../../adf/pipelines"
   pipeline_settings = "${path.module}/../../../adf/pipeline_settings"
-  pipeline_excluded = ["pl_ingest_off", "pl_master"]
-  pipeline_names = [
-    for f in fileset(local.pipeline_dir, "*.json") : trimsuffix(f, ".json")
-    if !contains(local.pipeline_excluded, trimsuffix(f, ".json"))
-  ]
-  pipeline_text = { for n in local.pipeline_names : n => file("${local.pipeline_dir}/${n}.json") }
+  pipeline_names    = [for f in fileset(local.pipeline_dir, "*.json") : trimsuffix(f, ".json")]
+  pipeline_text     = { for n in local.pipeline_names : n => file("${local.pipeline_dir}/${n}.json") }
 
-  # Tham số ADF đều là String (adf/README.md); giữ đúng giá trị mặc định trong settings.
+  # Pipeline gọi job Databricks nhận job ID qua tham số String, repo để trống (adf/README.md, mục
+  # "Điều phối batch"). Khóa "<pipeline>.<tham số>" => tên job prod. Target prod của DAB là mode
+  # production nên không thêm tiền tố: tên prod trùng `name` trong bundles/resources/*.yml. Job dev
+  # mang tiền tố "[dev <user>]" nên không bị tra nhầm. Đổi `name` job prod thì sửa map này cùng PR.
+  pipeline_job_names = {
+    "pl_ingest_off.off_job_id" = "instacart-off-crawler"     # bundles/resources/jobs_ingest.yml
+    "pl_master.batch_job_id"   = "instacart-batch-medallion" # bundles/resources/jobs_batch.yml
+  }
+  pipeline_job_ids = { for k, j in data.databricks_job.prod : k => tostring(j.id) }
+
+  # Tham số ADF đều là String (adf/README.md); giữ đúng giá trị mặc định trong settings, trừ tham số
+  # job ID ở trên được thay bằng ID tra từ workspace.
   pipelines = {
     for n in local.pipeline_names : n => {
       activities  = jsondecode(local.pipeline_text[n])
       concurrency = jsondecode(file("${local.pipeline_settings}/${n}.json")).concurrency
       parameters = {
         for k, v in jsondecode(file("${local.pipeline_settings}/${n}.json")).parameters :
-        k => { type = "String", defaultValue = tostring(v) }
+        k => { type = "String", defaultValue = lookup(local.pipeline_job_ids, "${n}.${k}", tostring(v)) }
       }
     }
   }
@@ -77,11 +88,32 @@ locals {
     if !contains(concat(local.pipeline_tier0, local.pipeline_tier1), n)
     && length(setsubtract(local.pipeline_refs[n], concat(local.pipeline_tier0, local.pipeline_tier1))) == 0
   ]
-  # Pipeline gọi pipeline bị loại, pipeline không có trong repo, tự gọi/gọi vòng, hoặc lồng sâu hơn 3 tầng.
+  # pl_master gọi pl_ingest_retail_db (tầng 2) nên nằm ở tầng 3.
+  pipeline_tier3 = [
+    for n in local.pipeline_names : n
+    if !contains(concat(local.pipeline_tier0, local.pipeline_tier1, local.pipeline_tier2), n)
+    && length(setsubtract(local.pipeline_refs[n], concat(local.pipeline_tier0, local.pipeline_tier1, local.pipeline_tier2))) == 0
+  ]
+  # Pipeline gọi pipeline không có trong repo, tự gọi/gọi vòng, hoặc lồng sâu hơn 4 tầng.
   # Khi một pipeline đổi tầng (vd. con gọi thêm pipeline mới), địa chỉ resource đổi theo: PR đó phải kèm
   # moved { from = azapi_resource.pipeline_tier0["x"]  to = azapi_resource.pipeline_tier1["x"] }, nếu không
   # plan sẽ xóa rồi tạo lại cùng tên.
-  pipeline_unplaced = setsubtract(local.pipeline_names, concat(local.pipeline_tier0, local.pipeline_tier1, local.pipeline_tier2))
+  pipeline_unplaced = setsubtract(local.pipeline_names, concat(local.pipeline_tier0, local.pipeline_tier1, local.pipeline_tier2, local.pipeline_tier3))
+}
+
+# Chỉ đọc job prod do DAB tạo (de-deploy prod). Chưa có job prod thì plan lỗi ở đây: chạy
+# `bundle deploy -t prod` (merge PR bundles → de-deploy) trước khi apply stack này.
+data "databricks_job" "prod" {
+  for_each = local.pipeline_job_names
+
+  job_name = each.value
+
+  lifecycle {
+    precondition {
+      condition     = contains(keys(try(jsondecode(file("${local.pipeline_settings}/${split(".", each.key)[0]}.json")).parameters, {})), split(".", each.key)[1])
+      error_message = "adf/pipeline_settings/${split(".", each.key)[0]}.json phải có tham số ${split(".", each.key)[1]} để nhận job ID của ${each.value}."
+    }
+  }
 }
 
 # ---------------------------------------------------------------------------
@@ -185,8 +217,9 @@ resource "azapi_resource" "dataset" {
 }
 
 # ---------------------------------------------------------------------------
-# Pipeline ingest không gọi Databricks (AD-OPS-25b). Thêm/sửa pipeline là sửa JSON trong adf/pipelines và
-# adf/pipeline_settings, không sửa file này. Ba resource ứng với ba tầng Execute Pipeline ở locals.
+# Pipeline (AD-OPS-25b, AD-OPS-26). Thêm/sửa pipeline là sửa JSON trong adf/pipelines và
+# adf/pipeline_settings, không sửa file này. Bốn resource ứng với bốn tầng Execute Pipeline ở locals.
+# pl_ingest_off không gọi pipeline nào nên ở tầng 0; pl_master ở tầng 3.
 # Dùng azapi như dataset: gửi nguyên activities, tham số giữ kiểu String và defaultValue như settings.
 # ---------------------------------------------------------------------------
 
@@ -228,4 +261,44 @@ resource "azapi_resource" "pipeline_tier2" {
   schema_validation_enabled = false
 
   depends_on = [azapi_resource.dataset, azapi_resource.pipeline_tier1]
+}
+
+resource "azapi_resource" "pipeline_tier3" {
+  for_each = toset(local.pipeline_tier3)
+
+  type                      = "Microsoft.DataFactory/factories/pipelines@2018-06-01"
+  name                      = each.key
+  parent_id                 = local.adf_id
+  body                      = { properties = local.pipelines[each.key] }
+  schema_validation_enabled = false
+
+  depends_on = [azapi_resource.dataset, azapi_resource.pipeline_tier2]
+}
+
+# ---------------------------------------------------------------------------
+# Trigger (AD-OPS-26). pl_master chạy 02:00 hằng ngày giờ Việt Nam (docs/devops/06 mục 1), dùng
+# default của tham số (job ID đã điền ở trên). Tạo ở trạng thái tắt; bật bằng PR đặt triggers_on = true
+# sau khi pl_master chạy tay đạt. start_time để provider lấy thời điểm tạo (giờ UTC), lịch tính theo time_zone.
+# ---------------------------------------------------------------------------
+
+resource "azurerm_data_factory_trigger_schedule" "master_daily" {
+  name            = "tr_master_daily"
+  data_factory_id = local.adf_id
+  description     = "pl_master hằng ngày 02:00 (SE Asia Standard Time). Bật/tắt qua var.triggers_on."
+  # Tra theo tên trong mọi tầng để trigger vẫn trỏ đúng khi pl_master đổi tầng.
+  pipeline_name = merge(
+    azapi_resource.pipeline_tier0,
+    azapi_resource.pipeline_tier1,
+    azapi_resource.pipeline_tier2,
+    azapi_resource.pipeline_tier3,
+  )["pl_master"].name
+  activated = var.triggers_on
+
+  frequency = "Day"
+  interval  = 1
+  time_zone = "SE Asia Standard Time"
+  schedule {
+    hours   = [2]
+    minutes = [0]
+  }
 }
