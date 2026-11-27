@@ -5,6 +5,7 @@ from pyspark.sql import Column, DataFrame, SparkSession
 from pyspark.sql import functions as F
 
 from common.dq import EVENT_RULES
+from common.power_bi_push import push_kpi_rows
 
 spark = SparkSession.active()
 CATALOG = spark.conf.get("catalog")
@@ -98,3 +99,18 @@ def streaming_latency() -> DataFrame:
             F.lit(spark.conf.get("dbx_region", "unknown")).alias("dbx_region"),
         )
     )
+
+
+if spark.conf.get("enable_power_bi_push", "false").lower() == "true":
+
+    @dp.foreach_batch_sink(name="pbi_push")
+    def pbi_push(df: DataFrame, _batch_id: int) -> None:
+        from pyspark.dbutils import DBUtils
+
+        rows = df.selectExpr("unix_seconds(minute) AS minute_epoch", "orders", "items").orderBy("minute_epoch")
+        url = DBUtils(df.sparkSession).secrets.get("kv", "pbi-push-url")
+        push_kpi_rows(rows.toLocalIterator(), url)
+
+    @dp.append_flow(target="pbi_push", name="kpi_to_pbi")
+    def kpi_to_pbi() -> DataFrame:
+        return spark.readStream.option("startingVersion", "latest").table(table_name(GOLD, "stream_kpi_1m"))

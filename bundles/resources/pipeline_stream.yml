@@ -29,6 +29,7 @@ resources:
         eh_generation: ${var.eh_generation}
         eh_region: ${var.eh_region}
         dbx_region: ${var.dbx_region}
+        enable_power_bi_push: ${var.enable_power_bi_push}
         spark.sql.session.timeZone: UTC
         pipelines.clusterShutdown.delay: 60s
       event_log:
