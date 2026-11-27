@@ -37,7 +37,7 @@ Cả ba view đều hiển thị tháng hiện tại, chia theo ngày, kèm KPI 
 | Ngày ghi | Lũy kế Sub A (Cost analysis) | Budget báo đã tiêu | Dự báo | Chi phí ngày gần nhất | Sub B | Cảnh báo budget đã nhận | vCPU đang dùng / giới hạn (eastasia) |
 |---|---:|---:|---|---:|---|---|---|
 | 2026-11-19 | 22,47 | 12,06 | Chưa có (budget mới tạo) | 12,80 (18/11) | Chưa có số | Chưa nhận | Tổng 4/6, DDSv4 4/4 |
-| 2026-11-26 | 96,66 | 95,87 (96%) | 142,47 tới 30/11 (Cost analysis) | 8,15 (26/11) | Chưa nhận (đã nhờ P3) | Chưa nhận email nào, dù đã qua mốc 90% (§3, tuần 2) | Tổng 0/6, DDSv4 0/4 (đo 27/11) |
+| 2026-11-26 | 96,66 | 95,87 (96%) | 142,47 tới 30/11 (Cost analysis) | 8,15 (26/11) | 0,19 lũy kế tới 25/11, chỉ có Event Hubs; 0,04 ngày 25/11; Sub B không có budget | Chưa nhận email nào, dù đã qua mốc 90% (§3, tuần 2) | Tổng 0/6, DDSv4 0/4 (đo 27/11) |
 
 Số tuần 1 ghi lúc Cost Management mới có một phần dữ liệu. Azure đã cập nhật lại: lũy kế tới 19/11 thực ra là **74,38 USD**, không phải 22,47. Bảng giữ nguyên số đã ghi để thấy độ trễ dữ liệu; chi tiết ở §3, tuần 2.
 
@@ -220,12 +220,25 @@ Ngày 18/11 tuần 1 ghi 8,95 USD vì lúc đó Azure mới có một phần d�
 | Tag `stack` | ![Chi phí theo tag stack](evidence/2026-11-26_cost_by_stack.png) |
 | Tag `cost_owner` | ![Chi phí theo tag cost_owner](evidence/2026-11-26_cost_by_cost_owner.png) |
 
+**Sub B** (P3 gửi ngày 27/11; Cost Management của Sub B có số tới 25/11):
+- Lũy kế tháng 11: **0,19 USD**, toàn bộ là Event Hubs ở `koreacentral`, tag `stack = 20-stream`. Service Bus 0,00 USD.
+- Chi phí chỉ phát sinh vào các ngày 21, 22 và 25/11, đúng những ngày bật stream để nghiệm thu. Ngày 25/11 tốn 0,04 USD, nằm trong `rg-instacart-stream`.
+- Số lũy kế lấy ở scope billing account. Billing account này chỉ có một subscription là Sub B, nên số đó chính là chi phí Sub B.
+- Sub B không có budget (budget chỉ đặt ở Sub A, stack `10-core`), nên không có email cảnh báo nào để chờ.
+
+| Nội dung | Ảnh |
+|---|---|
+| Ngày 25/11, scope subscription | ![Chi phí Sub B ngày 25/11](evidence/2026-11-25_sub-b_cost_daily.png) |
+| Lũy kế tháng 11, scope billing account | ![Chi phí Sub B lũy kế tháng 11](evidence/2026-11-27_cost_billing-account_november_accumulated.png) |
+| Theo ngày, nhóm theo tag `stack` | ![Chi phí Sub B theo tag stack](evidence/2026-11-27_cost_billing-account_november_by_stack.png) |
+
 **Nhận xét:**
 - **Credit Sub A gần hết:** đã tiêu 96,66/100 USD. Phần lớn rơi vào hai ngày 18–19/11 (64,86 USD), trước khi áp dụng quy tắc warehouse ở §6.
 - **Quy tắc §6 có tác dụng:** chi phí warehouse giảm từ khoảng 26 USD/ngày (18–19/11) xuống dưới 1 USD/ngày (20–24/11).
   - Ngày 25–26/11 tăng lại lên khoảng 8 USD/ngày, do các đợt nghiệm thu: G1 #25, AD-DE-15/16, #215, AD-ST-05/06/07.
   - Trong đó warehouse chiếm 4–5 USD/ngày, phần còn lại là pipeline và job serverless.
 - **Serverless SQL vẫn chiếm 72% tổng chi phí** (69,92/96,66 USD). Job và pipeline (serverless, DLT, máy D4ds v4) tốn khoảng 22 USD.
+- **Sub B gần như không tốn tiền** (0,19 USD), nhờ `stream-toggle` tắt Event Hubs mỗi đêm. Đề xuất số 3 ở §5 đang có tác dụng.
 - **Phần spike** (9,67 USD, không có tag) không đổi so với tuần 1: không còn phát sinh chi phí sau khi xóa `rg-spike`.
 - **Email cảnh báo budget không tới:** budget đã báo tiêu 96%, tức đã qua cả bốn mốc 25/50/75/90%, nhưng P1 không thấy email nào trong hộp thư trường.
   - Cấu hình vẫn đúng: bốn mốc đều bật, gửi qua action group `ag-instacart-team`, cả 4 người nhận đều ở trạng thái `Enabled`.
