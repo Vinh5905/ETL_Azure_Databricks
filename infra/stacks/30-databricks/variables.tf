@@ -28,3 +28,13 @@ variable "roles" {
     error_message = "Mỗi người trong roles phải là một key có trong member_upns."
   }
 }
+
+variable "uc_managers" {
+  description = "Key của member_upns được cấp MANAGE trên catalog instacart, storage credential và các external location. Dùng khi chuyển subscription (docs/devops/chuyen_sang_sub_d.md §4): SP CI cũ mất đăng nhập thì người này vẫn xóa được các đối tượng trong metastore dùng chung."
+  type        = list(string)
+
+  validation {
+    condition     = alltrue([for k in var.uc_managers : contains(flatten(values(var.roles)), k)])
+    error_message = "Mỗi người trong uc_managers phải có ít nhất một vai trong roles."
+  }
+}
