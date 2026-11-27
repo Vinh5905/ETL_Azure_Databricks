@@ -1,6 +1,76 @@
 # Lưới E1–E5 trên Databricks; E6 local được nạp ở ingest_local.
 resources:
   jobs:
+    ds_prepare:
+      name: instacart-ds-prepare
+      max_concurrent_runs: 1
+      tags:
+        cost_owner: p2
+        task: AD-DE-21
+      parameters:
+        - name: data_version
+          default: v1
+        - name: catalog
+          default: ${var.catalog}
+        - name: silver_schema
+          default: ${var.schema_prefix}silver
+        - name: ds_schema
+          default: ${var.schema_prefix}ds_data
+      tasks:
+        - task_key: prepare_tables
+          job_cluster_key: single_node
+          spark_python_task:
+            python_file: ../../src/tasks/ds_prepare/run_sql.py
+            source: WORKSPACE
+            parameters: &ds_prepare_args
+              - --data-version
+              - "{{job.parameters.data_version}}"
+              - --catalog
+              - "{{job.parameters.catalog}}"
+              - --silver-schema
+              - "{{job.parameters.silver_schema}}"
+              - --ds-schema
+              - "{{job.parameters.ds_schema}}"
+        - task_key: export_txt
+          depends_on:
+            - task_key: prepare_tables
+          job_cluster_key: single_node
+          spark_python_task:
+            python_file: ../../src/tasks/ds_prepare/export_txt.py
+            source: WORKSPACE
+            parameters: *ds_prepare_args
+        - task_key: check
+          depends_on:
+            - task_key: export_txt
+          job_cluster_key: single_node
+          spark_python_task:
+            python_file: ../../src/tasks/ds_prepare/run_sql.py
+            source: WORKSPACE
+            parameters:
+              - --data-version
+              - "{{job.parameters.data_version}}"
+              - --catalog
+              - "{{job.parameters.catalog}}"
+              - --silver-schema
+              - "{{job.parameters.silver_schema}}"
+              - --ds-schema
+              - "{{job.parameters.ds_schema}}"
+              - 04_check.sql
+      job_clusters:
+        - job_cluster_key: single_node
+          new_cluster:
+            policy_id: ${var.policy_id}
+            spark_version: 15.4.x-scala2.12
+            node_type_id: ${var.node_type_id}
+            num_workers: 0
+            data_security_mode: SINGLE_USER
+            spark_conf:
+              spark.databricks.cluster.profile: singleNode
+              spark.master: "local[*]"
+            custom_tags:
+              ResourceClass: SingleNode
+              cost_owner: p2
+
     ds_benchmark:
       name: instacart-ds-benchmark
       max_concurrent_runs: 1

@@ -472,7 +472,7 @@ Quyền **bên trong Databricks** (ai đọc/ghi schema nào) được cấp b�
 
 ### Bước 3.9 · Budget và cảnh báo chi phí
 
-**Vì sao:** credit Students có hạn (khoảng 100 USD). Hết credit thì subscription bị vô hiệu hóa và tài nguyên dừng. Budget gửi email sớm cho cả nhóm. Đây cũng là bằng chứng "thông tin chi phí, quota" cho rubric 5.4.
+**Vì sao:** credit Students có hạn (khoảng 100 USD). Hết credit thì subscription bị vô hiệu hóa và tài nguyên dừng. Budget gửi email sớm cho cả nhóm. Đây cũng là bằng chứng "thông tin chi phí, quota" cho rubric 5.4. Nhận email mốc 75–90% thì bắt đầu chuyển sang Sub D theo [chuyen_sang_sub_d.md](chuyen_sang_sub_d.md).
 
 ```hcl
 resource "azurerm_monitor_action_group" "team" {

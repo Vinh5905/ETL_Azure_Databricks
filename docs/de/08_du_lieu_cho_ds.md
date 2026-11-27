@@ -87,129 +87,50 @@ Bảng chỉ insert lần đầu cho mỗi phiên bản. Nếu kết quả bằn
 
 ## 5. Xuất file cho Hadoop local
 
-```python
-# src/tasks/ds_prepare/export_txt.py  (job cluster single-node của DE)
-import argparse
-import json
+[`export_txt.py`](../../src/tasks/ds_prepare/export_txt.py) lấy `transactions` của
+phiên bản đã chọn và chỉ xuất split `prior`. Mỗi dòng chứa các `idx` cách nhau
+bằng dấu cách. Giữ nguyên `scale_bucket` để ba cấp có cùng tập đơn ở mỗi quy mô.
 
-from pyspark.sql import SparkSession
-from pyspark.sql import functions as F
+Job ghi 12 thư mục `/Volumes/<catalog>/<ds_schema>/exports/<v>/<grain>/scale=<pct>/`
+với ba cấp và bốn quy mô 10/25/50/100. Sau mỗi lần ghi, Spark đọc lại và so số dòng
+với số giao dịch nguồn. Job thu hồi manifest trước khi ghi đè và công bố
+`<v>/_manifest.json` sau khi cả 12 thư mục đạt. DS chỉ tải file khi job `check`
+đã đạt và manifest có đủ 12 số đếm.
 
-VOL = "/Volumes/instacart/ds_data/exports"
-GRAINS, SCALES = ("product", "aisle", "department"), (10, 25, 50, 100)
-
-p = argparse.ArgumentParser()
-p.add_argument("--data-version", default="v1")
-v = p.parse_args().data_version
-spark = SparkSession.builder.getOrCreate()
-
-tx = spark.table("instacart.ds_data.transactions").where((F.col("data_version") == v) & (F.col("split") == "prior"))
-manifest = {"data_version": v, "format": "txt: idx cách nhau bằng dấu cách, mỗi dòng một giao dịch"}
-for grain in GRAINS:
-    manifest[grain] = {}
-    for scale in SCALES:
-        part = tx.where((F.col("grain") == grain) & (F.col("scale_bucket") < scale))
-        path = f"{VOL}/{v}/{grain}/scale={scale}"
-        (part.select(F.concat_ws(" ", F.transform("items", lambda x: x.cast("string"))).alias("value"))
-             .repartition(max(1, scale // 25))                           # vài file; HDFS tự chia block 8 MB lúc put
-             .write.mode("overwrite").text(path))
-        n_written = spark.read.text(path).count()
-        n_expected = part.count()
-        assert n_written == n_expected, (grain, scale, n_written, n_expected)
-        manifest[grain][str(scale)] = n_expected
-
-# Manifest ghi SAU CÙNG: có manifest nghĩa là mọi file đã đủ (vai trò như _SUCCESS)
-with open(f"{VOL}/{v}/_manifest.json", "w") as f:
-    json.dump(manifest, f, indent=2)
-```
-
-- Volume `ds_data.exports` trỏ tới `abfss://ds-data@<lake>.dfs.core.windows.net/exports`. Đường dẫn `/Volumes/…/exports/v1/product/scale=10/` tương ứng với blob `ds-data/exports/v1/product/scale=10/`, nơi AzCopy ở máy local tải về ([ds/03 §3](../ds/03_hadoop_mapreduce_local.md)).
-- `mode("overwrite")` trên đường dẫn tất định: chạy lại thì thay đúng thư mục đó bằng nội dung y hệt, vì `transactions` của một phiên bản không đổi.
-- Volume hỗ trợ ghi file bằng `open()` của Python (FUSE), nên manifest không cần `dbutils`.
+Volume prod `instacart.ds_data.exports` trỏ vào `ds-data/exports` cho AzCopy.
+Dev dùng volume `exports` trong schema dev riêng. Xem cách đưa file vào HDFS
+ở [DS/03 §3](../ds/03_hadoop_mapreduce_local.md).
 
 ## 6. Job `ds-prepare`
 
-```yaml
-# bundles/resources/jobs_ds.yml  (phần của DE)
-resources:
-  jobs:
-    ds_prepare:
-      name: instacart-ds-prepare
-      max_concurrent_runs: 1
-      parameters:
-        - { name: data_version, default: v1 }
-      tasks:
-        - task_key: prepare_tables                      # chạy 01 → 02 → 03 theo thứ tự
-          job_cluster_key: sn
-          spark_python_task:
-            python_file: ../../src/tasks/ds_prepare/run_sql.py
-            parameters: ["--data-version", "{{job.parameters.data_version}}",
-                         "01_snapshot.sql", "02_index_transactions.sql", "03_holdout.sql"]
-        - task_key: export_txt
-          depends_on: [{ task_key: prepare_tables }]
-          job_cluster_key: sn
-          spark_python_task:
-            python_file: ../../src/tasks/ds_prepare/export_txt.py
-            parameters: ["--data-version", "{{job.parameters.data_version}}"]
-        - task_key: check
-          depends_on: [{ task_key: export_txt }]
-          job_cluster_key: sn
-          spark_python_task:
-            python_file: ../../src/tasks/ds_prepare/run_sql.py
-            parameters: ["--data-version", "{{job.parameters.data_version}}", "04_check.sql"]
-      job_clusters:
-        - job_cluster_key: sn
-          new_cluster:                          # khai đủ trường fixed của policy, không dùng apply_policy_default_values (devops/05 §3 bước 6)
-            policy_id: ${var.policy_id}
-            spark_version: 15.4.x-scala2.12
-            node_type_id: ${var.node_type_id}
-            num_workers: 0
-            data_security_mode: SINGLE_USER
-            spark_conf:
-              spark.databricks.cluster.profile: singleNode
-              spark.master: "local[*]"
-            custom_tags: { ResourceClass: SingleNode, cost_owner: p2 }
+[`jobs_ds.yml`](../../bundles/resources/jobs_ds.yml) khai báo `ds_prepare` với
+`max_concurrent_runs: 1`, không có lịch. Ba task dùng chung cluster single-node.
+Chạy khi quota 4 vCPU rảnh và nguồn Silver đã đạt G3.
+
+| Task | Việc thực hiện |
+|---|---|
+| `prepare_tables` | Chạy 01 → 02 → 03 qua [`run_sql.py`](../../src/tasks/ds_prepare/run_sql.py) để cố định snapshot và tạo bảng dẫn xuất |
+| `export_txt` | Xuất và kiểm 12 nhóm file rồi ghi manifest |
+| `check` | Chạy [`04_check.sql`](../../src/tasks/ds_prepare/04_check.sql) để chặn bàn giao nếu dữ liệu sai |
+
+Tạo schema DS dev và volume managed `exports` trong schema đó trước khi chạy.
+Trong `bundles/`, deploy target `dev` rồi chạy với Silver đã nghiệm thu và
+schema đích dev. Ví dụ:
+
+```bash
+databricks bundle run -t dev --params data_version=v1,silver_schema=<silver_dev>,ds_schema=<ds_dev> ds_prepare
 ```
 
-- [`run_sql.py`](../../src/tasks/ds_prepare/run_sql.py) chạy 01 → 02 → 03 theo mặc định trong cùng SparkSession.
-  Runner tách `;` bên ngoài chuỗi, identifier và comment rồi dừng tại câu lỗi. `:v` được bind qua
-  `spark.sql(..., args=...)`. Delta OSS 3.3 tách predicate `REPLACE WHERE` trước khi bind, nên runner chỉ
-  render phiên bản đã kiểm định dạng ở hai predicate ghi đè. Tên bảng đi qua `IDENTIFIER` đã quote từng phần.
-  Dùng `--catalog`, `--silver-schema` và `--ds-schema` để cô lập dev/local. Có thể truyền danh sách tên file
-  trong thư mục `ds_prepare` để repair một bước, hoặc chạy `04_check.sql` sau khi AD-DE-21 bổ sung file đó.
-  AD-DE-21 truyền cùng ba tham số namespace cho `04_check.sql` và `export_txt.py`. Dùng tên
-  bảng đã quote từ `sql_args` qua `IDENTIFIER(:…)` khi truy vấn SQL, cùng schema DS cho volume xuất.
-  Thay namespace minh họa ở §5 và §7 bằng tham số đã resolve trước khi chạy dev.
-- AD-DE-20 kiểm ba file trên Spark 3.5 và Delta 3.3 local với fixture. AD-DE-21 phụ trách bundle, file txt,
-  check G3 và nghiệm thu `v1` trên workspace với dữ liệu đầy đủ.
-- **Không đặt lịch.** P2 chạy tay một lần sau G3 (`databricks bundle run ds_prepare`), và chạy lại khi tạo phiên bản mới.
-- Dùng job cluster single-node (4 vCPU), nên **không chạy cùng lúc** với job batch hay pipeline stream.
+Giữ nguyên `catalog`, `silver_schema`, `ds_schema` và `data_version` khi repair
+hoặc chạy lại. Runner kiểm và quote tên bảng, phiên bản trước khi chạy SQL trên DBR 15.4. Prod dùng mặc định
+`silver` và `ds_data`, chạy tay sau khi G3 của prod đạt.
 
 ## 7. Checklist (mốc G3 của DS)
 
-```sql
--- src/tasks/ds_prepare/04_check.sql   (assert_true: sai thì task đỏ)
-SELECT assert_true(n_prior = (SELECT count(*) FROM instacart.silver.baskets WHERE split = 'prior'),
-                   'n_prior lệch silver.baskets')
-FROM instacart.ds_data.data_versions WHERE data_version = :v;
-
-SELECT assert_true(count(DISTINCT grain) = 3 AND min(n) = max(n), 'mỗi cấp phải có cùng số giỏ prior')
-FROM (SELECT grain, count(*) AS n FROM instacart.ds_data.transactions
-      WHERE data_version = :v AND split = 'prior' GROUP BY grain);
-
-SELECT assert_true(sum(n_items) = (SELECT sum(n_items) FROM instacart.ds_data.baskets
-                                   WHERE data_version = :v AND split = 'prior'),
-                   'tổng số món cấp product phải bằng snapshot (mỗi món 1 lần / đơn)')
-FROM instacart.ds_data.transactions WHERE data_version = :v AND grain = 'product' AND split = 'prior';
-
-SELECT assert_true(count_if(grain = 'department') = 21 AND count_if(grain = 'aisle') = 134,
-                   'số item cấp department / aisle')
-FROM instacart.ds_data.item_index WHERE data_version = :v;
-
-SELECT assert_true(count(*) > 0 AND abs(count_if(eval_part = 'val') - count_if(eval_part = 'test')) < 0.05 * count(*),
-                   'holdout_eval rỗng hoặc chia val/test lệch')
-FROM instacart.ds_data.holdout_eval WHERE data_version = :v;
-```
+[`04_check.sql`](../../src/tasks/ds_prepare/04_check.sql) kiểm số giỏ prior/holdout
+của phiên bản khớp nguồn và snapshot, prior đủ ba cấp với khóa duy nhất, tổng món
+cấp product khớp snapshot, index có 21 department và 134 aisle, và holdout chia
+`val`/`test` lệch dưới 5%.
 
 **Ghi vào báo cáo** (chạy tay, không chặn):
 
@@ -226,12 +147,40 @@ FROM instacart.ds_data.holdout_eval WHERE data_version = :v;
 - [ ] P4 (vai `ds`, không thuộc `de`) đọc được `ds_data.*` và volume `exports`; **không** ghi được (`INSERT` báo `PERMISSION_DENIED`). Không thử bằng P1 vì P1 thuộc `de`.
 - [ ] Báo DS (P4) rằng `v1` đã sẵn sàng; ghi ngày tạo `v1` vào [ds/00 §5](../ds/00_tong_quan_ds.md).
 
+### Nghiệm thu v1 trên dev
+
+Ngày 26/11/2026, tạo `v1` trong `instacart.23521394_ad21_ds_data` từ `instacart.23521394_ad17_replay_silver`
+đã đạt G3 ở [AD-DE-17](06c_nghiem_thu_reconciliation.md#nghiệm-thu-sau-replay-ad-st-07).
+Cả ba task đều thành công ở hai lượt. [Lượt đầu](https://adb-7405615740735217.17.azuredatabricks.net/jobs/977787802741923/runs/447868960559557?o=7405615740735217) ·
+[Lượt chạy lại](https://adb-7405615740735217.17.azuredatabricks.net/jobs/977787802741923/runs/971019481850633?o=7405615740735217)
+
+| Số liệu | Kết quả dev |
+|---|---:|
+| Giỏ prior / holdout trong snapshot | 3.214.874 / 131.209 |
+| Item cấp product / aisle / department | 49.677 / 134 / 21 |
+| Holdout dùng được theo val / test | 62.232 / 62.132 |
+| Dòng món holdout có sản phẩm chưa có trong prior | 9 |
+
+Manifest tại `/Volumes/instacart/23521394_ad21_ds_data/exports/v1/_manifest.json` có đủ 12 số đếm:
+
+| Cấp | 10% | 25% | 50% | 100% |
+|---|---:|---:|---:|---:|
+| product | 321.030 | 803.462 | 1.606.589 | 3.214.874 |
+| aisle | 321.030 | 803.462 | 1.606.589 | 3.214.874 |
+| department | 321.030 | 803.462 | 1.606.589 | 3.214.874 |
+
+Hai lượt kiểm `01f1e99a-339c-1383-b5f7-1ebfd72adcc4` và `01f1e99c-de1e-1e82-86d5-fbb3d21bac8c` cho cùng số dòng và cùng tổng
+`xxhash64` trên từng hàng nghiệp vụ của cả bảy bảng. Hai bản manifest trùng nội dung.
+Đã kiểm quyền hiệu lực của Trung trên schema dev và volume để bàn giao cho AD-DS-11.
+Bài thử bằng chính tài khoản DS đọc bảng, đọc file và bị từ chối `INSERT` được theo dõi
+ở [issue #57](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/57).
+
 ## 8. Lỗi giữa chừng thì chạy lại thế nào
 
 | Tình huống | Cách chạy lại | Vì sao không trùng / không mất |
 |---|---|---|
 | `prepare_tables` lỗi trong hoặc giữa 01 → 03 | Repair run cùng phiên bản, catalog và schema ban đầu | Bước 01 giữ phần snapshot đã commit, bước 02 chỉ thay phần của phiên bản đang chạy, bước 03 giữ tập đánh giá đã tạo |
-| `export_txt` lỗi ở một quy mô | Repair run | `mode("overwrite")` trên đường dẫn tất định; manifest chỉ ghi khi **mọi** file đủ |
+| `export_txt` lỗi ở một quy mô | Repair run | Ghi đè đường dẫn tất định; công bố manifest sau khi kiểm đủ 12 nhóm file |
 | `check` báo lệch | Điều tra theo thông báo; nếu silver sai thì sửa silver rồi tạo **`v2`** | `v1` không bị sửa ngầm; DS biết rõ đang dùng phiên bản nào |
 | Lỡ chạy job với `data_version` đã có | Không cần làm gì | Snapshot và holdout bị chặn ghi; index/transactions tính lại ra y hệt |
 | File trên volume bị xóa nhầm | Chạy lại riêng task `export_txt` | Tạo lại từ `ds_data.transactions` |

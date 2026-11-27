@@ -292,8 +292,10 @@ resource "databricks_grants" "catalog" {
   dynamic "grant" {
     for_each = local.grants_by_member["catalog"]
     content {
-      principal  = databricks_user.members[grant.key].user_name
-      privileges = grant.value
+      principal = databricks_user.members[grant.key].user_name
+      # MANAGE cho uc_managers: xóa được catalog khi SP CI cũ (owner) mất đăng nhập. MANAGE áp xuống
+      # mọi schema, bảng, volume bên trong (docs/devops/chuyen_sang_sub_d.md §4).
+      privileges = contains(var.uc_managers, grant.key) ? concat(grant.value, ["MANAGE"]) : grant.value
     }
   }
 
@@ -343,6 +345,35 @@ resource "databricks_grants" "volume" {
   grant {
     principal  = databricks_service_principal.ci.application_id
     privileges = local.rw_volume
+  }
+}
+
+# Storage credential và external location do SP CI sở hữu, thành viên không có grant nào (bước 3).
+# Chỉ cấp MANAGE cho uc_managers, để xóa được chúng trong metastore dùng chung khi chuyển subscription.
+# MANAGE không kèm READ FILES hay WRITE FILES, nên không mở đường đọc file ngoài volume.
+resource "databricks_grants" "storage_credential" {
+  storage_credential = databricks_storage_credential.lake.name
+
+  dynamic "grant" {
+    for_each = toset(var.uc_managers)
+    content {
+      principal  = databricks_user.members[grant.key].user_name
+      privileges = ["MANAGE"]
+    }
+  }
+}
+
+resource "databricks_grants" "external_location" {
+  for_each = databricks_external_location.layer
+
+  external_location = each.value.name
+
+  dynamic "grant" {
+    for_each = toset(var.uc_managers)
+    content {
+      principal  = databricks_user.members[grant.key].user_name
+      privileges = ["MANAGE"]
+    }
   }
 }
 

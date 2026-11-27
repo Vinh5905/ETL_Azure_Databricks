@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import re
+import sys
 from collections.abc import Sequence
 from pathlib import Path
 from typing import TYPE_CHECKING
@@ -11,7 +12,8 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from pyspark.sql import SparkSession
 
-SQL_DIR = Path(__file__).resolve().parent
+# Spark Python Task có thể thực thi file bằng exec(compile(...)) mà không đặt __file__.
+SQL_DIR = Path(globals().get("__file__", sys._getframe().f_code.co_filename)).resolve().parent
 PREPARE_FILES = ("01_snapshot.sql", "02_index_transactions.sql", "03_holdout.sql")
 VERSION = re.compile(r"[A-Za-z0-9][A-Za-z0-9_-]{0,63}")
 REPLACE_VERSION = re.compile(
@@ -19,6 +21,13 @@ REPLACE_VERSION = re.compile(
     r"REPLACE\s+WHERE\s+data_version\s*=\s*):v\b",
     re.IGNORECASE,
 )
+
+SQL_TOKEN = re.compile(
+    r"--|/\*|['\"`]|\bIDENTIFIER\(\s*:(?P<identifier>[a-z_]+)\s*\)|:(?P<literal>[a-z_]+)\b",
+    re.IGNORECASE,
+)
+NAME_PART = r"(?:`(?:[^`]|``)+`|[A-Za-z_]\w*)"
+QUALIFIED_NAME = re.compile(rf"{NAME_PART}(?:\.{NAME_PART}){{0,2}}")
 
 
 def _block_end(sql: str, start: int) -> int:
@@ -129,6 +138,43 @@ def _load_sql(files: Sequence[str]) -> list[tuple[str, list[str]]]:
     return loaded
 
 
+def _render_sql(statement: str, args: dict[str, str]) -> str:
+    # DBR 15.4 có thể bỏ sót marker tên bảng trong INSERT có CTE.
+    parts = []
+    pos = 0
+    while token := SQL_TOKEN.search(statement, pos):
+        start, end = token.span()
+        parts.append(statement[pos:start])
+        if token.group() == "--":
+            newline = statement.find("\n", end)
+            end = len(statement) if newline < 0 else newline
+        elif token.group() == "/*":
+            end = _block_end(statement, start)
+        elif token.group() in "'\"`":
+            end = _quoted_end(statement, start)
+        elif name := token.group("identifier"):
+            identifier = args[name]
+            if not QUALIFIED_NAME.fullmatch(identifier):
+                raise ValueError(f"Tên bảng SQL không hợp lệ: {name}")
+            parts.append(identifier)
+            pos = end
+            continue
+        elif token.group("literal") == "v":
+            parts.append(f"'{args['v']}'")
+            pos = end
+            continue
+        elif token.group("literal") == "source_baskets":
+            encoded = args["source_baskets"].encode("utf-8").hex()
+            parts.append(f"CAST(unhex('{encoded}') AS STRING)")
+            pos = end
+            continue
+        else:
+            raise ValueError(f"Marker SQL không được hỗ trợ: {token.group()}")
+        parts.append(statement[start:end])
+        pos = end
+    return "".join(parts) + statement[pos:]
+
+
 def run_files(spark: SparkSession, args: dict[str, str], files: Sequence[str] = PREPARE_FILES) -> None:
     version = args["v"]
     if not VERSION.fullmatch(version):
@@ -136,15 +182,14 @@ def run_files(spark: SparkSession, args: dict[str, str], files: Sequence[str] = 
     # Đọc và tách toàn bộ file trước lần ghi đầu tiên. Chỉ collect kết quả kiểm tra hoặc DML.
     for name, statements in _load_sql(files):
         for index, statement in enumerate(statements, start=1):
-            # Delta OSS 3.3 tách predicate REPLACE WHERE trước khi Spark bind marker.
-            # Chỉ render literal đã kiểm ở hai predicate cố định, giữ bind cho phần SELECT.
             try:
-                statement, substitutions = REPLACE_VERSION.subn(lambda m: f"{m[1]}'{version}'", statement)
-                if not substitutions and re.search(r"\bREPLACE\s+WHERE\b", statement, flags=re.IGNORECASE):
+                if re.search(r"\bREPLACE\s+WHERE\b", statement, flags=re.IGNORECASE) and not REPLACE_VERSION.match(
+                    statement
+                ):
                     raise ValueError(
                         "REPLACE WHERE cần dạng INSERT INTO IDENTIFIER(:bảng) REPLACE WHERE data_version = :v"
                     )
-                spark.sql(statement, args=args).collect()
+                spark.sql(_render_sql(statement, args)).collect()
             except Exception as exc:
                 raise RuntimeError(f"{name}, câu {index}, phiên bản {version}: {exc}") from exc
 

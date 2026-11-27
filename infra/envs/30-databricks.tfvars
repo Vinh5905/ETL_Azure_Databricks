@@ -8,3 +8,7 @@ roles = {
   ds = ["p1", "p4"]
   bi = ["p4"]
 }
+
+# Người giữ quyền MANAGE trên catalog, storage credential, external location, để xóa được chúng khi
+# SP CI cũ mất đăng nhập lúc chuyển subscription (docs/devops/chuyen_sang_sub_d.md §4).
+uc_managers = ["p1"]

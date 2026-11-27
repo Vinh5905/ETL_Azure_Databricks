@@ -103,6 +103,10 @@
 
 ## 5. Cổng và mốc
 
+Snapshot dev `v1` cho AD-DS-11 được tạo ngày 26/11/2026 trong `instacart.23521394_ad21_ds_data`.
+Dùng [số liệu và đường dẫn export dev](../de/08_du_lieu_cho_ds.md#nghiệm-thu-v1-trên-dev).
+Bản `v1` chính thức dùng schema prod sau khi G3 prod đạt.
+
 | Cổng / mốc | Điều kiện vào | Việc | Xong khi |
 |---|---|---|---|
 | G0 | — | DS đọc bài báo; viết DApriori/DATID và test trên dữ liệu đồ chơi ở máy local; dựng thử cụm Hadoop Docker | Test đúng đắn trên dữ liệu đồ chơi đạt ([02 §6](02_thuat_toan_spark.md)) |
