@@ -210,6 +210,7 @@ jobs:
   core:          { uses: ./.github/workflows/_tf-stack.yml, with: { stack: 10-core },          secrets: inherit }
   databricks:    { needs: core,       uses: ./.github/workflows/_tf-stack.yml, with: { stack: 30-databricks },    secrets: inherit }
   orchestration: { needs: databricks, uses: ./.github/workflows/_tf-stack.yml, with: { stack: 40-orchestration }, secrets: inherit }
+  serving:       { needs: databricks, uses: ./.github/workflows/_tf-stack.yml, with: { stack: 50-serving },       secrets: inherit }   # tùy chọn, G5
 ```
 
 `_tf-stack.yml` là **reusable workflow** gồm các bước login, init, plan, apply. Nó khai báo `environment: prod` và chỉ chạy apply khi plan có thay đổi (`-detailed-exitcode` = 2). `20-stream` **không** nằm trong chuỗi này, vì stack đó có workflow riêng.

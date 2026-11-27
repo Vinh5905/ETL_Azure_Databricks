@@ -54,6 +54,9 @@ jobs:
               - infra/stacks/40-orchestration/**
               - infra/envs/40-orchestration.tfvars
               - adf/**
+            50-serving:
+              - infra/stacks/50-serving/**
+              - infra/envs/50-serving.tfvars
 
   plan:
     needs: detect

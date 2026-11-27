@@ -715,13 +715,18 @@ resource "azurerm_function_app_flex_consumption" "recommend" {
 }
 
 resource "azurerm_role_assignment" "func_ds_reader" {          # phương án B
-  scope                = "${local.core.lake_account_id}/blobServices/default/containers/ds"
+  scope                = "${local.core.lake_account_id}/blobServices/default/containers/ds-data"
   role_definition_name = "Storage Blob Data Reader"
   principal_id         = local.core.func_identity_principal_id
 }
 ```
 
 - `local.core` đọc từ `terraform_remote_state` của `10-core`. Output `lake_account_id` và `func_identity_principal_id` đã có từ bước 3.10.
+- **Code thật** (AD-OPS-31) dùng AVM `avm-res-web-serverfarm` 2.1.0 và `avm-res-web-site` 0.25.0 thay cho hai resource azurerm ở trên:
+  - `azurerm_function_app_flex_consumption` (azurerm 4.81.0) luôn ghi `AzureWebJobsStorage` dạng connection string với key rỗng, nên host không chạy được bằng danh tính khi storage tắt shared key.
+  - Đặt `AzureWebJobsStorage = ""` để chặn thì plan không bao giờ hết thay đổi (issue 33211 của provider azurerm, còn mở).
+  - AVM chỉ ghi bộ `AzureWebJobsStorage__accountName/credential/clientId` khi `storage_uses_managed_identity = true`.
+- Host storage của Function dùng chung storage account gói code. UAMI được cấp *Storage Blob Data Contributor* trên account này (Function chỉ có trigger HTTP, không cần Queue/Table).
 - **Spike:** Flex Consumption có ở region đã chốt và subscription Students có cho tạo hay không ([01 §3.5](01_chuan_bi_va_spike.md)). Không được thì dùng gói Consumption cũ (`sku_name = "Y1"`, resource `azurerm_linux_function_app`), và ghi lý do vào báo cáo.
 - Code Function deploy bằng workflow `func-deploy` ([04 §3.8](04_github_actions_cicd.md)), không đi qua Terraform.
 

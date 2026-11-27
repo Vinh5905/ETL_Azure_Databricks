@@ -32,6 +32,7 @@ jobs:
           - stacks/20-stream
           - stacks/30-databricks
           - stacks/40-orchestration
+          - stacks/50-serving
           - stacks/90-sandbox
     defaults:
       run:

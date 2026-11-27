@@ -36,3 +36,12 @@ jobs:
     with:
       stack: 40-orchestration
     secrets: inherit
+
+  # 50-serving đọc output của 10-core (UAMI Function, lake, URL workspace). Chạy sau 30-databricks
+  # vì identity id-func-recommend được thêm vào workspace ở đó (docs/devops/03 §6).
+  serving:
+    needs: databricks
+    uses: ./.github/workflows/_tf-stack.yml
+    with:
+      stack: 50-serving
+    secrets: inherit
