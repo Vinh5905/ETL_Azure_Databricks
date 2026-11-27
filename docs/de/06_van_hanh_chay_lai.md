@@ -47,7 +47,8 @@ Bốn bước SQL chạy trên Spark serverless qua [notebook](../../src/tasks/r
 Mỗi bước đọc file SQL tương ứng và chạy tuần tự trong cùng SparkSession, bind tham số theo tên.
 `resolve_pipeline_update` công bố `update_id` qua Jobs task value để `collect_dq` nhận đúng lượt.
 Warehouse `wh-instacart-bi` phục vụ truy vấn nghiệm thu và BI.
-Bundle giữ `enable_baskets=false` cho lượt batch cơ bản. Phần hai view và kiểm G3/G4 đợi đủ nguồn.
+Target dev giữ `enable_baskets=false` cho lượt batch cơ bản. Target prod bật `enable_baskets` và `enable_gold_fact`
+từ G3, nên chỉ chạy batch prod sau khi stream prod đã tạo hai bảng stream và đã chạy `create_views.sql`.
 Chạy batch tách thời gian với crawler, seed và stream để vừa quota 4 vCPU.
 
 Khi repair task pipeline, dùng task run ID mới và chạy lại các task phụ thuộc. Khi chỉ repair

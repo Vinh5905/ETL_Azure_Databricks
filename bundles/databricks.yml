@@ -113,3 +113,11 @@ targets:
     permissions:
       - level: CAN_VIEW
         group_name: users
+    variables:
+      # G3 prod: bật silver từ stream (baskets) và fact Gold. Chỉ chạy batch prod sau khi
+      # pipeline stream prod đã tạo hai bảng stream và đã chạy create_views.sql.
+      enable_baskets: "true"
+      enable_gold_fact: "true"
+      # Prod chưa từng đọc Event Hubs nên g1 là checkpoint mới. Mỗi lần hub được tạo lại
+      # sau lượt đọc đầu, mở PR đổi mã này trước khi chạy lại stream prod.
+      eh_generation: g1

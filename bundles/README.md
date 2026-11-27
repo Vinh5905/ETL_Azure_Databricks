@@ -119,7 +119,8 @@ Hợp đồng counters, khóa có dataset và cách nghiệm thu chạy hai lầ
 47 khóa expectation và bốn bảng quarantine. Còn chờ event log stream.
 
 AD-DE-15 thêm `baskets` và views UC hợp nhất. Mặc định `enable_baskets=false`; chỉ bật
-khi hai bảng stream tồn tại đúng schema. Xem [nghiệm thu baskets](../docs/de/03f_nghiem_thu_baskets.md).
+khi hai bảng stream tồn tại đúng schema. Target prod bật `enable_baskets` và `enable_gold_fact`
+từ G3 trong `targets.prod.variables`, nên batch prod chỉ chạy sau khi stream prod và hai view đã có. Xem [nghiệm thu baskets](../docs/de/03f_nghiem_thu_baskets.md).
 
 ## Nghiệm thu pipeline stream (AD-ST-03)
 
@@ -160,8 +161,8 @@ phối hợp với lịch batch theo quota 4 vCPU.
 
 `eh_region` mặc định là `koreacentral`, region của Event Hubs Sub B theo
 [kết quả spike](../docs/devops/spike_results.md). Khi AD-ST-04 đã có source Kafka,
-cấu hình CI prod với `dbx_region` đúng region workspace và `eh_generation` ứng
-với lần tạo hub. Mỗi lần hub được tạo lại, cấp mã thế hệ mới
+target prod dùng `dbx_region` đúng region workspace và `eh_generation` ứng với lần tạo hub,
+đặt trong `targets.prod.variables` của `databricks.yml`. Mỗi lần hub được tạo lại, cấp mã thế hệ mới
 trong lần deploy tiếp theo. Đặt `stream_schedule_pause_status=UNPAUSED` khi hub hoạt
 động và pipeline chạy từng đợt. Tạm dừng lịch trước khi tắt hub hoặc trước khi CI triển khai
 `stream_continuous=true` để demo. Trước demo, phối hợp dừng lịch batch và xác nhận
