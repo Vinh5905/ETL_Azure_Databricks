@@ -104,9 +104,6 @@ Endpoint được khai báo riêng trong target `serving`, không thuộc deploy
 
 ```yaml
 # bundles/resources/serving_ds.yml
-variables:
-  champion_version:
-    description: Phiên bản model UC sau lượt ds-champion
 targets:
   serving:
     resources:

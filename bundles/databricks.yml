@@ -86,6 +86,9 @@ variables:
       để endpoint serving cấp CAN_QUERY cho Function. CI tra theo tên rồi đặt qua
       BUNDLE_VAR_func_sp_application_id; local để trống nếu không deploy serving_ds.yml.
     default: ""
+  champion_version:
+    description: Phiên bản UC model basket_rules; phải truyền phiên bản thật khi deploy target serving
+    default: ""
 
 targets:
   dev:

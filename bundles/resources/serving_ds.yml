@@ -1,8 +1,4 @@
 # Endpoint chỉ thuộc target serving riêng; dev/prod deploy thường không tạo endpoint trước model.
-variables:
-  champion_version:
-    description: Phiên bản UC model basket_rules sau lượt ds-champion đầu tiên
-
 targets:
   serving:
     resources:

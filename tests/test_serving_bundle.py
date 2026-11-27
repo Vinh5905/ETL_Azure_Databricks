@@ -13,6 +13,7 @@ def test_serving_endpoint_is_isolated_from_dev_and_normal_prod_deploys():
     endpoint = serving["targets"]["serving"]["resources"]["model_serving_endpoints"]["basket_rules"]
 
     assert "serving" in base["targets"]
+    assert base["variables"]["champion_version"]["default"] == ""
     assert "model_serving_endpoints" not in base["targets"]["dev"].get("resources", {})
     assert "model_serving_endpoints" not in base["targets"]["prod"].get("resources", {})
     assert endpoint["name"] == "instacart-basket-rules"
