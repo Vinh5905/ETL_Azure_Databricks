@@ -27,6 +27,7 @@ resources:
         ops: ${var.schema_prefix}ops
         eh_topic: orders-stream
         eh_generation: ${var.eh_generation}
+        eh_listen_secret: ${var.eh_listen_secret}
         eh_region: ${var.eh_region}
         dbx_region: ${var.dbx_region}
         spark.sql.session.timeZone: UTC
