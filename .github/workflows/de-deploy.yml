@@ -38,6 +38,13 @@ jobs:
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_A }}
       - uses: databricks/setup-cli@main
+      # Client id của UAMI Function (output func_identity_client_id của 10-core), tra theo tên để không
+      # phải giữ thêm secret và vẫn đúng khi tạo lại hạ tầng ở subscription khác. Che giá trị trong log.
+      - name: Look up Function SP
+        run: |
+          id=$(az identity show -g rg-instacart-core -n id-func-recommend --query clientId -o tsv)
+          echo "::add-mask::$id"
+          echo "BUNDLE_VAR_func_sp_application_id=$id" >> "$GITHUB_ENV"
       - run: databricks bundle deploy -t dev
         working-directory: bundles
       # TODO(G1): thêm job smoke-test trên dữ liệu mẫu rồi bật bước này
@@ -76,6 +83,11 @@ jobs:
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_A }}
       - uses: databricks/setup-cli@main
+      - name: Look up Function SP
+        run: |
+          id=$(az identity show -g rg-instacart-core -n id-func-recommend --query clientId -o tsv)
+          echo "::add-mask::$id"
+          echo "BUNDLE_VAR_func_sp_application_id=$id" >> "$GITHUB_ENV"
       - name: Configure batch notifications
         working-directory: bundles
         env:

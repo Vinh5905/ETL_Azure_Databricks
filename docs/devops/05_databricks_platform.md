@@ -468,8 +468,10 @@ Thêm biến vào `databricks.yml`:
 ```yaml
 variables:
   ds_policy_id: { lookup: { cluster_policy: instacart-ds-benchmark } }
-  func_sp_application_id: { description: "client id của id-func-recommend (output 10-core), truyền qua --var" }
+  func_sp_application_id: { description: "client id của id-func-recommend (output 10-core)", default: "" }
 ```
+
+Workflow `de-deploy` tra `func_sp_application_id` bằng `az identity show -g rg-instacart-core -n id-func-recommend` rồi đặt `BUNDLE_VAR_func_sp_application_id`, giá trị được che trong log. Không cần thêm secret, và vẫn đúng khi dựng lại `10-core` ở subscription khác. Chạy local thì để trống, trừ khi deploy `serving_ds.yml`.
 
 Target `sandbox` (host của workspace Sub C) **chỉ thêm khi Sub C cùng region với Sub A**, vì khi đó hai workspace dùng chung metastore ([03 §5](03_terraform_azure.md)). Target này chỉ deploy job DS.
 

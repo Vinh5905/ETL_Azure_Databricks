@@ -80,6 +80,12 @@ variables:
   ci_sp_id:
     description: application_id của SP CI (= client id của UAMI id-github-ci). CI đặt qua BUNDLE_VAR_ci_sp_id.
     default: ""
+  func_sp_application_id:
+    description: >-
+      application_id của SP sp-func-recommend (= client id của UAMI id-func-recommend, output 10-core),
+      để endpoint serving cấp CAN_QUERY cho Function. CI tra theo tên rồi đặt qua
+      BUNDLE_VAR_func_sp_application_id; local để trống nếu không deploy serving_ds.yml.
+    default: ""
 
 targets:
   dev:
