@@ -4,6 +4,8 @@
 
 Ngày làm spike: 2026-11-16 → 2026-11-17 (Sub A) · Người tổng hợp: P1 · Chốt G0: AD-OPS-07
 
+> **Từ 2026-11-27, Sub D thay Sub A làm subscription chính** vì credit Sub A gần hết ([chuyen_sang_sub_d.md](chuyen_sang_sub_d.md)). Sub D dùng cùng tenant và cùng region `eastasia`. Kết quả spike bên dưới đo trên Sub A và giữ nguyên làm bằng chứng G0.
+
 ## 1. Công cụ đã cài
 
 | Thành viên | az | terraform | tflint | databricks | gh | uv | Docker | Ghi chú |

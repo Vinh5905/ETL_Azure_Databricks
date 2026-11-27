@@ -3,6 +3,8 @@
 > Bộ tài liệu `docs/devops/` mô tả cách dựng toàn bộ hạ tầng bằng **Terraform** và đưa code lên **tự động bằng GitHub Actions**. Bộ tài liệu cũng chỉ rõ **mốc nào DE được bắt đầu trên cloud** và **mốc nào DS được bắt đầu**.
 > Kiến trúc đích nằm ở [docs/architecture](../architecture/). Dữ liệu được mô tả trong [data_dictionary.md](../data/data_dictionary.md).
 
+> **Từ 2026-11-27, subscription chính là Sub D** (cùng tenant, region `eastasia`), thay cho Sub A đã gần hết credit. Hạ tầng dựng lại theo [chuyen_sang_sub_d.md](chuyen_sang_sub_d.md). Trong bộ tài liệu này, "Sub A" là subscription chính, nay là Sub D.
+
 | Thứ tự đọc | File | Trả lời câu hỏi |
 |---|---|---|
 | 0 | `00_tong_quan.md` (file này) | Làm gì, theo thứ tự nào, ai làm, khi nào xong |

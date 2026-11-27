@@ -3,7 +3,7 @@
 # Giá trị không bí mật (roles) nằm ở infra/envs/30-databricks.tfvars, truyền bằng -var-file.
 
 # Storage account chứa state, khớp infra/backend.hcl (CI: TF_VAR_tfstate_account).
-tfstate_account = "sttfstatez87e6"
+tfstate_account = "sttfstatex9qak"
 
 # Tài khoản Entra (UPN) thành viên dùng đăng nhập workspace, KHÔNG phải hộp thư gm.
 # Phải giống hệt GitHub Secret TF_VAR_MEMBER_UPNS, nếu không plan ở máy lệch với CI và
