@@ -4,7 +4,7 @@ from pathlib import Path
 
 import pytest
 
-from ml.evaluate_holdout import _execute_eval_sql, evaluate_run
+from ml.evaluate_holdout import _execute_eval_sql, evaluate_run, expand_e7_confidences
 
 ROOT = Path(__file__).parents[2]
 N_ITEMS = 14  # idx 0..13 ở grain product, data_version v1
@@ -63,6 +63,24 @@ METRICS = (
     "rule_only_recall_at_k",
     "rule_only_catalog_coverage",
 )
+
+
+def test_expand_e7_confidences_restores_all_nine_evaluations():
+    rows = [
+        {
+            "run_key": f"support-{support}",
+            "min_confidence": 0.1,
+            "sweep": '{"min_confidence":[0.1,0.2,0.3]}',
+        }
+        for support in (1, 2, 5)
+    ]
+    expanded = expand_e7_confidences(rows)
+    assert len(expanded) == 9
+    assert expanded == [(f"support-{support}", confidence) for support in (1, 2, 5) for confidence in (0.1, 0.2, 0.3)]
+
+
+def test_expand_e7_confidences_falls_back_to_run_min_confidence():
+    assert expand_e7_confidences([{"run_key": "legacy", "min_confidence": 0.2, "sweep": None}]) == [("legacy", 0.2)]
 
 
 def _metrics(row) -> dict:

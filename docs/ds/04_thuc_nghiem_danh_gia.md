@@ -168,14 +168,15 @@ def time_limit(sc, minutes: int, group: str):
 
 ### 5.1 Luồng
 
-`plan` → `grid_c1` → `grid_c2` → `grid_c4` → `ingest_local` → `publish_gold`
+`plan` → `grid_c1` → `grid_c2` → `grid_c4` → `publish_gold`
 
 | Task | Loại | Làm gì |
 |---|---|---|
 | `plan` | Python, cluster `c1` | Đọc `experiments.yml` (lọc theo tham số `experiments`), bung thành từng tổ hợp, **bỏ tổ hợp đã `ok`**, ghi phần còn lại vào `ml.experiment_queue`. Đặt task value `queue_c1/c2/c4` = danh sách `run_key` rút gọn (12 ký tự) theo số core |
 | `grid_c{n}` | `for_each_task`, `concurrency: 1` | Mỗi vòng gọi `run_experiment.py --run-key <id>` trên cluster `local[n]`. Chạy tuần tự để các phép đo không chen nhau |
-| `ingest_local` | `sql_task` (serverless) | `COPY INTO` từ `/Volumes/instacart/ml/inbox/local/` rồi `MERGE` vào `ml.experiment_runs` ([03 §7](03_hadoop_mapreduce_local.md)) |
 | `publish_gold` | `sql_task` (serverless) | Tạo lại view `gold.*` của DS ([05 §4](05_mlflow_serving_bao_cao.md)) |
+
+`ingest_local` là job chạy tay riêng `ds_ingest_local`, chỉ chạy sau khi đã upload kết quả E6 vào volume. Nhờ vậy benchmark E1–E5/E7 không phụ thuộc thư mục E6 tồn tại.
 
 **Vì sao task value chỉ chứa `run_key` rút gọn:** task value có giới hạn kích thước. Tham số đầy đủ của mỗi tổ hợp nằm trong `ml.experiment_queue`, mỗi vòng tự đọc phần của mình.
 
