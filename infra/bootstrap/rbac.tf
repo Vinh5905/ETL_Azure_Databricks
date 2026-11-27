@@ -8,6 +8,7 @@ locals {
     "2a2b9908-6ea1-4ae2-8e65-a410df84e7d1", # Storage Blob Data Reader
     "4633458b-17de-408a-b874-0445c86b69e6", # Key Vault Secrets User
     "b86a8fe4-44ce-4948-aee5-eccb2c155cd7", # Key Vault Secrets Officer
+    "de139f84-1756-47ae-9be6-808fbbe84772", # Website Contributor (UAMI CI trên Function App, 50-serving)
   ]
 
   ci_assignable_role_list = join(", ", local.ci_assignable_role_ids)
