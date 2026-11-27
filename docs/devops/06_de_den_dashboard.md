@@ -145,10 +145,10 @@ Bảng gold dành cho Power BI phải **nhỏ và đã tổng hợp sẵn**. Kh�
 
 **Cách triển khai push:**
 1. P3 tạo *streaming semantic model* kiểu API và lấy **push URL**. URL này chứa key, nên lưu vào Key Vault với tên `pbi-push-url`.
-2. Task `pair_counts_gold` trong `foreachBatch` gửi POST các KPI tổng hợp của micro-batch (số đơn, doanh thu giả lập, top cặp) tới push URL.
+2. Flow `kpi_to_pbi` trong pipeline dùng ForEachBatch sink để gửi phút UTC, số đơn và số món đã chốt từ `stream_kpi_1m`. Xem cấu hình, retry và giới hạn watermark ở [de/04 §4.5](../de/04_streaming.md#45-đẩy-số-lên-tile-power-bi-push-semantic-model).
 3. Ghim tile streaming lên **dashboard** Power BI cạnh các visual của report.
 
-Trong buổi demo, khi phát nốt khoảng 5% đơn còn lại, tile sẽ nhảy số sau vài giây. Các trang DirectQuery thì cập nhật khi bấm *Refresh visuals*.
+Trong buổi demo, ghi thời gian từ lúc phát nốt phần đơn còn lại đến khi tile đổi số. Gold phải chốt phút trước khi gửi KPI. Các trang DirectQuery cập nhật khi bấm *Refresh visuals*.
 
 ### 5.4 Bảo mật: chia sẻ và RLS (1 điểm)
 
