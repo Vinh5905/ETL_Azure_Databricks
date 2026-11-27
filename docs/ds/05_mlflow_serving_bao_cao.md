@@ -100,32 +100,43 @@ def register(rules_path: str, items_path: str, run_key: str, min_conf: float) ->
 
 ### 3.1 Phương án A (mặc định): Databricks Model Serving
 
-Endpoint khai báo trong DAB. Phiên bản model truyền vào bằng biến lúc deploy, nên đổi champion chỉ cần deploy lại:
+Endpoint được khai báo riêng trong target `serving`, không thuộc deploy `dev` hay deploy `prod` thường. Chỉ deploy target này sau khi job `ds-champion` đã đăng ký model lần đầu; truyền phiên bản model khi deploy để đổi champion:
 
 ```yaml
 # bundles/resources/serving_ds.yml
 variables:
-  champion_version: { default: "1" }
-resources:
-  model_serving_endpoints:
-    basket_rules:
-      name: instacart-basket-rules
-      config:
-        served_entities:
-          - entity_name: instacart.ml.basket_rules
-            entity_version: ${var.champion_version}
-            workload_size: Small
-            scale_to_zero_enabled: true                 # không có request thì không tốn tiền
-      permissions:
-        - { group_name: ds, level: CAN_MANAGE }
-        - { service_principal_name: "${var.func_sp_application_id}", level: CAN_QUERY }
+  champion_version:
+    description: Phiên bản model UC sau lượt ds-champion
+targets:
+  serving:
+    resources:
+      model_serving_endpoints:
+        basket_rules:
+          name: instacart-basket-rules
+          config:
+            served_entities:
+              - entity_name: instacart.ml.basket_rules
+                entity_version: ${var.champion_version}
+                workload_size: Small
+                scale_to_zero_enabled: true
+          permissions:
+            - user_name: ${workspace.current_user.userName}
+              level: CAN_MANAGE
+            - service_principal_name: ${var.func_sp_application_id}
+              level: CAN_QUERY
+```
+
+Deploy thủ công sau lần chạy `ds-champion` đầu tiên. Workspace URL và hồ sơ CLI phải trỏ đến workspace prod; điền `BUNDLE_VAR_func_sp_application_id` bằng client ID của identity `id-func-recommend` và truyền version vừa đăng ký:
+
+```bash
+databricks bundle deploy -t serving --var="champion_version=<version>"
 ```
 
 ```bash
 curl -s -X POST "https://$DATABRICKS_HOST/serving-endpoints/instacart-basket-rules/invocations" \
   -H "Authorization: Bearer $(az account get-access-token --resource 2ff814a6-3304-4ab8-85cb-cd0e6f879c1d --query accessToken -o tsv)" \
   -H "Content-Type: application/json" \
-  -d '{"dataframe_records": [{"product_ids": [24852, 13176]}], "params": {"k": 5}}'
+  -d '{"dataframe_records": [{"product_ids": [24852, 13176]}], "params": {"k": 10}}'
 ```
 
 - **Spike bắt buộc** ([devops/01 §3.4](../devops/01_chuan_bi_va_spike.md)): Model Serving là dịch vụ serverless. Cần kiểm tra subscription Azure for Students và region đã chốt có cho tạo endpoint hay không.
