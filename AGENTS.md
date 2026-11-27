@@ -30,10 +30,10 @@ Cách tổ chức các file hướng dẫn:
 | Kiến trúc tổng thể | `docs/architecture/*.png` (hình 1 tổng thể, 2 bên trong Databricks, 3 chỉ icon) |
 
 **Vai trò:**
-- **P1** Platform/DevOps (Sub A)
-- **P2** DE batch
+- **P1** Platform/DevOps (Sub A; từ 27/11 vận hành hạ tầng trên Sub D)
+- **P2** DE batch (chủ Sub D, subscription chính từ 27/11)
 - **P3** DE streaming + BI (Sub B, Power BI)
-- **P4** DS (Sub C/D, gồm Hadoop/MapReduce local)
+- **P4** DS (Sub C sandbox, gồm Hadoop/MapReduce local)
 
 Quyền duyệt PR theo `.github/CODEOWNERS`.
 

@@ -295,8 +295,8 @@ Lộ trình theo tuần và checklist từng cổng ở [devops/00 §3, §6](dev
 
 | Vai | Phụ trách |
 |---|---|
-| **P1 · Platform / DevOps** | Sub A, Terraform, CI/CD, Unity Catalog, chi phí; hạ tầng DS (serving, Function) |
-| **P2 · DE batch** | ADF, Auto Loader, bronze → silver → gold, chất lượng dữ liệu, `ds-prepare` |
+| **P1 · Platform / DevOps** | Sub A (từ 27/11 vận hành trên Sub D), Terraform, CI/CD, Unity Catalog, chi phí; hạ tầng DS (serving, Function) |
+| **P2 · DE batch** | Chủ Sub D (subscription chính từ 27/11); ADF, Auto Loader, bronze → silver → gold, chất lượng dữ liệu, `ds-prepare` |
 | **P3 · DE streaming + BI** | Sub B, simulator, pipeline stream, đo độ trễ; Power BI (semantic model, 5 trang, RLS, mobile, real-time) |
 | **P4 · DS** | Sub C (sandbox); DApriori / DATID / FP-Growth, Hadoop / MapReduce local, thực nghiệm, MLflow, API, Power BI trang 6–7 |
 

@@ -160,7 +160,7 @@ resource "azurerm_federated_identity_credential" "gh" {
 | UAMI CI | Sub A | Contributor | Tạo tài nguyên |
 | UAMI CI | Sub A | Role Based Access Control Administrator (**có điều kiện**: chỉ được gán một số role như Storage Blob Data Contributor, Key Vault Secrets User, Reader) | Stack core tạo role assignment, mà Contributor không làm được việc này. Có điều kiện để CI không tự nâng quyền thành Owner |
 | UAMI CI | Sub B | Contributor | **Chủ Sub B (P3) gán**, vì P1 không có quyền trên Sub B. Làm được vì cùng tenant |
-| UAMI CI | Sub C/D | Contributor (tùy chọn) | Chỉ khi muốn CI dựng sandbox |
+| UAMI CI | Sub C | Contributor (tùy chọn) | Chỉ khi muốn CI dựng sandbox |
 
 ```hcl
 resource "azurerm_role_assignment" "state_members" {

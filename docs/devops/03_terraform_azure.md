@@ -1,7 +1,7 @@
 # 03 · Dựng hạ tầng Azure bằng Terraform (giai đoạn P2 và P5)
 
 **Đầu vào:** bootstrap đã xong ([02](02_bootstrap_tfstate.md)); kết quả spike ([01](01_chuan_bi_va_spike.md)).
-**Đầu ra:** stack `10-core` (Sub A), `20-stream` (Sub B), `90-sandbox` (Sub C/D) đã apply; `50-serving` (Sub A, tùy chọn ở G5). Các output (URL workspace, tên storage, ID Key Vault) được những stack sau đọc.
+**Đầu ra:** stack `10-core` (Sub A), `20-stream` (Sub B), `90-sandbox` (Sub C) đã apply; `50-serving` (Sub A, tùy chọn ở G5). Các output (URL workspace, tên storage, ID Key Vault) được những stack sau đọc.
 **Xong khi:** đạt checklist ở cuối mỗi stack. Từ thời điểm đó mọi thay đổi chỉ đi qua PR ([04](04_github_actions_cicd.md)).
 
 > Ở giai đoạn đầu, P1 chạy `plan/apply` của `10-core` từ máy local để gỡ lỗi nhanh. Khi CI xong (P3 của tài liệu 00), apply chuyển hẳn sang GitHub Actions.
@@ -27,7 +27,7 @@ infra/
     30-databricks/      # bên trong workspace (tài liệu 05)
     40-orchestration/   # ADF linked service, dataset, pipeline, trigger (tài liệu 06)
     50-serving/         # Sub A — Azure Function làm API gợi ý (tùy chọn, G5, docs/ds/05)
-    90-sandbox/         # Sub C/D — workspace #2 cho DS
+    90-sandbox/         # Sub C — workspace #2 cho DS
   envs/
     10-core.tfvars  20-stream.tfvars  30-databricks.tfvars  40-orchestration.tfvars  50-serving.tfvars  90-sandbox-p4.tfvars
 ```
@@ -642,7 +642,7 @@ resource "azurerm_key_vault_secret" "eh_listen" {        # Databricks đọc qua
 
 ---
 
-## 5. Stack `90-sandbox` (Sub C/D): workspace #2 cho DS
+## 5. Stack `90-sandbox` (Sub C): workspace #2 cho DS
 
 **Vì sao:** quota vCPU tính **theo subscription**. Train FP-Growth / DApriori với nhiều cấu hình (rubric "trực quan kết quả trên các tham số") cần chạy song song với pipeline DE mà không giành 4 vCPU của Sub A.
 

@@ -78,10 +78,10 @@ Nhóm tập trung vào **mục 4 (phân tích dữ liệu + trực quan dữ li�
 
 | Vai | Giữ subscription | Phụ trách chính | Code owner |
 |---|---|---|---|
-| **P1 · Platform / DevOps** | Sub A (core) | Tài liệu 01–05, stack `bootstrap`, `10-core`, `30-databricks`, workflow CI/CD, chi phí | `infra/**`, `.github/**` |
-| **P2 · DE batch** | — (dùng Sub A) | ADF pipeline, Auto Loader, bronze → silver → gold batch, DQ | `adf/**`, `src/ingest/**`, `src/pipelines/batch/**`, `src/tasks/**` |
+| **P1 · Platform / DevOps** | Sub A (core tới 26/11); từ 27/11 dựng và vận hành core trên Sub D với quyền Owner | Tài liệu 01–05, stack `bootstrap`, `10-core`, `30-databricks`, workflow CI/CD, chi phí | `infra/**`, `.github/**` |
+| **P2 · DE batch** | Sub D (subscription chính từ 27/11, cấp Owner cho P1) | ADF pipeline, Auto Loader, bronze → silver → gold batch, DQ | `adf/**`, `src/ingest/**`, `src/pipelines/batch/**`, `src/tasks/**` |
 | **P3 · DE streaming + BI** | Sub B (stream) | Stack `20-stream`, simulator, streaming jobs, đo độ trễ khác region; Power BI (semantic model, 5 trang, RLS, mobile, real-time) | `src/streaming/**`, `src/pipelines/stream/**`, `infra/stacks/20-stream/**`, `powerbi/**` |
-| **P4 · DS** | Sub C (sandbox), Sub D dự phòng | DApriori / DATID / FP-Growth, cụm Hadoop + MapReduce local, thực nghiệm, MLflow, API, Power BI trang 6–7 | `src/ml/**`, `src/mapreduce/**`, `local/hadoop/**`, `src/serving_func/**` |
+| **P4 · DS** | Sub C (sandbox) | DApriori / DATID / FP-Growth, cụm Hadoop + MapReduce local, thực nghiệm, MLflow, API, Power BI trang 6–7 | `src/ml/**`, `src/mapreduce/**`, `local/hadoop/**`, `src/serving_func/**` |
 
 Mỗi PR cần ít nhất 1 người khác duyệt. PR đụng `infra/**` bắt buộc có P1 duyệt (CODEOWNERS). Lịch sử PR, review, issue và board trên GitHub Projects là bằng chứng cho rubric 5.4.
 

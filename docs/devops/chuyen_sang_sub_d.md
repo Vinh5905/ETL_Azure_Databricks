@@ -1,7 +1,7 @@
 # Runbook: chuyển hạ tầng từ Sub A sang Sub D khi sắp hết credit
 
 **Dùng khi:** budget alert của Sub A báo 75% hoặc 90% (`budget-sub-a`, stack `10-core`), hoặc Sub A đã bị vô hiệu vì hết credit.
-**Người chạy chính:** P1. Chủ Sub B (P3), chủ Sub C (P4) và chủ Sub D làm các bước có ghi tên.
+**Người chạy chính:** P1. Chủ Sub B (P3), chủ Sub C (P4) và chủ Sub D (P2) làm các bước có ghi tên.
 **Thời gian ước tính:** 1–2 ngày, nếu Sub D có `eastasia` và Sub A còn chạy lúc bắt đầu. Phần lớn thời gian là chờ apply và chạy lại pipeline.
 
 > **Nguyên tắc quan trọng nhất: chuyển khi Sub A còn sống.**
@@ -28,7 +28,7 @@
 
 ## 2. Chuẩn bị sẵn (làm ngay, không tốn credit)
 
-1. **Chủ Sub D**
+1. **Chủ Sub D (P2)**
    - Tạo Sub D bằng **email trường**, để cùng tenant với Sub A và dùng chung metastore.
    - Báo danh sách region được phép lên #131.
    - Gán cho P1 quyền **Owner** trên Sub D. Cần quyền này vì `bootstrap` tạo role assignment.
