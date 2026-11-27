@@ -1,0 +1,5 @@
+# az vm list-usage --location eastasia (Sub A), 2026-11-27 07:25 UTC, lọc dòng vCPU
+# Không có cluster classic nào đang chạy.
+Name                                           CurrentValue   Limit
+Total Regional vCPUs                                      0       6
+Standard DDSv4 Family vCPUs                               0       4

@@ -37,6 +37,9 @@ Cả ba view đều hiển thị tháng hiện tại, chia theo ngày, kèm KPI 
 | Ngày ghi | Lũy kế Sub A (Cost analysis) | Budget báo đã tiêu | Dự báo | Chi phí ngày gần nhất | Sub B | Cảnh báo budget đã nhận | vCPU đang dùng / giới hạn (eastasia) |
 |---|---:|---:|---|---:|---|---|---|
 | 2026-11-19 | 22,47 | 12,06 | Chưa có (budget mới tạo) | 12,80 (18/11) | Chưa có số | Chưa nhận | Tổng 4/6, DDSv4 4/4 |
+| 2026-11-26 | 96,66 | 95,87 (96%) | 142,47 tới 30/11 (Cost analysis) | 8,15 (26/11) | Chưa nhận (đã nhờ P3) | Chưa nhận email nào, dù đã qua mốc 90% (§3, tuần 2) | Tổng 0/6, DDSv4 0/4 (đo 27/11) |
+
+Số tuần 1 ghi lúc Cost Management mới có một phần dữ liệu. Azure đã cập nhật lại: lũy kế tới 19/11 thực ra là **74,38 USD**, không phải 22,47. Bảng giữ nguyên số đã ghi để thấy độ trễ dữ liệu; chi tiết ở §3, tuần 2.
 
 ## 3. Chi tiết từng tuần
 
@@ -125,6 +128,111 @@ Job và pipeline chỉ chạy khoảng 2 giờ, tốn chưa tới 3 USD. Phần 
 - **Budget báo thấp hơn Cost analysis** (12,06 so với 22,47). Budget cập nhật chậm hơn vài giờ, và có thể chưa tính phần spike. Bảng §2 lấy số Cost analysis làm chuẩn.
 - **Tốc độ tiêu:** ngày 18/11 tiêu 12,80 USD cho môi trường chính. Giữ tốc độ này thì credit còn lại khoảng 77 USD chỉ đủ 6 ngày. Phải làm ngay các mục 1–2 ở §5, không chờ chạm mốc 50%.
 
+### 2026-11-26 (tuần 2)
+
+Số lũy kế 01–26/11. Script chạy ngày 27/11, lúc Cost Management đã có đủ dữ liệu ngày 26/11.
+
+**Chi phí theo ngày** (tổng các resource group). Ngày 17–19/11 đã được Azure cập nhật lại, cao hơn nhiều so với số ghi ở tuần 1:
+
+| Ngày | USD |
+|---|---:|
+| 17/11 | 9,52 |
+| 18/11 | 34,51 |
+| 19/11 | 30,35 |
+| 20/11 | 0,65 |
+| 21/11 | 0,82 |
+| 22/11 | 2,27 |
+| 23/11 | 1,92 |
+| 24/11 | 0,52 |
+| 25/11 | 7,94 |
+| 26/11 | 8,15 |
+
+Tuần 20–26/11 tiêu **22,27 USD**, so với 74,38 USD của ba ngày 17–19/11.
+
+| Tag `owner` | USD |
+|---|---:|
+| p1 | 86,99 |
+| (không có tag) | 9,67 |
+
+| Tag `stack` | USD |
+|---|---:|
+| 10-core | 86,99 |
+| (không có tag) | 9,67 |
+
+| Tag `cost_owner` | USD |
+|---|---:|
+| (không có tag) | 61,71 |
+| p3 | 25,16 |
+| p2 | 9,58 |
+| p1 | 0,21 |
+
+| Resource group | USD |
+|---|---:|
+| rg-instacart-core | 80,85 |
+| rg-spike | 8,10 |
+| rg-instacart-dbw-managed | 6,14 |
+| rg-spike-dbw-managed | 1,57 |
+
+| Meter | Số lượng | USD | Đơn giá |
+|---|---:|---:|---:|
+| Premium Serverless SQL DBU | 73,60 | 69,92 | 0,95 |
+| Premium Automated Serverless Compute DBU | 24,50 | 12,74 | 0,52 |
+| D4ds v4 (máy của job/pipeline cluster) | 15,88 giờ | 4,92 | 0,31 |
+| Premium Advanced Compute Delta Live Tables DBU | 6,07 | 3,28 | 0,54 |
+| Standard Gateway (NAT của workspace spike) | 23,90 giờ | 1,08 | 0,045 |
+| P15 LRS Disk | | 0,90 | |
+| Premium Interactive Serverless Compute DBU | 0,75 | 0,79 | 1,05 |
+| Premium Jobs Compute DBU | 1,95 | 0,58 | 0,30 |
+| Cloud Data Movement (ADF) | 2,10 | 0,53 | 0,25 |
+| Hot Write Operations (storage) | | 0,52 | |
+| Các meter khác (IP tĩnh, disk P10, đọc storage, truyền dữ liệu, Model Serving, ADF activity) | | 1,17 | |
+
+**Warehouse `wh-instacart-bi`** (2X-Small, auto stop 2 phút). Cách ước tính giống tuần 1; cột "USD thật" lấy từ meter serverless SQL.
+
+| Ngày | Số truy vấn | Số phiên | Giờ chạy ước tính | USD thật (Azure) | Chia theo thời gian truy vấn |
+|---|---:|---:|---:|---:|---|
+| 18/11 | 193 | 19 | 1,4 | 28,92 | người dùng khác 2: 44%; P1: 34%; service principal: 22% |
+| 19/11 | 544 | 37 | 3,3 | 23,78 | người dùng khác 2: 80%; P1: 11%; service principal: 8% |
+| 20/11 | 3 | 2 | 0,1 | 0,36 | người dùng khác 2: 100% |
+| 22/11 | 25 | 2 | 0,2 | 0,62 | người dùng khác 3: 100% |
+| 23/11 | 35 | 3 | 0,4 | 0,79 | người dùng khác 3: 62%; người dùng khác 2: 38% |
+| 25/11 | 177 | 10 | 0,9 | 4,26 | người dùng khác 2: 66%; người dùng khác 3: 34% |
+| 26/11 | 159 | 18 | 1,1 | 5,13 | người dùng khác 2: 63%; service principal: 31%; người dùng khác 1: 5% |
+
+Ngày 18/11 tuần 1 ghi 8,95 USD vì lúc đó Azure mới có một phần dữ liệu. Số thật là 28,92 USD. Giờ chạy ước tính thấp hơn nhiều so với số tiền thật, nên cách ước tính theo lịch sử truy vấn không dùng được để tính tiền; chỉ dùng tỷ lệ để biết ai dùng nhiều.
+
+| Job / pipeline (20–26/11) | Số lần chạy | Tổng phút |
+|---|---:|---:|
+| job `[dev người 1] instacart-ds-prepare` | 4 | 47 |
+| pipeline `[dev người 3] instacart-stream-*` (4 bản nghiệm thu AD-ST-05/06/07 và bản chính) | 10 | 75 |
+| job `[dev người 2] instacart-batch-medallion` | 2 | 30 |
+| pipeline `[dev người 1] instacart-*-acceptance` (AD-DE-15, AD-DE-16, #215) | 7 | 49 |
+| job `[dev người 1] instacart-benchmark-formats` | 1 | 16 |
+| pipeline `instacart-batch` (prod) | 1 | 12 |
+| Các job thử quyền và EDA (AD-OPS-21, AD-OPS-23, AD-DS-11, G1 #25) | 10 | 12 |
+| Các job, pipeline còn lại | 3 | 4 |
+
+Ảnh Cost analysis, 01–26/11, chia theo ngày, cột chồng:
+
+| Nhóm theo | Ảnh |
+|---|---|
+| Tag `owner` | ![Chi phí theo tag owner](evidence/2026-11-26_cost_by_owner.png) |
+| Tag `stack` | ![Chi phí theo tag stack](evidence/2026-11-26_cost_by_stack.png) |
+| Tag `cost_owner` | ![Chi phí theo tag cost_owner](evidence/2026-11-26_cost_by_cost_owner.png) |
+
+**Nhận xét:**
+- **Credit Sub A gần hết:** đã tiêu 96,66/100 USD. Phần lớn rơi vào hai ngày 18–19/11 (64,86 USD), trước khi áp dụng quy tắc warehouse ở §6.
+- **Quy tắc §6 có tác dụng:** chi phí warehouse giảm từ khoảng 26 USD/ngày (18–19/11) xuống dưới 1 USD/ngày (20–24/11).
+  - Ngày 25–26/11 tăng lại lên khoảng 8 USD/ngày, do các đợt nghiệm thu: G1 #25, AD-DE-15/16, #215, AD-ST-05/06/07.
+  - Trong đó warehouse chiếm 4–5 USD/ngày, phần còn lại là pipeline và job serverless.
+- **Serverless SQL vẫn chiếm 72% tổng chi phí** (69,92/96,66 USD). Job và pipeline (serverless, DLT, máy D4ds v4) tốn khoảng 22 USD.
+- **Phần spike** (9,67 USD, không có tag) không đổi so với tuần 1: không còn phát sinh chi phí sau khi xóa `rg-spike`.
+- **Email cảnh báo budget không tới:** budget đã báo tiêu 96%, tức đã qua cả bốn mốc 25/50/75/90%, nhưng P1 không thấy email nào trong hộp thư trường.
+  - Cấu hình vẫn đúng: bốn mốc đều bật, gửi qua action group `ag-instacart-team`, cả 4 người nhận đều ở trạng thái `Enabled`.
+  - Chưa rõ nguyên nhân. Cần kiểm thư mục Spam (người gửi `azure-noreply@microsoft.com`) và bấm *Test* trên action group (Portal → Monitor → Alerts → Action groups). Việc này còn treo từ bước nghiệm thu 10-core (`03_terraform_azure.md` bước 3.10).
+  - Ở Sub D phải kiểm email test ngay sau khi apply `10-core`, trước khi dựa vào cảnh báo budget.
+- **Tuần 3 (03/12):** với tốc độ 8 USD/ngày, credit Sub A hết trước ngày ghi số. Khi đó nhóm chuyển sang Sub D theo [runbook](chuyen_sang_sub_d.md). Chi phí đến lúc Sub A dừng đã sao lưu ở máy P1 (runbook §9). Bảng §2 sẽ ghi dòng chốt Sub A và bắt đầu đếm lại cho Sub D.
+
 ## 4. Quota vCPU
 
 Region Sub A là `eastasia`. Bằng chứng gồm ảnh trang *Quotas* bên dưới và bản chữ của `az vm list-usage`: [`evidence/2026-11-19_quota_vcpu_eastasia.txt`](evidence/2026-11-19_quota_vcpu_eastasia.txt).
@@ -136,7 +244,11 @@ Region Sub A là `eastasia`. Bằng chứng gồm ảnh trang *Quotas* bên dư�
 | Total Regional vCPUs | 4 | 6 |
 | Standard DDSv4 Family vCPUs | 4 | 4 |
 
-Lúc chụp có một cluster pipeline `Standard_D4ds_v4` (4 vCPU) đang chạy, nên họ DDSv4 đã đầy. Một job hoặc pipeline classic thứ hai sẽ không lên được cho tới khi cluster này tắt. Đây là lý do repo chỉ cho phép một cluster single-node mỗi lần (`bundles/AGENTS.md`, job seed).
+**Lần đo 2026-11-27**, ghi cho tuần 2: Total Regional vCPUs 0/6, Standard DDSv4 Family vCPUs 0/4. Không có cluster classic nào đang chạy. Bản chữ: [`evidence/2026-11-26_quota_vcpu_eastasia.txt`](evidence/2026-11-26_quota_vcpu_eastasia.txt). Ảnh trang *Quotas* chỉ hiện các họ máy, không có dòng tổng của region.
+
+![Quota vCPU East Asia, 2026-11-27](evidence/2026-11-26_quota_vcpu.png)
+
+Lần đo 2026-11-19: lúc chụp có một cluster pipeline `Standard_D4ds_v4` (4 vCPU) đang chạy, nên họ DDSv4 đã đầy. Một job hoặc pipeline classic thứ hai sẽ không lên được cho tới khi cluster này tắt. Đây là lý do repo chỉ cho phép một cluster single-node mỗi lần (`bundles/AGENTS.md`, job seed).
 
 ## 5. Đề xuất cắt giảm
 
