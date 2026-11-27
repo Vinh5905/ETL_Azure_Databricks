@@ -244,7 +244,7 @@ Ngày 18/11 tuần 1 ghi 8,95 USD vì lúc đó Azure mới có một phần d�
   - Cấu hình vẫn đúng: bốn mốc đều bật, gửi qua action group `ag-instacart-team`, cả 4 người nhận đều ở trạng thái `Enabled`.
   - Chưa rõ nguyên nhân. Cần kiểm thư mục Spam (người gửi `azure-noreply@microsoft.com`) và bấm *Test* trên action group (Portal → Monitor → Alerts → Action groups). Việc này còn treo từ bước nghiệm thu 10-core (`03_terraform_azure.md` bước 3.10).
   - Ở Sub D phải kiểm email test ngay sau khi apply `10-core`, trước khi dựa vào cảnh báo budget.
-- **Tuần 3 (03/12):** với tốc độ 8 USD/ngày, credit Sub A hết trước ngày ghi số. Khi đó nhóm chuyển sang Sub D theo [runbook](chuyen_sang_sub_d.md). Chi phí đến lúc Sub A dừng đã sao lưu ở máy P1 (runbook §9). Bảng §2 sẽ ghi dòng chốt Sub A và bắt đầu đếm lại cho Sub D.
+- **Chốt sau 2 tuần:** ngày 2026-11-27 nhóm quyết định không ghi tuần 3 (03/12) vì không kịp, AD-OPS-28 đóng với 2 tuần số liệu. Với tốc độ 8 USD/ngày, credit Sub A sẽ hết trước 03/12. Khi đó nhóm chuyển sang Sub D theo [runbook](chuyen_sang_sub_d.md), và chi phí tới lúc Sub A dừng đã sao lưu ở máy P1 (runbook §9).
 
 ## 4. Quota vCPU
 

@@ -1126,8 +1126,8 @@ Checklist G4 cần bảng chi phí theo owner/stack và ảnh quota vCPU cho rub
 
 **Xong khi**
 
-- [ ] Bảng có số liệu ít nhất 3 tuần liên tiếp
-- [ ] Có ảnh chi phí theo tag owner/stack và ảnh quota vCPU
+- [x] Bảng có số liệu 2 tuần liên tiếp (ban đầu là 3 tuần; ngày 2026-11-27 nhóm chốt dừng ở 2 tuần vì không kịp ghi tuần 3)
+- [x] Có ảnh chi phí theo tag owner/stack và ảnh quota vCPU
 
 ### AD-OPS-29
 
