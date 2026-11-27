@@ -481,12 +481,18 @@ resources:
 
 ## 5. Checklist (cổng G1)
 
-- [ ] `terraform plan` của `30-databricks` báo *No changes* sau khi apply.
-- [ ] `SHOW SCHEMAS IN instacart` liệt kê đủ 8 schema (thêm `ds_data`); `DESCRIBE EXTERNAL LOCATION el-bronze` trả về đúng URL.
-- [ ] P2 (vai `de`) tạo được bảng trong `bronze`. P4 (vai `ds` + `bi`, không thuộc `de`) **không** đọc được `bronze` (lỗi PERMISSION_DENIED) nhưng đọc được `gold`. Không thử bằng P3 vì P3 thuộc `de`.
-- [ ] Không chọn được cấu hình cluster nào ngoài policy single-node; cluster tự tắt sau 20 phút. Thử bằng tài khoản **chưa** là admin: thành viên có Contributor trên RG core sẽ thành workspace admin nếu mở workspace từ Azure portal, khi đó bỏ qua được policy.
-- [ ] `dbutils.secrets.get("kv","sql-admin-password")` trả về `[REDACTED]` trong notebook.
-- [ ] `SELECT 1` chạy được trên `wh-instacart-bi` (hoặc đã chốt lớp serving dự phòng).
-- [ ] `databricks bundle deploy -t dev` từ máy P2 tạo được job `[dev p2] instacart-batch-medallion`.
+- [x] `terraform plan` của `30-databricks` báo *No changes* sau khi apply.
+- [x] `SHOW SCHEMAS IN instacart` liệt kê đủ 8 schema (thêm `ds_data`); `DESCRIBE EXTERNAL LOCATION el-bronze` trả về đúng URL.
+  - P1 không `DESCRIBE` được `el-bronze`, vì location thuộc SP CI. URL khớp code vì plan báo No changes.
+- [x] P2 (vai `de`) tạo được bảng trong `bronze`. P4 (vai `ds` + `bi`, không thuộc `de`) **không** đọc được `bronze` (lỗi PERMISSION_DENIED) nhưng đọc được `gold`. Không thử bằng P3 vì P3 thuộc `de`.
+  - P4 bị từ chối với `INSUFFICIENT_PERMISSIONS`, vì không có `USE SCHEMA` trên `bronze`.
+- [x] Không chọn được cấu hình cluster nào ngoài policy single-node; cluster tự tắt sau 20 phút. Thử bằng tài khoản **chưa** là admin: thành viên có Contributor trên RG core sẽ thành workspace admin nếu mở workspace từ Azure portal, khi đó bỏ qua được policy.
+  - Thành viên chưa là admin thấy các policy `instacart-*` và `Personal Compute`, không thấy Unrestricted.
+  - `Personal Compute` đã bị ghi đè theo luật single-node ở bước 6. Kiểm bằng API ngày 2026-11-26: chỉ cho `Standard_D4ds_v4` và tự tắt 10–20 phút.
+  - Server từ chối giá trị tự tắt 0 và 60 phút khi tạo cluster. Form trên giao diện không báo lỗi tại chỗ.
+- [x] `dbutils.secrets.get("kv","sql-admin-password")` trả về `[REDACTED]` trong notebook.
+- [x] `SELECT 1` chạy được trên `wh-instacart-bi` (hoặc đã chốt lớp serving dự phòng).
+- [x] `databricks bundle deploy -t dev` từ máy P2 tạo được job `[dev p2] instacart-batch-medallion`.
+  - Tên thật có dạng `[dev <short_name>] …`, theo preset dev của bundle.
 
 Đạt hết các mục trên thì **mở G1**: P2 chạy ADF → landing → bronze trên cloud, P3 chuẩn bị streaming (cần thêm G2 = `20-stream` + secret `eh-*`).
