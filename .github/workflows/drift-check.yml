@@ -31,7 +31,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        stack: [10-core, 30-databricks, 40-orchestration]
+        stack: [10-core, 30-databricks, 40-orchestration, 50-serving]
     defaults:
       run:
         working-directory: infra/stacks/${{ matrix.stack }}

@@ -1080,7 +1080,7 @@ pl_master gọi job Databricks theo job ID nên phải apply sau lần deploy bu
 - **Hoàn tất còn cần:** Không có.
 - **Mở khóa:** [AD-OPS-33](01_devops.md#ad-ops-33) (bắt đầu)
 
-drift-check giữ nguyên tắc không sửa tay trên Portal; matrix 10/30/40 chỉ plan được khi cả ba stack đã có state.
+drift-check giữ nguyên tắc không sửa tay trên Portal; matrix 10/30/40/50 chỉ plan được khi các stack này đã có state.
 
 **Việc cần làm**
 
@@ -1224,9 +1224,9 @@ Function là thành phần FaaS (rubric 1.4) để demo gọi API không giữ t
 
 **Xong khi**
 
-- [ ] Plan 50-serving qua tf-plan có comment trên PR, apply qua tf-apply
-- [ ] `az functionapp show -n func-instacart-recommend` trả về trạng thái Running
-- [ ] Plan lần hai No changes
+- [x] Plan 50-serving qua tf-plan có comment trên PR, apply qua tf-apply
+- [x] `az functionapp show -n func-instacart-recommend` trả về trạng thái Running
+- [x] Plan lần hai No changes
 
 ### AD-OPS-32
 
