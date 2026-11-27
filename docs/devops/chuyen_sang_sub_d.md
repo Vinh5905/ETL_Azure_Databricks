@@ -162,7 +162,20 @@ Sau mỗi stack, chạy plan lại phải ra `No changes`.
    - **Không có bản sao:** chạy pipeline ADF cho Zenodo, Open Food Facts và CDC `retail_db`.
      - `seed_retail_db` dùng seed cố định nên dữ liệu sinh lại giống cũ. Nhưng LSN của database mới khác, nên tên thư mục `window=` và `snapshot=` sẽ khác.
      - Kiểm lại số đối soát CDC và gold. Nếu lệch thì ghi bộ số mới, không sửa số cũ.
-2. Chạy job batch, rồi pipeline stream khi cần. Đối soát theo [06_de_den_dashboard.md](06_de_den_dashboard.md) §6.
+2. Chạy job batch và đối soát theo [06_de_den_dashboard.md](06_de_den_dashboard.md) §6.
+   - Từ #257, target prod bật `enable_baskets` và `enable_gold_fact`. Khi đó pipeline batch đọc view `silver.order_items`, `silver.orders` và hai bảng `silver.stream_*`.
+   - Workspace mới chưa có các đối tượng này. Nếu chạy batch ngay, update lỗi ở bước phân tích với `TABLE_OR_VIEW_NOT_FOUND` và không ghi được bảng nào.
+   - Chọn một trong hai thứ tự:
+     - **Stream đã sẵn sàng (đúng thứ tự G3):**
+       1. Chạy `stream-toggle` với `up` (5.4 bước 4).
+       2. Chạy pipeline `instacart-stream` prod để tạo hai bảng `stream_*`.
+       3. Chạy `src/tasks/create_views.sql` theo [de/03f](../de/03f_nghiem_thu_baskets.md).
+       4. Chạy job batch.
+     - **Chưa có stream (dựng lại silver batch trước):**
+       1. Đặt hai cờ về `"false"` ngay trên pipeline `instacart-batch` prod bằng `databricks pipelines update`. Gửi đủ spec và giữ `run_as` là SP CI, nếu không API từ chối.
+       2. Chạy job batch.
+       3. Pipeline lúc này lệch so với bundle. Lần `de-deploy` sau sẽ bật lại hai cờ, và từ đó batch prod lỗi cho tới khi làm xong nhánh "Stream đã sẵn sàng" ở trên.
+   - Ngày 2026-11-27, lần chuyển sang Sub D đi theo nhánh "Chưa có stream". Job batch đạt cả 22 kiểm tra của `reconcile`. Silver có đủ 10 bảng như Sub A, gold vẫn trống như lúc sao lưu.
 3. **Power BI:** đổi server hostname và HTTP path của warehouse trong semantic model, publish lại, rồi kiểm làm mới dữ liệu.
 4. **DS:** chép kết quả đã sao ở bước 3.4 vào `ds-data`. Chạy lại thực nghiệm nếu cần số trên cloud mới.
 5. Lặp lại checklist các cổng đã qua (G1–G4) ở mức rút gọn. Ghi kết quả vào #131 hoặc một issue mới.
