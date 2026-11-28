@@ -126,7 +126,7 @@ def kafka_to_bronze():
 - Event Hubs bị **xóa mỗi đêm** và tạo lại khi cần (`stream-toggle`). Hub mới đánh offset lại từ 0.
 - Checkpoint cũ thì nhớ offset của hub cũ, ví dụ 65.000. Nếu đọc tiếp bằng checkpoint đó, Kafka source sẽ báo mất dữ liệu, hoặc bỏ qua sự kiện của hub mới.
 - Đổi tên flow (`kafka_g1` → `kafka_g2`) thì LDP tạo **checkpoint mới** và đọc hub mới từ `earliest`, trong khi bảng bronze vẫn giữ toàn bộ dữ liệu cũ. Không cần full refresh, và bronze cũng không cho full refresh.
-- Workflow `stream-toggle up` truyền `--var eh_generation=g<yyyymmdd>` khi deploy.
+- `stream-toggle up` dựng hạ tầng Event Hubs. Khi deploy pipeline, truyền `--var eh_generation=<mã mới>` theo [runbook AD-ST-08](06_van_hanh_chay_lai.md#62-đổi-thế-hệ-event-hubs-ad-st-08).
 
 > **Spike:** xác nhận đổi tên flow (bỏ flow cũ khỏi code) không làm lỗi update.
 > Nếu có lỗi: trong suốt giai đoạn demo giữ **một** namespace cố định, không xóa mỗi đêm, và chỉ xóa sau khi xong. Chi phí Standard 1 TU khoảng 0,7 USD/ngày, ghi vào budget.
