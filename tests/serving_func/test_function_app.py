@@ -202,3 +202,55 @@ def test_fallback_core_imports_without_mlflow():
     code = "import sys; sys.modules['mlflow'] = None; from ml.serving.basket_core import BasketCore; BasketCore()"
     result = subprocess.run([sys.executable, "-c", code], cwd=src, capture_output=True, text=True, check=False)
     assert result.returncode == 0, result.stderr
+
+
+def test_fallback_loader_finds_ml_in_deploy_package(tmp_path):
+    # Bố cục gói của func-deploy.yml: ml/ nằm cạnh function_app.py trong wwwroot, không có src/ ở thư mục cha.
+    import shutil
+
+    import pandas as pd
+
+    src = Path(__file__).resolve().parents[2] / "src"
+    wwwroot = tmp_path / "site" / "wwwroot"
+    (wwwroot / "ml" / "serving").mkdir(parents=True)
+    shutil.copy(src / "serving_func" / "function_app.py", wwwroot)
+    for name in ("__init__.py", "recommendations.py", "serving/__init__.py", "serving/basket_core.py"):
+        shutil.copy(src / "ml" / name, wwwroot / "ml" / name)
+    blobs = tmp_path / "blobs"
+    blobs.mkdir()
+    pd.DataFrame({"antecedent": [[10]], "item": [12], "confidence": [0.7], "lift": [1.4]}).to_parquet(
+        blobs / "rules.parquet", index=False
+    )
+    pd.DataFrame({"product_id": [100, 101, 102], "idx": [10, 11, 12], "product_name": ["a", "b", "c"]}).to_parquet(
+        blobs / "items.parquet", index=False
+    )
+    code = f"""
+import os, sys
+from pathlib import Path
+sys.modules["mlflow"] = None
+sys.path.insert(0, {str(wwwroot)!r})
+os.environ["STORAGE_ACCOUNT_NAME"] = "account"
+import azure.storage.blob as blob
+
+class Container:
+    def download_blob(self, name):
+        data = (Path({str(blobs)!r}) / Path(name).name).read_bytes()
+        return type("Blob", (), {{"readall": lambda self: data}})()
+
+class Service:
+    def __init__(self, url, credential):
+        pass
+    def get_container_client(self, container):
+        return Container()
+
+blob.BlobServiceClient = Service
+import function_app
+function_app._credential = lambda: object()
+function_app._load_fallback_model()
+import ml.serving.basket_core as core
+assert Path(core.__file__).resolve().is_relative_to(Path({str(wwwroot)!r}).resolve()), core.__file__
+"""
+    result = subprocess.run(
+        [sys.executable, "-I", "-c", code], cwd=tmp_path, capture_output=True, text=True, check=False
+    )
+    assert result.returncode == 0, result.stderr
