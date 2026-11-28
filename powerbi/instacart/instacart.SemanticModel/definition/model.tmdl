@@ -27,3 +27,6 @@ ref table dim_aisle
 ref table _Measures
 
 ref cultureInfo en-US
+
+ref role DeptManager
+ref role Executive
