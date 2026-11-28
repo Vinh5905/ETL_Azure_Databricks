@@ -34,3 +34,15 @@ cặp sản phẩm và bảng doanh số đều là dữ liệu giả lập.
   nhận bản PDF. [Quy định giấy phép và chia sẻ](../docs/devops/06_de_den_dashboard.md#51-giấy-phép-và-phân-phối).
 - Trước khi commit, rà soát tệp dự án để loại trừ thông tin đăng nhập và kiểm tra
   `localSettings.json`, `cache.abf` nằm ngoài các tệp Git theo dõi.
+
+## Nghiệm thu trang Vận hành
+
+Mẫu local dùng Import cho `stream_kpi_1m`, `streaming_latency`,
+`dq_results` và `reconciliation`. Ba bảng vận hành đọc schema cùng tiền tố
+với Gold. Ví dụ, `Schema=gold` dùng `ops`, còn `Schema=p3_gold` dùng `p3_ops`.
+
+Khi có nguồn thật, cấu hình hai bảng `stream_kpi_1m` và `streaming_latency`
+ở chế độ DirectQuery, giữ hai bảng chất lượng và đối soát ở Import. Sau đó
+bật **Page refresh** trên trang Vận hành và kiểm trong Desktop, theo
+[hướng dẫn cập nhật thời gian thực](../docs/de/07_power_bi.md#6-cập-nhật-gần-thời-gian-thực).
+Biểu đồ độ trễ so p50/p95 của `ms_eh_to_bronze` theo `eh_region`.

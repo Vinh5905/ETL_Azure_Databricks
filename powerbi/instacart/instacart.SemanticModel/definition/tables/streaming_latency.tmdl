@@ -1,0 +1,75 @@
+table streaming_latency
+
+	column event_id
+		dataType: string
+		sourceColumn: event_id
+		summarizeBy: none
+
+	column replay_run_id
+		dataType: string
+		sourceColumn: replay_run_id
+		summarizeBy: none
+
+	column producer_location
+		dataType: string
+		sourceColumn: producer_location
+		summarizeBy: none
+
+	column produced_at
+		dataType: dateTime
+		sourceColumn: produced_at
+		summarizeBy: none
+		formatString: yyyy-MM-dd HH:mm:ss
+
+	column _enqueued_ts
+		dataType: dateTime
+		sourceColumn: _enqueued_ts
+		summarizeBy: none
+		formatString: yyyy-MM-dd HH:mm:ss
+
+	column _ingest_ts
+		dataType: dateTime
+		sourceColumn: _ingest_ts
+		summarizeBy: none
+		formatString: yyyy-MM-dd HH:mm:ss
+
+	column _silver_ts
+		dataType: dateTime
+		sourceColumn: _silver_ts
+		summarizeBy: none
+		formatString: yyyy-MM-dd HH:mm:ss
+
+	column ms_producer_to_eh
+		dataType: int64
+		sourceColumn: ms_producer_to_eh
+		summarizeBy: none
+
+	column ms_eh_to_bronze
+		dataType: int64
+		sourceColumn: ms_eh_to_bronze
+		summarizeBy: none
+
+	column ms_end_to_end
+		dataType: int64
+		sourceColumn: ms_end_to_end
+		summarizeBy: none
+
+	column eh_region
+		dataType: string
+		sourceColumn: eh_region
+		summarizeBy: none
+
+	column dbx_region
+		dataType: string
+		sourceColumn: dbx_region
+		summarizeBy: none
+
+	partition streaming_latency = m
+		mode: import
+		source =
+			let
+			    Sample = Table.PromoteHeaders(Csv.Document(Text.ToBinary(SampleCsv[streaming_latency]), [Delimiter=",", Encoding=65001, QuoteStyle=QuoteStyle.Csv]), [PromoteAllScalars=true]),
+			    Source = if DbxServer = "(sample)" then Sample else GetDatabricksTable(Text.Start(Schema, Text.Length(Schema) - 4) & "ops", "streaming_latency"),
+			    Typed = Table.TransformColumnTypes(Source, {{"event_id", type text}, {"replay_run_id", type text}, {"producer_location", type text}, {"produced_at", type datetime}, {"_enqueued_ts", type datetime}, {"_ingest_ts", type datetime}, {"_silver_ts", type datetime}, {"ms_producer_to_eh", Int64.Type}, {"ms_eh_to_bronze", Int64.Type}, {"ms_end_to_end", Int64.Type}, {"eh_region", type text}, {"dbx_region", type text}}, "en-US")
+			 in
+			    Typed
