@@ -52,6 +52,14 @@ table _Measures
 		displayFolder: Vận hành
 		formatString: #,0
 
+	measure 'Latency p50 (ms)' = PERCENTILE.INC ( streaming_latency[ms_eh_to_bronze], 0.50 )
+		displayFolder: Vận hành
+		formatString: #,0.0
+
+	measure 'Latency p95 (ms)' = PERCENTILE.INC ( streaming_latency[ms_eh_to_bronze], 0.95 )
+		displayFolder: Vận hành
+		formatString: #,0.0
+
 	column Value
 		isHidden
 		dataType: int64

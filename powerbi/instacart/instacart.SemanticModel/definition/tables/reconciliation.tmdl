@@ -1,0 +1,63 @@
+table reconciliation
+
+	column check_date
+		dataType: dateTime
+		sourceColumn: check_date
+		summarizeBy: none
+		formatString: yyyy-MM-dd
+
+	column check_name
+		dataType: string
+		sourceColumn: check_name
+		summarizeBy: none
+
+	column expected
+		dataType: int64
+		sourceColumn: expected
+		summarizeBy: none
+
+	column actual
+		dataType: int64
+		sourceColumn: actual
+		summarizeBy: none
+
+	column passed
+		dataType: boolean
+		sourceColumn: passed
+		summarizeBy: none
+
+	column checked_at
+		dataType: dateTime
+		sourceColumn: checked_at
+		summarizeBy: none
+		formatString: yyyy-MM-dd HH:mm:ss
+
+	column run_id
+		dataType: string
+		sourceColumn: run_id
+		summarizeBy: none
+
+	column profile
+		dataType: string
+		sourceColumn: profile
+		summarizeBy: none
+
+	column stage
+		dataType: string
+		sourceColumn: stage
+		summarizeBy: none
+
+	column config_hash
+		dataType: string
+		sourceColumn: config_hash
+		summarizeBy: none
+
+	partition reconciliation = m
+		mode: import
+		source =
+			let
+			    Sample = Table.PromoteHeaders(Csv.Document(Text.ToBinary(SampleCsv[reconciliation]), [Delimiter=",", Encoding=65001, QuoteStyle=QuoteStyle.Csv]), [PromoteAllScalars=true]),
+			    Source = if DbxServer = "(sample)" then Sample else GetDatabricksTable(Text.Start(Schema, Text.Length(Schema) - 4) & "ops", "reconciliation"),
+			    Typed = Table.TransformColumnTypes(Source, {{"check_date", type date}, {"check_name", type text}, {"expected", Int64.Type}, {"actual", Int64.Type}, {"passed", type logical}, {"checked_at", type datetime}, {"run_id", type text}, {"profile", type text}, {"stage", type text}, {"config_hash", type text}}, "en-US")
+			 in
+			    Typed

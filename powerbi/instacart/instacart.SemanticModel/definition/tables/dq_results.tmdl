@@ -1,0 +1,61 @@
+table dq_results
+
+	column update_id
+		dataType: string
+		sourceColumn: update_id
+		summarizeBy: none
+
+	column pipeline
+		dataType: string
+		sourceColumn: pipeline
+		summarizeBy: none
+
+	column flow
+		dataType: string
+		sourceColumn: flow
+		summarizeBy: none
+
+	column dataset
+		dataType: string
+		sourceColumn: dataset
+		summarizeBy: none
+
+	column expectation
+		dataType: string
+		sourceColumn: expectation
+		summarizeBy: none
+
+	column passed
+		dataType: int64
+		sourceColumn: passed
+		summarizeBy: none
+
+	column failed
+		dataType: int64
+		sourceColumn: failed
+		summarizeBy: none
+
+	column at
+		dataType: dateTime
+		sourceColumn: at
+		summarizeBy: none
+		formatString: yyyy-MM-dd HH:mm:ss
+
+	column pipeline_name
+		dataType: string
+		sourceColumn: pipeline_name
+		summarizeBy: none
+
+	partition dq_results = m
+		mode: import
+		source =
+			let
+			    Sample = Table.PromoteHeaders(Csv.Document(Text.ToBinary(SampleCsv[dq_results]), [Delimiter=",", Encoding=65001, QuoteStyle=QuoteStyle.Csv]), [PromoteAllScalars=true]),
+			    Source = if DbxServer = "(sample)" then Sample else GetDatabricksTable(Text.Start(Schema, Text.Length(Schema) - 4) & "ops", "dq_results"),
+			    Typed = Table.TransformColumnTypes(Source, {{"update_id", type text}, {"pipeline", type text}, {"flow", type text}, {"dataset", type text}, {"expectation", type text}, {"passed", Int64.Type}, {"failed", Int64.Type}, {"at", type datetime}, {"pipeline_name", type text}}, "en-US")
+			 in
+			    Typed
+
+	column 'Pipeline label' = COALESCE ( dq_results[pipeline_name], dq_results[pipeline] )
+		dataType: string
+		summarizeBy: none
