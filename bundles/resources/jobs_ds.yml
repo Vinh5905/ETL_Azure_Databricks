@@ -270,6 +270,9 @@ resources:
           depends_on:
             - task_key: evaluate_holdout
           job_cluster_key: c4
+          libraries:
+            - pypi:
+                package: mlflow==2.22.5
           spark_python_task:
             python_file: ../../src/ml/champion.py
             source: WORKSPACE

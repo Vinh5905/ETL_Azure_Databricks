@@ -1,8 +1,25 @@
 """Kiểm quy tắc chọn champion bằng các dòng bảng holdout/rules đồ chơi."""
 
+import pandas as pd
 import pytest
 
-from ml.champion import select_champion
+from ml.champion import _write_local_parquet, select_champion
+
+
+def test_write_local_parquet_is_readable_by_pyfunc(tmp_path):
+    class SparkFrame:
+        def toPandas(self):
+            return pd.DataFrame({"antecedent": [[1, 2]], "item": [3], "confidence": [0.8], "lift": [1.5]})
+
+    artifact = tmp_path / "rules.parquet"
+    _write_local_parquet(SparkFrame(), str(artifact))
+
+    restored = pd.read_parquet(artifact)
+
+    assert restored.iloc[0]["antecedent"].tolist() == [1, 2]
+    assert restored.iloc[0]["item"] == 3
+    assert restored.iloc[0]["confidence"] == 0.8
+    assert restored.iloc[0]["lift"] == 1.5
 
 
 def test_select_champion_filters_then_uses_hit_rate_and_rule_count():

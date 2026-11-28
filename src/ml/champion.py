@@ -83,23 +83,26 @@ def _baseline_hit_rate(spark: SparkSession) -> float:
     return float(rows[0].hit_rate_at_k)
 
 
+def _write_local_parquet(frame: Any, path: str) -> None:
+    """Ghi Parquet vào filesystem local mà MLflow và pyfunc có thể đọc."""
+    frame.toPandas().to_parquet(path, index=False)
+
+
 def _export_artifacts(spark: SparkSession, run_key: str, min_confidence: float, root: str) -> tuple[str, str]:
     rules_path = os.path.join(root, "rules")
     items_path = os.path.join(root, "items")
     rules = spark.table("instacart.ml.association_rules")
-    (
+    _write_local_parquet(
         rules.where((F.col("run_key") == run_key) & (F.col("confidence") >= min_confidence))
         .where("size(consequent) = 1")
-        .selectExpr("antecedent", "CAST(element_at(consequent, 1) AS INT) AS item", "confidence", "lift")
-        .write.mode("overwrite")
-        .parquet(rules_path)
+        .selectExpr("antecedent", "CAST(element_at(consequent, 1) AS INT) AS item", "confidence", "lift"),
+        rules_path,
     )
-    (
+    _write_local_parquet(
         spark.table("instacart.ds_data.item_index")
         .where("data_version = 'v1' AND grain = 'product'")
-        .selectExpr("idx", "CAST(item_key AS INT) AS product_id", "item_name AS product_name")
-        .write.mode("overwrite")
-        .parquet(items_path)
+        .selectExpr("idx", "CAST(item_key AS INT) AS product_id", "item_name AS product_name"),
+        items_path,
     )
     return rules_path, items_path
 
