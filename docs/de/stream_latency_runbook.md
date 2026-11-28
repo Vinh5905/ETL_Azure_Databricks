@@ -1,16 +1,18 @@
 # Đo độ trễ Event Hubs và Databricks (AD-ST-09)
 
-So sánh `ms_eh_to_bronze` của hai lượt trên cùng Databricks `eastasia`.
-Lượt A dùng Event Hubs Sub B `koreacentral`. Lượt B cần hub tạm ở
+So sánh `ms_eh_to_bronze` của hai lượt trên workspace Databricks Sub D ở
+`eastasia`. Lượt A dùng Event Hubs Sub B `koreacentral`. Lượt B cần hub tạm ở
 `eastasia` do P1 bàn giao. Workflow `stream-toggle` hiện chỉ có input
-`action` và dựng stack Sub B. [Issue AD-ST-09](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/72)
+`action` và dựng stack Sub B trong `koreacentral`. [Issue AD-ST-09](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/72)
 
 ## Chuẩn bị và bàn giao
 
-- Chờ AD-OPS-24 (#26) xác nhận đường chạy Event Hubs. Thống nhất với P1 về
-  thời gian đo, hub `orders-stream` ở region Databricks, SAS Send và tên secret
-  SAS Listen riêng trong scope `kv`. Nếu namespace B chưa sẵn sàng thì chỉ
-  chuẩn bị cấu hình và truy vấn.
+- Quyền bật/tắt tay trên Sub B đã được kiểm trong lượt G3 ngày 28/11/2026.
+  Nghiệm thu AD-OPS-24 còn chờ bằng chứng cron xóa một namespace đang bật.
+  [Kết quả G3](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/131#issuecomment-7236865031) · [Đối chiếu AD-OPS-24](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/26#issuecomment-7238077600)
+- Thống nhất với P1 về thời gian đo, hub `orders-stream` ở region Databricks,
+  SAS Send và tên secret SAS Listen riêng trong scope `kv`. Chỉ bắt đầu phép
+  so sánh khi có cả hai cấu hình hub và giữ cùng điều kiện gửi cho hai lượt.
 - Kiểm tra hai hub có tier, số partition và cấu hình hoạt động tương đương.
   Dùng cùng bộ CSV, mã nguồn, máy gửi, region Databricks, policy cluster, số
   partition và tốc độ gửi. Tắt lịch stream cho buổi đo. Phối hợp P1 tạm
