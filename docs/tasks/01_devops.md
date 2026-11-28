@@ -175,11 +175,11 @@ Tách từ AD-OPS-03 để AD-OPS-03 đóng được với phần Sub A. Region 
 
 **Xong khi**
 
-- [ ] Dòng 3.1 có kết quả của Sub B, C, D
-- [ ] Dòng gán role chéo ghi Đạt hoặc Không đạt kèm phương án dự phòng
-- [ ] Có region Sub B khác Sub A
-- [ ] `az role assignment list --assignee <uami> --scope /subscriptions/<subB>` có Contributor
-- [ ] GitHub Secret AZURE_SUBSCRIPTION_B đã đặt
+- [x] Dòng 3.1 có kết quả của Sub B, C, D
+- [x] Dòng gán role chéo ghi Đạt hoặc Không đạt kèm phương án dự phòng
+- [x] Có region Sub B khác Sub A
+- [x] `az role assignment list --assignee <uami> --scope /subscriptions/<subB>` có Contributor
+- [x] GitHub Secret AZURE_SUBSCRIPTION_B đã đặt
 
 ### AD-OPS-04
 
@@ -1161,11 +1161,11 @@ Quota tính theo subscription nên thực nghiệm DS chạy ở Sub C để kh�
 
 **Xong khi**
 
-- [ ] `az account show` trên máy P4 trả về Sub C (không phải Sub A hay Sub D), cùng tenant trường
-- [ ] `terraform init -backend-config=../../backend.hcl` với key `sandbox-p4.tfstate` chạy được từ máy P4 (chuyển từ AD-OPS-08: thành viên khác P1 đọc ghi được state)
-- [ ] Mở được workspace sandbox
+- [x] `az account show` trên máy P4 trả về Sub C (không phải Sub A hay Sub D), cùng tenant trường
+- [x] `terraform init -backend-config=../../backend.hcl` với key `sandbox-p4.tfstate` chạy được từ máy P4 (chuyển từ AD-OPS-08: thành viên khác P1 đọc ghi được state)
+- [x] Mở được workspace sandbox
 - [ ] Cùng region: `SELECT count(*) FROM instacart.ds_data.transactions` chạy được từ sandbox
-- [ ] Plan lần hai No changes
+- [x] Plan lần hai No changes
 
 ### AD-OPS-30
 
