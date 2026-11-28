@@ -327,34 +327,43 @@ FROM instacart.ops.streaming_latency GROUP BY ALL ORDER BY replay_run_id;
 
 ### 4.5 Đẩy số lên tile Power BI (push semantic model)
 
-**Ưu tiên:** ForEachBatch sink của LDP. Tính năng này đang preview; phải spike xem chạy được trên classic Advanced không.
+Spike xác nhận ForEachBatch sink có thể gửi POST trên classic. Trong
+pipeline, `kpi_to_pbi` đọc các dòng mới của `stream_kpi_1m` và ghi qua
+sink `pbi_push`. Mặc định `enable_power_bi_push=false`. Chỉ bật khi
+[BI08](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/81) xác nhận
+model, dashboard và secret `kv/pbi-push-url` sẵn sàng.
 
-```python
-import json, requests
+BI08 đã xác minh một hàng gửi bằng Microsoft Entra ID vào `instacart_rt`
+được Power BI nhận và hiển thị trên Card. Khi nghiệm thu sink của ST10,
+kiểm thêm luồng `kpi_to_pbi` đọc được `kv/pbi-push-url` và POST thành công
+qua Push URL trên cùng model. [Kết quả BI08](https://github.com/Vinh5905/ETL_Azure_Databricks/pull/269)
 
-PUSH_URL = dbutils.secrets.get("kv", "pbi-push-url")
+Mỗi dòng gửi là một giá trị KPI của phút đã chốt. `minute` dùng ISO 8601 UTC.
+Sink chia mảng JSON để mỗi request dưới 15 KB cho streaming tile. Một
+checkpoint mới bắt đầu ở các commit mới của Gold. Các lần khởi động lại dùng
+checkpoint của flow để tiếp tục đọc.
 
+**Đối soát khi gửi lại.** Power BI ghi thêm hàng sau POST. Khi retry, sink
+gửi lại cùng các giá trị `minute`, `orders` và `items` theo thứ tự phút.
+Card dùng giá trị nhận gần nhất. Đối chiếu Line chart ở từng phút và dùng
+giá trị theo phút cho báo cáo lịch sử, vì cộng tất cả các hàng push có thể
+đếm trùng. Khi thử retry trên dev, gửi lại đúng cùng phút và giá trị rồi
+ghi kết quả trên cả hai tile trước khi nghiệm thu. [Power BI real-time streaming](https://learn.microsoft.com/power-bi/connect-data/service-real-time-streaming)
 
-@dp.foreach_batch_sink(name="pbi_push")
-def pbi_push(df, batch_id):
-    rows = [{"minute": r.minute.isoformat(), "orders": r.orders, "items": r.items}
-            for r in df.collect()]                        # vài dòng mỗi batch, collect được
-    if rows:
-        requests.post(PUSH_URL, data=json.dumps(rows), timeout=10).raise_for_status()
+**Đo độ trễ đầu cuối.** Khi có Event Hubs và secret, chạy dev continuous
+với `enable_power_bi_push=true`. Ghi giờ UTC khi phát, khi dòng xuất hiện
+ở Gold và khi tile đổi cho cùng một phút KPI. Tính thời gian từ lúc phát
+đến khi tile đổi để kiểm ngưỡng 60 giây. Khoảng từ Gold đến tile dùng để
+định vị phần trễ của sink. `stream_kpi_1m` chạy append sau khi watermark 2 phút
+qua cuối cửa sổ 1 phút. Push chỉ bắt đầu khi Gold đã ghi dòng. Đường dữ
+liệu này còn giới hạn so với mục tiêu 60 giây của
+[ST10](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/73), cần
+đo thực tế và thống nhất nguồn KPI sớm hơn nếu phải giữ mốc đó.
 
-
-@dp.append_flow(target="pbi_push")
-def kpi_to_pbi():
-    return spark.readStream.table(f"{GOLD}.stream_kpi_1m")
-```
-
-Tên decorator `foreach_batch_sink` lấy theo tài liệu preview, cần kiểm lại khi spike.
-
-**Dự phòng nếu không có ForEachBatch sink:**
-- Một job Structured Streaming chạy ngoài pipeline, đọc `gold.stream_kpi_1m` và `foreachBatch` với cùng hàm, không chạy được cùng lúc. Lý do: nó cần cluster thứ hai, và cộng với pipeline continuous là 8 vCPU, vượt quota.
-- Vì vậy dự phòng thực tế là: pipeline continuous chỉ cập nhật `gold.stream_kpi_1m`, còn Power BI đọc bảng này bằng DirectQuery và bật auto page refresh khi trình chiếu ([07 §6](07_power_bi.md)).
-
-Gửi lại một batch (khi pipeline retry) chỉ làm tile nhận thêm một bản ghi của cùng phút. Tile hiển thị giá trị mới nhất nên không sai số. Đây là đầu ra duy nhất **không** cần chống trùng tuyệt đối.
+Sau thử nghiệm, dừng dev continuous, triển khai lại với
+`enable_power_bi_push=false` và `stream_continuous=false`, rồi xác nhận
+pipeline đã về triggered. Phương án dự phòng dùng DirectQuery và auto page
+refresh khi trình chiếu theo [07 §6](07_power_bi.md).
 
 ## 5. Chế độ chạy
 

@@ -59,6 +59,9 @@ variables:
   stream_continuous:
     description: Chạy pipeline stream liên tục khi demo, mặc định chạy từng đợt
     default: "false"
+  enable_power_bi_push:
+    description: Gửi KPI phút đã chốt sang Instacart Live khi đã bàn giao secret
+    default: "false"
   stream_schedule_pause_status:
     description: Bật lịch prod khi Event Hubs đã sẵn sàng và pipeline chạy từng đợt
     default: PAUSED
