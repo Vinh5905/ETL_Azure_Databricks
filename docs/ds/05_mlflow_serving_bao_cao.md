@@ -193,7 +193,7 @@ Cách này vẫn có API thật và vẫn là FaaS, chỉ mất phần "model se
 ## 4. View `gold.*` cho Power BI
 
 ```sql
--- src/ml/sql/publish_gold.sql  (task publish_gold, chạy bằng SP CI có ALL PRIVILEGES trên gold)
+-- src/ml/sql/publish_gold.sql  (task publish_gold, P4 chạy từ sandbox Sub C; vai ds có CREATE TABLE trên gold)
 CREATE OR REPLACE VIEW instacart.gold.association_rules
 COMMENT 'Luật kết hợp của champion (cấp product), có tên sản phẩm. Nguồn: ml.association_rules'
 AS
