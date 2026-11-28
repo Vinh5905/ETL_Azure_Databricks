@@ -61,8 +61,14 @@ minute** trên dashboard Instacart Live hiển thị **2** sau lượt gửi.
 | 2026-11-28 11:49 | 2 | 5 | 2 |
 | 2026-11-28 16:44 | 3 | 8 | Chưa kiểm |
 | 2026-11-28 16:45 | 4 | 11 | Chưa kiểm |
+| 2026-11-28 18:11 | 6 | 14 | 6 |
 
 Lượt đầu xác nhận model nhận dữ liệu và cập nhật Card. Hai dòng bổ sung được
-gửi chung trong một POST qua Entra ID và API trả **HTTP 200**. Đường Push URL của
+gửi chung trong một POST qua Entra ID và API trả **HTTP 200**. Lúc 01:11 ngày
+29/11 theo giờ Việt Nam, lượt cuối gửi một dòng khi dashboard đang mở. API
+trả **HTTP 200** và Card hiển thị **6**.
+[Ảnh Card ở lượt cuối](evidence/ad-bi-08/2026-11-29-live-card.jpg)
+
+Đường Push URL của
 ST10 còn chờ quyền ghi `pbi-push-url` vào Key Vault và kiểm scope `kv` đọc
 được. Visual batch Trang 1 vẫn chờ AD-BI-04.
