@@ -1,0 +1,27 @@
+table stream_kpi_1m
+
+	column minute
+		dataType: dateTime
+		sourceColumn: minute
+		summarizeBy: none
+		formatString: yyyy-MM-dd HH:mm:ss
+
+	column orders
+		dataType: int64
+		sourceColumn: orders
+		summarizeBy: none
+
+	column items
+		dataType: int64
+		sourceColumn: items
+		summarizeBy: none
+
+	partition stream_kpi_1m = m
+		mode: import
+		source =
+			let
+			    Sample = Table.PromoteHeaders(Csv.Document(Text.ToBinary(SampleCsv[stream_kpi_1m]), [Delimiter=",", Encoding=65001, QuoteStyle=QuoteStyle.Csv]), [PromoteAllScalars=true]),
+			    Source = if DbxServer = "(sample)" then Sample else GetDatabricksTable(Schema, "stream_kpi_1m"),
+			    Typed = Table.TransformColumnTypes(Source, {{"minute", type datetime}, {"orders", Int64.Type}, {"items", Int64.Type}}, "en-US")
+			 in
+			    Typed

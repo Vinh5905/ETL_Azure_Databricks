@@ -1,0 +1,23 @@
+table bi_user_access
+	isHidden
+
+	column user_email
+		dataType: string
+		sourceColumn: user_email
+		summarizeBy: none
+
+	column department_id
+		dataType: int64
+		sourceColumn: department_id
+		summarizeBy: none
+
+	partition bi_user_access = m
+		mode: import
+		source =
+			let
+			    Sample = Table.PromoteHeaders(Csv.Document(Text.ToBinary(SampleCsv[bi_user_access]), [Delimiter=",", Encoding=65001, QuoteStyle=QuoteStyle.Csv]), [PromoteAllScalars=true]),
+			    Source = if DbxServer = "(sample)" then Sample else GetDatabricksTable(Schema, "bi_user_access"),
+			    Typed = Table.TransformColumnTypes(Source, {{"user_email", type text}, {"department_id", Int64.Type}}, "en-US"),
+			    Result = if DbxServer = "(sample)" then Table.TransformColumns(Typed, {{"user_email", each _ & Character.FromNumber(64) & "example.invalid", type text}}) else Typed
+			 in
+			    Result

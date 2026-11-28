@@ -1,0 +1,36 @@
+table kpi_by_dow_hour
+
+	column order_dow
+		dataType: int64
+		sourceColumn: order_dow
+		summarizeBy: none
+
+	column order_hour_of_day
+		dataType: int64
+		sourceColumn: order_hour_of_day
+		summarizeBy: none
+
+	column orders
+		dataType: int64
+		sourceColumn: orders
+		summarizeBy: none
+
+	column items
+		dataType: int64
+		sourceColumn: items
+		summarizeBy: none
+
+	column reorder_rate
+		dataType: double
+		sourceColumn: reorder_rate
+		summarizeBy: none
+
+	partition kpi_by_dow_hour = m
+		mode: import
+		source =
+			let
+			    Sample = Table.PromoteHeaders(Csv.Document(Text.ToBinary(SampleCsv[kpi_by_dow_hour]), [Delimiter=",", Encoding=65001, QuoteStyle=QuoteStyle.Csv]), [PromoteAllScalars=true]),
+			    Source = if DbxServer = "(sample)" then Sample else GetDatabricksTable(Schema, "kpi_by_dow_hour"),
+			    Typed = Table.TransformColumnTypes(Source, {{"order_dow", Int64.Type}, {"order_hour_of_day", Int64.Type}, {"orders", Int64.Type}, {"items", Int64.Type}, {"reorder_rate", type number}}, "en-US")
+			 in
+			    Typed

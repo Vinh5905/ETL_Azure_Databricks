@@ -1,0 +1,28 @@
+table dim_department
+
+	column department_id
+		dataType: int64
+		sourceColumn: department_id
+		summarizeBy: none
+		isKey
+
+	column department
+		dataType: string
+		sourceColumn: department
+		summarizeBy: none
+
+	column n
+		dataType: int64
+		sourceColumn: n
+		summarizeBy: none
+		isHidden
+
+	partition dim_department = m
+		mode: import
+		source =
+			let
+			    Sample = Table.PromoteHeaders(Csv.Document(Text.ToBinary(SampleCsv[dim_department]), [Delimiter=",", Encoding=65001, QuoteStyle=QuoteStyle.Csv]), [PromoteAllScalars=true]),
+			    Source = if DbxServer = "(sample)" then Sample else GetDatabricksTable(Schema, "dim_department"),
+			    Typed = Table.TransformColumnTypes(Source, {{"department_id", Int64.Type}, {"department", type text}, {"n", Int64.Type}}, "en-US")
+			 in
+			    Typed
