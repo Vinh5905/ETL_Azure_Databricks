@@ -175,6 +175,26 @@ Hai lượt kiểm `01f1e99a-339c-1383-b5f7-1ebfd72adcc4` và `01f1e99c-de1e-1e8
 Bài thử bằng chính tài khoản DS đọc bảng, đọc file và bị từ chối `INSERT` được theo dõi
 ở [issue #57](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/57).
 
+### Kiểm trước khi tạo v1 trên prod Sub D
+
+Ngày 28/11/2026, job `instacart-ds-prepare` đã có trên Sub D với ba task
+`prepare_tables`, `export_txt` và `check`. Tham số mặc định đã được xác nhận là
+`data_version=v1`, `catalog=instacart`, `silver_schema=silver` và `ds_schema=ds_data`.
+Job chưa có lượt chạy trên Sub D. Schema `instacart.ds_data` chưa có bảng và volume
+`exports` chưa có thư mục `v1`.
+
+Truy vấn `instacart.ops.reconciliation` trên warehouse prod trả 22/22 kiểm tra Batch
+và chưa có hàng G3 (statement `01f1eae8-a5f8-11d1-a2ab-e0a31b24cfe7`).
+Silver prod chưa có hai bảng stream và hai view hợp nhất. Sau khi P1/P3 phục hồi
+stream và prod hoàn tất batch, chọn một lượt [đối soát G3](06c_nghiem_thu_reconciliation.md)
+đúng nguồn `instacart.silver`. Kiểm đủ 25/25 dòng xanh cùng `run_id`, `profile`
+và `config_hash` trước khi chạy job DS. Kết quả G3 dev ở trên dùng để so sánh số liệu.
+
+Chạy job prod một lần với bốn tham số mặc định. Ghi run ID, trạng thái ba task,
+số giỏ prior/holdout và 12 số đếm từ `/Volumes/instacart/ds_data/exports/v1/_manifest.json`
+vào [#57](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/57), rồi báo P4.
+Nếu số liệu khác dev, ghi rõ chênh lệch và nguồn trước khi bàn giao.
+
 ## 8. Lỗi giữa chừng thì chạy lại thế nào
 
 | Tình huống | Cách chạy lại | Vì sao không trùng / không mất |
