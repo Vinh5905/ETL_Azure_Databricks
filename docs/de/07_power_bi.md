@@ -6,7 +6,7 @@
 - Workspace `instacart-bi` và giấy phép Pro của P3; người khác xem bằng Desktop hoặc PDF ([devops/06 §5.1](../devops/06_de_den_dashboard.md)).
 
 **Đầu ra:**
-- Báo cáo `powerbi/instacart.pbip` (lưu trong repo, dạng text).
+- Báo cáo `powerbi/instacart/instacart.pbip` (lưu trong repo, dạng text).
 - Semantic model có RLS, 4 trang (+1 trang vận hành) kèm điều hướng và mobile layout.
 - Ở G5: thêm trang 6 (luật kết hợp) và trang 7 (thực nghiệm thuật toán) từ view DS ([ds/05 §5](../ds/05_mlflow_serving_bao_cao.md)).
 - Dashboard có tile real-time; App "Instacart Analytics".
@@ -27,7 +27,7 @@
 4. **Xác thực:** *Microsoft Entra ID* bằng tài khoản P3. Người đó chỉ có quyền đọc `gold` và `ops`, đúng nguyên tắc đặc quyền tối thiểu ([devops/05 bước 5](../devops/05_databricks_platform.md)).
 5. Navigator → catalog `instacart` → chọn các bảng ở mục 2. **Không** chọn `fact_order_lines`.
 
-Lưu bằng *File → Save as → Power BI Project (.pbip)* vào `powerbi/`. Thêm `powerbi/**/.pbi/localSettings.json` và `powerbi/**/cache.abf` vào `.gitignore`.
+Lưu bằng *File → Save as → Power BI Project (.pbip)* vào `powerbi/instacart/`. Thêm `powerbi/**/.pbi/localSettings.json` và `powerbi/**/cache.abf` vào `.gitignore`.
 
 ## 2. Mô hình dữ liệu (star schema)
 
