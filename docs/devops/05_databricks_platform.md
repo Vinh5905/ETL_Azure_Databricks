@@ -220,7 +220,7 @@ Unity Catalog cũng từ chối volume ngoài **bao trùm** vùng lưu managed. 
 | catalog `instacart` | USE CATALOG, CREATE SCHEMA (schema dev `<user>_*`, xem [de/02 §2.2](../de/02_bronze_ldp.md)) | USE CATALOG | USE CATALOG | USE CATALOG, CREATE SCHEMA |
 | `landing_meta`, `bronze` | ALL PRIVILEGES | — | — | ALL PRIVILEGES |
 | `silver` | ALL PRIVILEGES | SELECT | — | ALL PRIVILEGES |
-| `gold` | ALL PRIVILEGES | SELECT | **SELECT** | ALL PRIVILEGES |
+| `gold` | ALL PRIVILEGES | SELECT, CREATE TABLE (tạo view DS) | **SELECT** | ALL PRIVILEGES |
 | `ml` | SELECT | ALL PRIVILEGES | — | ALL PRIVILEGES |
 | `ds_data` ([de/08](../de/08_du_lieu_cho_ds.md)) | ALL PRIVILEGES | SELECT | — | ALL PRIVILEGES |
 | `ops` | ALL PRIVILEGES | SELECT | SELECT (bảng vận hành) | ALL PRIVILEGES |
@@ -246,6 +246,9 @@ resource "databricks_grants" "gold" {
   # ... de, ds
 }
 ```
+
+> **Vai `ds` trên `gold`:** task `publish_gold` của job DS tạo lại view `gold.association_rules` và `gold.recommendations` ([ds/05 §4](../ds/05_mlflow_serving_bao_cao.md)). Job DS chạy ở workspace sandbox Sub C bằng quyền của P4 (AD-OPS-30), nên vai `ds` cần thêm `CREATE TABLE` (quyền tạo view trong schema). Không cấp `MODIFY`: `ds` không ghi được vào bảng gold của DE.
+> - Người tạo view là owner. `CREATE OR REPLACE VIEW` chỉ chạy được khi người chạy là owner của view đang có, nên chỉ một danh tính chạy `publish_gold` (P4). Nếu view đã do SP CI tạo trước đó, chuyển owner (`ALTER VIEW … OWNER TO`) hoặc xóa view rồi để P4 tạo lại.
 
 > **Một người có nhiều vai** (ví dụ `p1` thuộc `de` và `ds`, `p4` thuộc `ds` và `bi`): không viết một dynamic block cho mỗi vai, vì cùng một principal sẽ xuất hiện hai lần trong một securable, API trả về một mục đã gộp và plan không bao giờ về *No changes*. Dựng `local` dạng `securable → { key người → hợp privilege của mọi vai người đó có }`, rồi mỗi securable chỉ một dynamic `grant` lặp theo key người, `principal = var.member_upns[grant.key]`.
 

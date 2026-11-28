@@ -257,6 +257,10 @@ locals {
   all_privileges = ["ALL_PRIVILEGES"]
   read_schema    = ["USE_SCHEMA", "SELECT"]
   rw_volume      = ["READ_VOLUME", "WRITE_VOLUME"]
+  # Vai ds chạy task publish_gold (CREATE OR REPLACE VIEW gold.association_rules, gold.recommendations)
+  # từ workspace sandbox Sub C (AD-OPS-30). Tạo view cần CREATE_TABLE trên schema; không cấp
+  # MODIFY nên ds không ghi được vào bảng gold của DE.
+  publish_views = ["CREATE_TABLE", "SELECT", "USE_SCHEMA"]
 
   # Bảng quyền ở docs/devops/05 bước 5: securable → vai → privilege.
   role_privileges = {
@@ -268,7 +272,7 @@ locals {
     landing_meta      = { de = local.all_privileges }
     bronze            = { de = local.all_privileges }
     silver            = { de = local.all_privileges, ds = local.read_schema }
-    gold              = { de = local.all_privileges, ds = local.read_schema, bi = local.read_schema }
+    gold              = { de = local.all_privileges, ds = local.publish_views, bi = local.read_schema }
     ml                = { de = local.read_schema, ds = local.all_privileges }
     ds_data           = { de = local.all_privileges, ds = local.read_schema }
     ops               = { de = local.all_privileges, ds = local.read_schema, bi = local.read_schema }
