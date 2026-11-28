@@ -254,8 +254,7 @@ resources:
 
 - `ds_policy_id` là biến DAB, lookup theo tên policy `instacart-ds-benchmark` ([devops/05 bước 6](../devops/05_databricks_platform.md)).
 - `PYTHONPATH` trỏ vào thư mục `src` mà bundle đã đồng bộ lên workspace, để `run_experiment.py` import được `ml.fim.*`. `workspace.file_path` của Databricks CLI mới đã có tiền tố `/Workspace`; kiểm tra lại giá trị thật bằng `databricks bundle validate -o json`.
-- **Trước khi chạy job:** tạm dừng lịch `instacart-stream-15m` và đảm bảo không có buổi demo stream. Lý do: cả hai cùng dùng 4 vCPU của workspace chính (Sub D từ 27/11).
-- **Chạy ở đâu:** workspace chính ở Sub D, ngoài giờ batch. Sub C không dùng được nên không có target `sandbox` chạy song song với DE ([devops/03 §5](../devops/03_terraform_azure.md)).
+- **Chạy ở đâu:** deploy job này với target `sandbox` lên workspace Sub C (bắt buộc, [devops/03 §5](../devops/03_terraform_azure.md)). Sub C có quota vCPU riêng và đọc `ds_data` qua metastore chung, nên chạy song song với DE. Không chạy job này trên workspace chính: nó chiếm hết 4 vCPU của pipeline batch và stream.
 
 ### 5.3 Một lần chạy: `run_experiment.py`
 

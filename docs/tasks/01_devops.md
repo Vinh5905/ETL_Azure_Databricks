@@ -1141,30 +1141,31 @@ Checklist G4 cần bảng chi phí theo owner/stack và ảnh quota vCPU cho rub
 - **Hoàn tất còn cần:** [AD-DE-21](02_de_batch.md#ad-de-21) [#57](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/57)
 - **Mở khóa:** [AD-OPS-30](01_devops.md#ad-ops-30) (hoàn tất)
 
-Quota tính theo subscription nên thực nghiệm DS chạy ở Sub C để không giành 4 vCPU của Sub A. Chỉ đọc chung dữ liệu khi cùng region (cùng metastore).
+Quota tính theo subscription nên thực nghiệm DS chạy ở Sub C để không giành 4 vCPU của subscription chính (Sub D từ 27/11). Chỉ đọc chung dữ liệu khi cùng region (cùng metastore).
 
-> **Chốt 28/11: đóng theo nhánh dự phòng.** P4 không thấy Sub C trong Azure CLI (comment 27–28/11 ở #31, #131), nên không apply `90-sandbox`. Job DS chạy trên workspace chính ở Sub D, ngoài giờ batch. Bước 1–4 và các mục "Xong khi" của sandbox không còn áp dụng; bước 5 đã ghi vào `spike_results.md`.
+> **Chốt 28/11: Sub C là bắt buộc**, không chuyển DS sang subscription chính. Lần kiểm 27/11 cho thấy máy P4 chỉ thấy Sub A (quyền Reader), tức Sub C chưa có trong tenant trường. P4 phải tạo Sub C trước khi làm các bước dưới.
 
 **Việc cần làm**
 
+0. P4 tạo Sub C (Azure for Students) bằng **email trường**, để cùng tenant với Sub A, Sub D và dùng chung metastore. `az account list --all` trên máy P4 phải thấy Sub C, khác Sub A và Sub D. Điền dòng 3.1 của Sub C ở #131 (region được phép, có `eastasia`)
 1. Hoàn thiện module dbx_workspace (workspace + access connector, không có storage riêng vì dùng chung metastore), validate
 2. Điền infra/envs/90-sandbox-p4.tfvars theo region đã chốt
 3. P4 apply từ máy với key sandbox-p4.tfstate
-4. Kiểm workspace gắn cùng metastore với Sub A và đọc được instacart.silver.baskets
-5. Nếu khác region hoặc không dùng được Sub C: ghi vào spike_results là DS chạy trên workspace chính ngoài giờ batch (Sub D từ 27/11)
+4. Kiểm workspace gắn cùng metastore với workspace chính và đọc được instacart.silver.baskets
+5. Nếu Sub C không có `eastasia`: báo P1 trên #31 trước khi chọn region khác. Không chuyển DS sang subscription chính
 
 **Đầu ra**
 
-- ~~Workspace dbw-instacart-sbx-p4 trên Sub C~~ (không dựng)
+- Workspace dbw-instacart-sbx-p4 trên Sub C
 - Ghi chú lựa chọn nơi chạy DS trong spike_results.md
 
 **Xong khi**
 
+- [ ] `az account show` trên máy P4 trả về Sub C (không phải Sub A hay Sub D), cùng tenant trường
 - [ ] `terraform init -backend-config=../../backend.hcl` với key `sandbox-p4.tfstate` chạy được từ máy P4 (chuyển từ AD-OPS-08: thành viên khác P1 đọc ghi được state)
 - [ ] Mở được workspace sandbox
 - [ ] Cùng region: `SELECT count(*) FROM instacart.ds_data.transactions` chạy được từ sandbox
 - [ ] Plan lần hai No changes
-- [x] Nhánh dự phòng: `spike_results.md` §3 ghi DS chạy trên workspace chính ở Sub D, ngoài giờ batch
 
 ### AD-OPS-30
 

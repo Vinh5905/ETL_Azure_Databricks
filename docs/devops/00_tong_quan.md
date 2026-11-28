@@ -72,7 +72,7 @@ Nhóm tập trung vào **mục 4 (phân tích dữ liệu + trực quan dữ li�
 
 **Hai điểm then chốt người dùng hỏi:**
 - **DE bắt đầu trên cloud ở G1.** Lúc này đã có ADLS, External Location và catalog `instacart`. Trước G1, DE vẫn viết và test code bằng PySpark local, vì code chạy được trên cả hai môi trường.
-- **DS bắt đầu ở G3.** Lúc này `silver.baskets` (prior | holdout) đã qua đối soát số dòng, và DE chạy job `ds-prepare` để chụp thành bản cố định `ds_data.*` ([de/08](../de/08_du_lieu_cho_ds.md)). DS chạy thực nghiệm trên workspace chính ở Sub D, ngoài giờ batch (chốt 28/11 vì Sub C không dùng được, #31). Phần Hadoop MapReduce chạy ở máy local bằng Docker ([ds/03](../ds/03_hadoop_mapreduce_local.md)).
+- **DS bắt đầu ở G3.** Lúc này `silver.baskets` (prior | holdout) đã qua đối soát số dòng, và DE chạy job `ds-prepare` để chụp thành bản cố định `ds_data.*` ([de/08](../de/08_du_lieu_cho_ds.md)). DS chạy thực nghiệm trên workspace #2 ở Sub C (bắt buộc; P4 tạo Sub C bằng email trường, region `eastasia`). Phần Hadoop MapReduce chạy ở máy local bằng Docker ([ds/03](../ds/03_hadoop_mapreduce_local.md)).
 
 ## 4. Phân vai 4 người
 
@@ -81,7 +81,7 @@ Nhóm tập trung vào **mục 4 (phân tích dữ liệu + trực quan dữ li�
 | **P1 · Platform / DevOps** | Sub A (core tới 26/11); từ 27/11 dựng và vận hành core trên Sub D với quyền Owner | Tài liệu 01–05, stack `bootstrap`, `10-core`, `30-databricks`, workflow CI/CD, chi phí | `infra/**`, `.github/**` |
 | **P2 · DE batch** | Sub D (subscription chính từ 27/11, cấp Owner cho P1) | ADF pipeline, Auto Loader, bronze → silver → gold batch, DQ | `adf/**`, `src/ingest/**`, `src/pipelines/batch/**`, `src/tasks/**` |
 | **P3 · DE streaming + BI** | Sub B (stream) | Stack `20-stream`, simulator, streaming jobs, đo độ trễ khác region; Power BI (semantic model, 5 trang, RLS, mobile, real-time) | `src/streaming/**`, `src/pipelines/stream/**`, `infra/stacks/20-stream/**`, `powerbi/**` |
-| **P4 · DS** | Sub C (không dùng được; DS chạy trên Sub D, #31) | DApriori / DATID / FP-Growth, cụm Hadoop + MapReduce local, thực nghiệm, MLflow, API, Power BI trang 6–7 | `src/ml/**`, `src/mapreduce/**`, `local/hadoop/**`, `src/serving_func/**` |
+| **P4 · DS** | Sub C (sandbox) | DApriori / DATID / FP-Growth, cụm Hadoop + MapReduce local, thực nghiệm, MLflow, API, Power BI trang 6–7 | `src/ml/**`, `src/mapreduce/**`, `local/hadoop/**`, `src/serving_func/**` |
 
 Mỗi PR cần ít nhất 1 người khác duyệt. PR đụng `infra/**` bắt buộc có P1 duyệt (CODEOWNERS). Lịch sử PR, review, issue và board trên GitHub Projects là bằng chứng cho rubric 5.4.
 
@@ -112,7 +112,7 @@ Mỗi PR cần ít nhất 1 người khác duyệt. PR đụng `infra/**` bắt 
 
 | Rủi ro | Ảnh hưởng | Phương án |
 |---|---|---|
-| Quota vCPU của Students rất thấp, không xin tăng được | Cluster batch, streaming và SQL warehouse classic không chạy song song được | Single-node `Standard_D4ds_v4` (4 vCPU, chốt ở G0 vì Sub A không mua được DS3_v2); streaming chạy kiểu `availableNow` theo lô; dùng warehouse **serverless**; thí nghiệm DS chạy ngoài giờ batch |
+| Quota vCPU của Students rất thấp, không xin tăng được | Cluster batch, streaming và SQL warehouse classic không chạy song song được | Single-node `Standard_D4ds_v4` (4 vCPU, chốt ở G0 vì Sub A không mua được DS3_v2); streaming chạy kiểu `availableNow` theo lô; dùng warehouse **serverless**; thí nghiệm DS chạy ở Sub C |
 | Policy chỉ cho phép một số region | Databricks / Event Hubs / SQL free offer không có ở region được phép | Spike chọn region giao nhau; Sub B có thể đặt ở region khác (đây cũng là thí nghiệm 3.3) |
 | Không có quyền admin Unity Catalog (metastore) | Không tạo được storage credential / external location | Dùng managed storage của catalog mặc định |
 | Power BI Pro: auto page refresh tối thiểu 30 phút | "Real-time" không đạt nếu chỉ dựa vào DirectQuery | Thêm **push semantic model** (tile cập nhật trong vài giây) cho KPI streaming |
