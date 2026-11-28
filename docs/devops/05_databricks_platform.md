@@ -465,7 +465,8 @@ AD-DE-01 đã bỏ các task Python tạm. Đến AD-DE-08 khai báo pipeline, r
 
 | File | Tài nguyên DAB | Chi tiết |
 |---|---|---|
-| `resources/jobs_ds.yml` | Job `ds_prepare` (DE), `ds_benchmark`, `ds_champion` (DS) | [de/08 §6](../de/08_du_lieu_cho_ds.md), [ds/04 §5](../ds/04_thuc_nghiem_danh_gia.md) |
+| `resources/jobs_ds_prepare.yml` | Job `ds_prepare` (DE) | [de/08 §6](../de/08_du_lieu_cho_ds.md) |
+| `resources/jobs_ds.yml` | Job `ds_benchmark`, `ds_ingest_local`, `ds_champion` (DS) | [ds/04 §5](../ds/04_thuc_nghiem_danh_gia.md) |
 | `resources/mlflow_ds.yml` | `experiments.instacart_ds` (`/Shared/instacart-ds`) | [ds/05 §1](../ds/05_mlflow_serving_bao_cao.md) |
 | `serving/resources/serving_ds.yml` | `model_serving_endpoints.basket_rules`, biến `champion_version` | [ds/05 §3.1](../ds/05_mlflow_serving_bao_cao.md) |
 
@@ -479,7 +480,21 @@ variables:
 
 Workflow `de-deploy` tra `func_sp_application_id` bằng `az identity show -g rg-instacart-core -n id-func-recommend` rồi đặt `BUNDLE_VAR_func_sp_application_id`, giá trị được che trong log. Không cần thêm secret, và vẫn đúng khi dựng lại `10-core` ở subscription khác. Bundle endpoint riêng yêu cầu truyền biến này khi deploy.
 
-Target `sandbox` (host của workspace Sub C) thêm khi `90-sandbox` đã dựng (AD-OPS-29). Sub C phải cùng region và cùng tenant với workspace chính để dùng chung metastore ([03 §5](03_terraform_azure.md)). Target này chỉ deploy job DS.
+Target `sandbox` nằm trong bundle riêng `bundles/sandbox/` (AD-OPS-30), vì `include` của bundle chính áp cho mọi target nên không tách riêng job DS được. Sub C phải cùng region và cùng tenant với workspace chính để dùng chung metastore ([03 §5](03_terraform_azure.md)); 90-sandbox đã dựng ngày 28/11 (AD-OPS-29).
+
+- Bundle `instacart-ds-sandbox` chỉ nạp `resources/jobs_ds.yml` (job DS), không nạp pipeline hay job DE. Job `ds_prepare` của DE tách sang `resources/jobs_ds_prepare.yml` để không bị kéo theo.
+- Workspace sandbox không có policy, warehouse hay SP CI của `30-databricks`, nên bundle này không dùng lookup:
+  - `ds_policy_id` mặc định để trống: máy, runtime và single-node đã khai đủ trong `jobs_ds.yml`, quota vCPU là của Sub C.
+  - `warehouse_id` bắt buộc truyền vào: ID serverless warehouse trong workspace sandbox.
+- Host lấy từ profile của P4, không ghi URL workspace vào repo. Target ở mode development, chạy bằng chính P4.
+- CI không có quyền trên Sub C, nên chỉ `pr-checks` validate bundle này trên workspace chính (cú pháp, biến, đường dẫn). P4 tự deploy:
+
+```bash
+cd bundles/sandbox
+databricks bundle deploy -t sandbox --profile <profile sandbox> --var warehouse_id=<id warehouse sandbox>
+```
+
+Bundle chính vẫn nạp `jobs_ds.yml`, nên job DS vẫn có mặt ở workspace chính, nhưng không được chạy ở đó ([ds/04 §5.2](../ds/04_thuc_nghiem_danh_gia.md)).
 
 ```yaml
 # bundles/resources/jobs_batch.yml ở G0; nội dung job thật bổ sung ở AD-DE-18

@@ -860,7 +860,7 @@ Chốt G3 phía DE: ds_data v1 và file txt cho cụm Hadoop local sẵn sàng t
 
 1. Viết src/tasks/ds_prepare/export_txt.py (3 cấp × 4 quy mô, assert số dòng, manifest ghi sau cùng)
 2. Viết src/tasks/ds_prepare/04_check.sql
-3. Viết bundles/resources/jobs_ds.yml phần ds_prepare (không lịch, max_concurrent_runs 1)
+3. Viết bundles/resources/jobs_ds_prepare.yml cho ds_prepare (không lịch, max_concurrent_runs 1)
 4. Chạy job với data_version v1 khi checklist G3 đạt
 5. Ghi số liệu vào bảng ở de/08 §7, báo P4 và ghi ngày tạo v1 vào ds/00 §5
 
@@ -868,7 +868,7 @@ Chốt G3 phía DE: ds_data v1 và file txt cho cụm Hadoop local sẵn sàng t
 
 - src/tasks/ds_prepare/export_txt.py
 - src/tasks/ds_prepare/04_check.sql
-- bundles/resources/jobs_ds.yml
+- bundles/resources/jobs_ds_prepare.yml
 - Bảng ds_data.* v1
 - /Volumes/instacart/ds_data/exports/v1/ + _manifest.json
 

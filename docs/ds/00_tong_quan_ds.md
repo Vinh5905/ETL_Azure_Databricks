@@ -179,6 +179,6 @@ src/ml/
 └── sql/publish_gold.sql      # view gold.* cho Power BI
 src/mapreduce/                # Maven: PairCount, AprioriMR (Java 11, Hadoop 3.3.6)
 local/hadoop/                 # Dockerfile, docker-compose.yml, conf/*.xml, scripts/
-bundles/resources/jobs_ds.yml # job ds-benchmark, ds-champion (+ ds-prepare của DE)
+bundles/resources/jobs_ds.yml # job ds-benchmark, ds-champion; deploy bằng bundles/sandbox lên Sub C
 tests/ml/                     # pytest: apriori_gen, DApriori = DATID = FPGrowth trên dữ liệu đồ chơi
 ```

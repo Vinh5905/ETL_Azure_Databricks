@@ -1190,13 +1190,13 @@ Job ds-benchmark dùng policy instacart-ds-benchmark; endpoint trong bundle riê
 
 **Đầu ra**
 
-- bundles/databricks.yml có biến DS (và target sandbox nếu dùng)
+- bundles/databricks.yml có biến DS; target sandbox nằm ở bundle riêng bundles/sandbox/databricks.yml
 - de-deploy truyền BUNDLE_VAR_func_sp_application_id
 
 **Xong khi**
 
-- [ ] `databricks bundle validate -t dev` xanh với biến mới
-- [ ] P4 ghi được file vào /Volumes/instacart/ml/inbox/
+- [x] `databricks bundle validate -t dev` xanh với biến mới
+- [x] P4 ghi được file vào /Volumes/instacart/ml/inbox/
 
 ### AD-OPS-31
 

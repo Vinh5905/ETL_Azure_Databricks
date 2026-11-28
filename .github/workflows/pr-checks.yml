@@ -182,3 +182,12 @@ jobs:
         env:
           DATABRICKS_HOST: ${{ vars.DATABRICKS_HOST }}
           DATABRICKS_AUTH_TYPE: azure-cli
+      # Bundle sandbox không có lookup nên validate được trên workspace chính: chỉ kiểm cú pháp,
+      # biến và đường dẫn. Deploy thật do P4 chạy từ máy vào workspace Sub C (CI không có quyền ở đó).
+      - name: Kiểm bundle sandbox DS riêng
+        if: vars.DATABRICKS_HOST != ''
+        run: databricks bundle validate -t sandbox --strict --var="warehouse_id=0000000000000000"
+        working-directory: bundles/sandbox
+        env:
+          DATABRICKS_HOST: ${{ vars.DATABRICKS_HOST }}
+          DATABRICKS_AUTH_TYPE: azure-cli

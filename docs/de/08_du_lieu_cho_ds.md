@@ -103,7 +103,7 @@ Dev dùng volume `exports` trong schema dev riêng. Xem cách đưa file vào HD
 
 ## 6. Job `ds-prepare`
 
-[`jobs_ds.yml`](../../bundles/resources/jobs_ds.yml) khai báo `ds_prepare` với
+[`jobs_ds_prepare.yml`](../../bundles/resources/jobs_ds_prepare.yml) khai báo `ds_prepare` với
 `max_concurrent_runs: 1`, không có lịch. Ba task dùng chung cluster single-node.
 Chạy khi quota 4 vCPU rảnh và nguồn Silver đã đạt G3.
 
