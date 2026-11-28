@@ -3,7 +3,7 @@
 **Đầu vào:**
 - Các bảng gold đã đạt kiểm tra ([05](05_gold_serving.md)).
 - Warehouse `wh-instacart-bi` (host và HTTP path lấy từ output `30-databricks`).
-- Workspace `instacart-bi` và giấy phép Pro ([devops/06 §5.1](../devops/06_de_den_dashboard.md)).
+- Workspace `instacart-bi` và giấy phép Pro của P3; người khác xem bằng Desktop hoặc PDF ([devops/06 §5.1](../devops/06_de_den_dashboard.md)).
 
 **Đầu ra:**
 - Báo cáo `powerbi/instacart.pbip` (lưu trong repo, dạng text).
@@ -149,9 +149,9 @@ CALCULATE ( SUM ( stream_kpi_1m[orders] ),
 
 **Kiểm tra:**
 - Trong Desktop: *Modeling → View as → DeptManager + Other user = <email người A>*. Trang 4 chỉ còn department được cấp.
-- Trên Service: *Semantic model → Security*, thêm người A, B vào `DeptManager` và giảng viên vào `Executive`, rồi *Test as role*. Chụp màn hình 2 người thấy 2 bộ số khác nhau.
+- Trên Service: *Semantic model → Security*, thêm email người A, B vào `DeptManager` và một email vào `Executive`, rồi *Test as role → Now viewing as* từng người (họ không cần Pro). Chụp màn hình 2 người thấy 2 bộ số khác nhau.
 
-**Lưu ý:** RLS chỉ áp với người có quyền **Viewer**. Thành viên Admin/Member/Contributor của workspace thấy hết. Vì vậy phải phân phối qua **App**, và người xem không được thêm vào workspace.
+**Lưu ý:** RLS chỉ áp với người có quyền **Viewer**. Thành viên Admin/Member/Contributor của workspace thấy hết. Vì vậy workspace chỉ có P3, và nếu sau này có người xem có Pro thì phân phối qua **App**, không thêm họ vào workspace.
 
 ## 6. Cập nhật gần thời gian thực
 
@@ -213,9 +213,9 @@ tra Refresh history trước khi thử lại.
 2. **Publish:** *Home → Publish → instacart-bi*. Đặt tên semantic model `instacart`.
 3. **App:** *Workspace → Create app → Instacart Analytics*.
    - Thêm audience *Quản lý ngành hàng* (thấy trang 1–4) và *Ban điều hành* (thấy cả trang 5). Từ G5, cả hai audience thấy thêm trang 6–7.
-   - Thêm người xem theo email hoặc nhóm Entra.
+   - Chỉ người có Pro mới mở được App; ở dự án này P3 dùng App để kiểm, người khác nhận PDF (*File → Export → PDF*).
 4. **Không** dùng *Publish to web*, vì RLS sẽ mất ([devops/06 §5.1](../devops/06_de_den_dashboard.md)).
-5. Mở app Power BI Mobile, đăng nhập bằng tài khoản người xem và chụp màn hình từng trang.
+5. Mở app Power BI Mobile, đăng nhập bằng tài khoản của P3 và chụp màn hình từng trang.
 
 ## 9. Checklist G4
 
