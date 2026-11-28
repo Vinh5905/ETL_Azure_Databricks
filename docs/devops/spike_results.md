@@ -100,4 +100,4 @@ DirectQuery kiểm tra Power BI có gửi truy vấn tới warehouse và trả d
 > - `no_public_ip = false` đã có sẵn ở devops/03 bước 3.5 và `infra/modules/dbx_workspace`.
 > - P1 báo đã dọn `dbw-spike` và `wh-spike` ngày 2026-11-19. Việc xác nhận dọn hết tài nguyên spike và đóng milestone G0 theo dõi tại #147.
 
-- [x] Đã xóa `rg-spike` và workspace thử. Kiểm 2026-11-27: `az group list` trên Sub A không còn group nào tên bắt đầu bằng `rg-spike`. Nhóm account `spike-acct-grp` kiểm riêng ở #147.
+- [x] Đã xóa `rg-spike` và workspace thử. Kiểm 2026-11-27: `az group list` trên Sub A không còn group nào tên bắt đầu bằng `rg-spike` (kiểm lại 2026-11-28 trên mọi subscription P1 thấy, vẫn rỗng). Nhóm account `spike-acct-grp` (không có thành viên, code không dùng) đã xóa ngày 2026-11-28 qua API SCIM cấp account gọi từ workspace chính; tìm lại theo tên trả 0 kết quả (#147).
