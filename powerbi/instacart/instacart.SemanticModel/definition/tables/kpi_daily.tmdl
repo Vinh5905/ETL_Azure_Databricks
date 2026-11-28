@@ -1,0 +1,53 @@
+table kpi_daily
+
+	column order_date
+		dataType: dateTime
+		sourceColumn: order_date
+		summarizeBy: none
+		isHidden
+		formatString: yyyy-MM-dd
+
+	column source
+		dataType: string
+		sourceColumn: source
+		summarizeBy: none
+
+	column orders
+		dataType: int64
+		sourceColumn: orders
+		summarizeBy: none
+
+	column items
+		dataType: int64
+		sourceColumn: items
+		summarizeBy: none
+
+	column users
+		dataType: int64
+		sourceColumn: users
+		summarizeBy: none
+
+	column revenue_sim
+		dataType: decimal
+		sourceColumn: revenue_sim
+		summarizeBy: none
+
+	column reorder_rate
+		dataType: double
+		sourceColumn: reorder_rate
+		summarizeBy: none
+
+	column avg_basket_size
+		dataType: double
+		sourceColumn: avg_basket_size
+		summarizeBy: none
+
+	partition kpi_daily = m
+		mode: import
+		source =
+			let
+			    Sample = Table.PromoteHeaders(Csv.Document(Text.ToBinary(SampleCsv[kpi_daily]), [Delimiter=",", Encoding=65001, QuoteStyle=QuoteStyle.Csv]), [PromoteAllScalars=true]),
+			    Source = if DbxServer = "(sample)" then Sample else GetDatabricksTable(Schema, "kpi_daily"),
+			    Typed = Table.TransformColumnTypes(Source, {{"order_date", type date}, {"source", type text}, {"orders", Int64.Type}, {"items", Int64.Type}, {"users", Int64.Type}, {"revenue_sim", Currency.Type}, {"reorder_rate", type number}, {"avg_basket_size", type number}}, "en-US")
+			 in
+			    Typed

@@ -1,0 +1,55 @@
+table department_sales
+
+	column order_date
+		dataType: dateTime
+		sourceColumn: order_date
+		summarizeBy: none
+		isHidden
+		formatString: yyyy-MM-dd
+
+	column department_id
+		dataType: int64
+		sourceColumn: department_id
+		summarizeBy: none
+		isHidden
+
+	column aisle_id
+		dataType: int64
+		sourceColumn: aisle_id
+		summarizeBy: none
+		isHidden
+
+	column orders
+		dataType: int64
+		sourceColumn: orders
+		summarizeBy: none
+
+	column items
+		dataType: int64
+		sourceColumn: items
+		summarizeBy: none
+
+	column revenue_sim
+		dataType: decimal
+		sourceColumn: revenue_sim
+		summarizeBy: none
+
+	column reordered_items
+		dataType: int64
+		sourceColumn: reordered_items
+		summarizeBy: none
+
+	column promo_items
+		dataType: int64
+		sourceColumn: promo_items
+		summarizeBy: none
+
+	partition department_sales = m
+		mode: import
+		source =
+			let
+			    Sample = Table.PromoteHeaders(Csv.Document(Text.ToBinary(SampleCsv[department_sales]), [Delimiter=",", Encoding=65001, QuoteStyle=QuoteStyle.Csv]), [PromoteAllScalars=true]),
+			    Source = if DbxServer = "(sample)" then Sample else GetDatabricksTable(Schema, "department_sales"),
+			    Typed = Table.TransformColumnTypes(Source, {{"order_date", type date}, {"department_id", Int64.Type}, {"aisle_id", Int64.Type}, {"orders", Int64.Type}, {"items", Int64.Type}, {"revenue_sim", Currency.Type}, {"reordered_items", Int64.Type}, {"promo_items", Int64.Type}}, "en-US")
+			 in
+			    Typed

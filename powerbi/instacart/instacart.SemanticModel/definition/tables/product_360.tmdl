@@ -1,0 +1,122 @@
+table product_360
+
+	column product_id
+		dataType: int64
+		sourceColumn: product_id
+		summarizeBy: none
+		isKey
+
+	column product_name
+		dataType: string
+		sourceColumn: product_name
+		summarizeBy: none
+
+	column aisle_id
+		dataType: int64
+		sourceColumn: aisle_id
+		summarizeBy: none
+		isHidden
+
+	column aisle
+		dataType: string
+		sourceColumn: aisle
+		summarizeBy: none
+
+	column department_id
+		dataType: int64
+		sourceColumn: department_id
+		summarizeBy: none
+		isHidden
+
+	column department
+		dataType: string
+		sourceColumn: department
+		summarizeBy: none
+
+	column current_price
+		dataType: decimal
+		sourceColumn: current_price
+		summarizeBy: none
+
+	column on_promotion
+		dataType: boolean
+		sourceColumn: on_promotion
+		summarizeBy: none
+
+	column discount_pct
+		dataType: double
+		sourceColumn: discount_pct
+		summarizeBy: none
+
+	column brand
+		dataType: string
+		sourceColumn: brand
+		summarizeBy: none
+
+	column nutriscore_grade
+		dataType: string
+		sourceColumn: nutriscore_grade
+		summarizeBy: none
+
+	column nova_group
+		dataType: int64
+		sourceColumn: nova_group
+		summarizeBy: none
+
+	column energy_kcal_100g
+		dataType: double
+		sourceColumn: energy_kcal_100g
+		summarizeBy: none
+
+	column sugars_100g
+		dataType: double
+		sourceColumn: sugars_100g
+		summarizeBy: none
+
+	column image_url
+		dataType: string
+		sourceColumn: image_url
+		summarizeBy: none
+		dataCategory: ImageUrl
+
+	column off_match_status
+		dataType: string
+		sourceColumn: off_match_status
+		summarizeBy: none
+
+	column off_match_score
+		dataType: double
+		sourceColumn: off_match_score
+		summarizeBy: none
+		isHidden
+
+	column times_ordered
+		dataType: int64
+		sourceColumn: times_ordered
+		summarizeBy: none
+
+	column reorder_rate
+		dataType: double
+		sourceColumn: reorder_rate
+		summarizeBy: none
+
+	column revenue_sim
+		dataType: decimal
+		sourceColumn: revenue_sim
+		summarizeBy: none
+
+	column n
+		dataType: int64
+		sourceColumn: n
+		summarizeBy: none
+		isHidden
+
+	partition product_360 = m
+		mode: import
+		source =
+			let
+			    Sample = Table.PromoteHeaders(Csv.Document(Text.ToBinary(SampleCsv[product_360]), [Delimiter=",", Encoding=65001, QuoteStyle=QuoteStyle.Csv]), [PromoteAllScalars=true]),
+			    Source = if DbxServer = "(sample)" then Sample else GetDatabricksTable(Schema, "product_360"),
+			    Typed = Table.TransformColumnTypes(Source, {{"product_id", Int64.Type}, {"product_name", type text}, {"aisle_id", Int64.Type}, {"aisle", type text}, {"department_id", Int64.Type}, {"department", type text}, {"current_price", Currency.Type}, {"on_promotion", type logical}, {"discount_pct", type number}, {"brand", type text}, {"nutriscore_grade", type text}, {"nova_group", Int64.Type}, {"energy_kcal_100g", type number}, {"sugars_100g", type number}, {"image_url", type text}, {"off_match_status", type text}, {"off_match_score", type number}, {"times_ordered", Int64.Type}, {"reorder_rate", type number}, {"revenue_sim", Currency.Type}, {"n", Int64.Type}}, "en-US")
+			 in
+			    Typed

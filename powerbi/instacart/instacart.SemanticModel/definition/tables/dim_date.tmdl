@@ -1,0 +1,44 @@
+table dim_date
+	dataCategory: Time
+
+	column date
+		dataType: dateTime
+		sourceColumn: date
+		summarizeBy: none
+		isKey
+		formatString: yyyy-MM-dd
+
+	column year
+		dataType: int64
+		sourceColumn: year
+		summarizeBy: none
+
+	column month
+		dataType: int64
+		sourceColumn: month
+		summarizeBy: none
+
+	column week
+		dataType: int64
+		sourceColumn: week
+		summarizeBy: none
+
+	column year_month
+		dataType: string
+		sourceColumn: year_month
+		summarizeBy: none
+
+	column iso_dow
+		dataType: int64
+		sourceColumn: iso_dow
+		summarizeBy: none
+
+	partition dim_date = m
+		mode: import
+		source =
+			let
+			    Sample = Table.PromoteHeaders(Csv.Document(Text.ToBinary(SampleCsv[dim_date]), [Delimiter=",", Encoding=65001, QuoteStyle=QuoteStyle.Csv]), [PromoteAllScalars=true]),
+			    Source = if DbxServer = "(sample)" then Sample else GetDatabricksTable(Schema, "dim_date"),
+			    Typed = Table.TransformColumnTypes(Source, {{"date", type date}, {"year", Int64.Type}, {"month", Int64.Type}, {"week", Int64.Type}, {"year_month", type text}, {"iso_dow", Int64.Type}}, "en-US")
+			 in
+			    Typed
