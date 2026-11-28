@@ -337,9 +337,9 @@ Tách từ AD-OPS-07 để AD-OPS-08 không phải chờ P3. `dbw-spike` đượ
 
 **Xong khi**
 
-- [ ] `az group list --query "[?name=='rg-spike']"` trả về rỗng
-- [ ] spike-acct-grp không còn trên account
-- [ ] PR cập nhật spike_results đã merge
+- [x] `az group list --query "[?name=='rg-spike']"` trả về rỗng
+- [x] spike-acct-grp không còn trên account
+- [x] PR cập nhật spike_results đã merge
 
 ### AD-OPS-08
 
