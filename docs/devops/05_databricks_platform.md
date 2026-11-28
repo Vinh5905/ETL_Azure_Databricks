@@ -251,6 +251,12 @@ resource "databricks_grants" "gold" {
 
 > Code thật ở `infra/stacks/30-databricks/main.tf` (bước 5): bảng trên viết thành `local.role_privileges` (securable → vai → privilege), `local.grants_by_member` gộp theo người và rút `ALL_PRIVILEGES` thành một mục. Có ba nhóm `databricks_grants`: catalog, mỗi schema (`for_each`), mỗi volume (`for_each`). Volume nằm trong schema mà vai đã có `ALL_PRIVILEGES` thì quyền đã kế thừa, khai lại chỉ để bảng quyền đọc được trong code.
 
+> **SP thử vai `bi` (AD-DE-23, #59).** Tiêu chí của #59 cần một danh tính chỉ có vai `bi`: đọc được `gold`, còn đọc `silver` thì bị chặn. Không thành viên nào chỉ có vai `bi` (P4 có thêm `ds`, mà `ds` đọc được `silver`), nên stack có SP `sp-test-bi`, bật bằng `enable_bi_test_sp` trong `infra/envs/30-databricks.tfvars`.
+> - SP do Databricks quản lý, không có app registration trên Entra. Quyền lấy đúng cột `bi` của `local.role_privileges`: `USE_CATALOG` trên catalog, `USE_SCHEMA` + `SELECT` trên `gold` và `ops`, cộng `CAN_USE` trên `wh-instacart-bi`.
+> - Cách thử: P1 vào **Settings → Identity and access → Service principals → `sp-test-bi` → Secrets**, tạo một OAuth secret ngắn hạn, rồi tạo profile CLI tạm (`host`, `client_id` = application ID của SP, `client_secret`) chỉ trên máy mình. Dùng profile đó chạy hai statement ở [de/05](../de/05_gold_serving.md) trên `wh-instacart-bi`, rồi ghi statement ID vào #59.
+> - Thử xong: xóa OAuth secret và profile tạm, đặt `enable_bi_test_sp = false` trong một PR để gỡ SP cùng các grant.
+> - Không đưa client secret vào file, issue hay PR.
+
 > `databricks_grants` là **có thẩm quyền tuyệt đối**: nó ghi đè mọi grant không khai báo. Vì vậy mọi quyền trên một securable phải nằm trong **một** khối duy nhất.
 
 **Bảo mật mức dòng ngay trong UC (tùy chọn, bổ trợ cho Power BI):** có thể đặt row filter trên `gold.department_sales` theo nhóm, ví dụ hàm `is_account_group_member('bi_produce')` chỉ cho xem department `produce`. Hàm SQL được tạo bằng job DE (DAB), vì hàm là "việc" chứ không phải "nền". Terraform chỉ cấp quyền `EXECUTE`.

@@ -38,3 +38,9 @@ variable "uc_managers" {
     error_message = "Mỗi người trong uc_managers phải có ít nhất một vai trong roles."
   }
 }
+
+variable "enable_bi_test_sp" {
+  description = "Tạo SP sp-test-bi chỉ có quyền của vai bi, để thử tiêu chí của AD-DE-23 (#59): đọc được gold, đọc silver bị chặn. Bật trong lúc nghiệm thu, thử xong đặt false để gỡ SP và grant."
+  type        = bool
+  default     = false
+}

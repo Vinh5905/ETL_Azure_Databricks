@@ -11,6 +11,7 @@
 # [x] 7. Secret scope dựa trên Key Vault (P1 apply từ máy local)
 # [x] 8. Serverless SQL warehouse wh-instacart-bi
 # [x] 9. Output cho DAB và Power BI
+# [x] 10. SP thử vai bi (AD-DE-23, #59), bật bằng enable_bi_test_sp
 
 data "terraform_remote_state" "core" {
   backend = "azurerm"
@@ -110,6 +111,22 @@ resource "databricks_service_principal" "func" {
   databricks_sql_access = false
   allow_cluster_create  = false
   force                 = true
+}
+
+# AD-DE-23 (#59): danh tính chỉ có vai bi để thử "đọc được gold, đọc silver bị chặn". Không thành
+# viên nào chỉ có vai bi (P4 có cả ds, mà ds đọc được silver), nên thử bằng người thì không chứng
+# minh được vế bị chặn. SP do Databricks quản lý (không có application_id), quyền lấy đúng cột bi
+# của local.role_privileges ở bước 5 cộng CAN_USE warehouse. Entitlement workspace chỉ để SP gọi được
+# API của workspace (SQL Statement Execution), không mở thêm quyền dữ liệu nào. P1 tạo OAuth secret
+# cho SP ở trang admin để thử, thử xong xóa secret và đặt enable_bi_test_sp = false
+# (docs/devops/05_databricks_platform.md bước 5).
+resource "databricks_service_principal" "bi_test" {
+  count = var.enable_bi_test_sp ? 1 : 0
+
+  display_name          = "sp-test-bi"
+  workspace_access      = true
+  databricks_sql_access = true
+  allow_cluster_create  = false
 }
 
 # Thành viên nhóm. allow_cluster_create = false chỉ có tác dụng với người không phải admin. Kiểm
@@ -303,6 +320,14 @@ resource "databricks_grants" "catalog" {
     principal  = databricks_service_principal.ci.application_id
     privileges = ["CREATE_SCHEMA", "USE_CATALOG"]
   }
+
+  dynamic "grant" {
+    for_each = var.enable_bi_test_sp ? [1] : []
+    content {
+      principal  = databricks_service_principal.bi_test[0].application_id
+      privileges = local.role_privileges.catalog.bi
+    }
+  }
 }
 
 resource "databricks_grants" "schema" {
@@ -323,6 +348,15 @@ resource "databricks_grants" "schema" {
     content {
       principal  = databricks_service_principal.ci.application_id
       privileges = local.all_privileges
+    }
+  }
+
+  # SP thử vai bi: chỉ các schema mà vai bi có quyền (gold, ops).
+  dynamic "grant" {
+    for_each = var.enable_bi_test_sp && length(lookup(local.role_privileges[each.key], "bi", [])) > 0 ? [1] : []
+    content {
+      principal  = databricks_service_principal.bi_test[0].application_id
+      privileges = local.role_privileges[each.key].bi
     }
   }
 }
@@ -584,6 +618,14 @@ resource "databricks_permissions" "warehouse_use" {
     content {
       user_name        = databricks_user.members[access_control.value].user_name
       permission_level = access_control.value == "p1" ? "CAN_MANAGE" : "CAN_USE"
+    }
+  }
+
+  dynamic "access_control" {
+    for_each = var.enable_bi_test_sp ? [1] : []
+    content {
+      service_principal_name = databricks_service_principal.bi_test[0].application_id
+      permission_level       = "CAN_USE"
     }
   }
 }

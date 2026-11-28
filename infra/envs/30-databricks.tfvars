@@ -12,3 +12,7 @@ roles = {
 # Người giữ quyền MANAGE trên catalog, storage credential, external location, để xóa được chúng khi
 # SP CI cũ mất đăng nhập lúc chuyển subscription (docs/devops/chuyen_sang_sub_d.md §4).
 uc_managers = ["p1"]
+
+# AD-DE-23 (#59): SP sp-test-bi chỉ có vai bi, vì không thành viên nào chỉ có vai bi. Thử xong
+# đặt false (docs/devops/05_databricks_platform.md bước 5).
+enable_bi_test_sp = true
