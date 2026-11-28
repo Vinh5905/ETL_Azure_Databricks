@@ -1,0 +1,31 @@
+{
+  "name": "InstacartMarketBasket.json",
+  "dataColors": [
+    "#167C65",
+    "#68A23A",
+    "#0F6273",
+    "#D68950",
+    "#B5CD66",
+    "#676C94"
+  ],
+  "background": "#FFFFFF",
+  "foreground": "#17342C",
+  "tableAccent": "#167C65",
+  "textClasses": {
+    "title": {
+      "fontFace": "Segoe UI Semibold",
+      "fontSize": 14,
+      "color": "#17342C"
+    },
+    "label": {
+      "fontFace": "Segoe UI",
+      "fontSize": 11,
+      "color": "#435E56"
+    },
+    "callout": {
+      "fontFace": "Segoe UI Semibold",
+      "fontSize": 24,
+      "color": "#167C65"
+    }
+  }
+}

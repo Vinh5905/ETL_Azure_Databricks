@@ -33,6 +33,10 @@ table dim_date
 		sourceColumn: iso_dow
 		summarizeBy: none
 
+	column iso_year_week = FORMAT ( YEAR ( dim_date[date] - WEEKDAY ( dim_date[date], 2 ) + 4 ), "0000" ) & "-W" & FORMAT ( dim_date[week], "00" )
+		dataType: string
+		summarizeBy: none
+
 	partition dim_date = m
 		mode: import
 		source =

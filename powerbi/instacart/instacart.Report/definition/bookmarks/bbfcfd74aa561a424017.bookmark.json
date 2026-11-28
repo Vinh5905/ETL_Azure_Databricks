@@ -1,0 +1,28 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/bookmark/2.0.0/schema.json",
+  "displayName": "Theo giờ",
+  "name": "bbfcfd74aa561a424017",
+  "options": {
+    "suppressData": true
+  },
+  "explorationState": {
+    "version": "1.3",
+    "activeSection": "6ffddd338adccec4d980",
+    "sections": {
+      "6ffddd338adccec4d980": {
+        "visualContainers": {
+          "83d4f4ac8b2f934bc47c": {
+            "singleVisual": {
+              "display": {
+                "mode": "hidden"
+              }
+            }
+          },
+          "94efa1bdd2cf13f9e7b6": {
+            "singleVisual": {}
+          }
+        }
+      }
+    }
+  }
+}
