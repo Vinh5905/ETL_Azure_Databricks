@@ -390,6 +390,11 @@ PYTHONPATH=src uv run --frozen --extra ingest python -m streaming.simulator.simu
 
 ### 6.2 Đổi thế hệ Event Hubs (AD-ST-08)
 
+Ngày 28/11/2026, identity CI trên Sub D đã bật và tắt được Event Hubs trên
+Sub B. Lượt G3 dùng pipeline prod với `g1` và xác nhận được hai bảng Silver.
+Nghiệm thu đổi thế hệ dùng pipeline dev riêng và một lô nhỏ để so sánh hai
+mốc trên cùng pipeline. [Kết quả G3 và các lượt bật/tắt](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/131#issuecomment-7236865031)
+
 #### Chuẩn bị mốc trước khi đổi namespace
 
 1. Chọn một pipeline dev đã chạy thành công với namespace cũ. Có thể dùng lại
@@ -417,7 +422,7 @@ PYTHONPATH=src uv run --frozen --extra ingest python -m streaming.simulator.simu
    cấu hình và thư mục triển khai đã tạo pipeline. Chạy trong `bundles/`:
 
    ```bash
-   databricks bundle deploy -t dev --profile "<profile>" --var "eh_generation=<mã mới>"
+   databricks bundle deploy -t dev --select pipelines.instacart_stream --profile "<profile>" --var "eh_generation=<mã mới>"
    ```
 
    Với pipeline dev tạo riêng, sửa `configuration.eh_generation` trên pipeline hiện

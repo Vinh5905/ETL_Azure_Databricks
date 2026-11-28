@@ -1,5 +1,10 @@
 # Mốc trước khi đổi thế hệ Event Hubs (AD-ST-08)
 
+**Mốc lịch sử của workspace cũ.** Sau khi chuyển sang Sub D ngày 27/11/2026,
+catalog `instacart` của workspace cũ đã bị xóa. Các số dưới đây lưu kết quả
+đã đo ngày 26/11. Để nghiệm thu trên Sub D, cần đo lại cả hai mốc trên cùng
+pipeline dev mới. [Yêu cầu nghiệm thu lại](https://github.com/Vinh5905/ETL_Azure_Databricks/pull/239#issuecomment-7234020353)
+
 Truy vấn đối soát chạy thành công trên `wh-instacart-bi` lúc **00:19:09 ngày 26/11/2026 (UTC+7)**, tức 17:19:09 ngày 25/11/2026 (UTC). Dữ liệu lấy từ `order_events` và `stream_orders` của pipeline dev đã chạy [AD-ST-07](../ad-st-07/2026-11-25-train-replay.md). Pipeline ở trạng thái `IDLE` với `eh_generation=g20261125_6b780de`.
 
 ## Kết quả trước khi đổi
