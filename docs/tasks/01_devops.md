@@ -1147,7 +1147,7 @@ Quota tính theo subscription nên thực nghiệm DS chạy ở Sub C để kh�
 
 **Việc cần làm**
 
-1. Hoàn thiện module dbx_workspace (workspace + access connector + storage nhỏ), validate
+1. Hoàn thiện module dbx_workspace (workspace + access connector, không có storage riêng vì dùng chung metastore), validate
 2. Điền infra/envs/90-sandbox-p4.tfvars theo region đã chốt
 3. P4 apply từ máy với key sandbox-p4.tfstate
 4. Kiểm workspace gắn cùng metastore với Sub A và đọc được instacart.silver.baskets

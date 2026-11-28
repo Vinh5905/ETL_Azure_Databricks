@@ -646,7 +646,7 @@ resource "azurerm_key_vault_secret" "eh_listen" {        # Databricks đọc qua
 
 **Vì sao:** quota vCPU tính **theo subscription**. Train FP-Growth / DApriori với nhiều cấu hình (rubric "trực quan kết quả trên các tham số") cần chạy song song với pipeline DE mà không giành 4 vCPU của Sub A.
 
-Stack này dùng lại module nội bộ `modules/dbx_workspace` (workspace + access connector + storage nhỏ), mỗi thành viên một state `sandbox-<member>.tfstate`:
+Stack này dùng lại module nội bộ `modules/dbx_workspace` (workspace + access connector, không có storage riêng vì dùng chung metastore), mỗi thành viên một state `sandbox-<member>.tfstate`:
 
 ```hcl
 module "ws2" {
