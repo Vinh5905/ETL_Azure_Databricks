@@ -72,7 +72,7 @@ Nhóm tập trung vào **mục 4 (phân tích dữ liệu + trực quan dữ li�
 
 **Hai điểm then chốt người dùng hỏi:**
 - **DE bắt đầu trên cloud ở G1.** Lúc này đã có ADLS, External Location và catalog `instacart`. Trước G1, DE vẫn viết và test code bằng PySpark local, vì code chạy được trên cả hai môi trường.
-- **DS bắt đầu ở G3.** Lúc này `silver.baskets` (prior | holdout) đã qua đối soát số dòng, và DE chạy job `ds-prepare` để chụp thành bản cố định `ds_data.*` ([de/08](../de/08_du_lieu_cho_ds.md)). DS chạy thực nghiệm trên workspace #2 (Sub C) nếu cùng region với Sub A, nếu không thì trên Sub A ngoài giờ batch. Phần Hadoop MapReduce chạy ở máy local bằng Docker ([ds/03](../ds/03_hadoop_mapreduce_local.md)).
+- **DS bắt đầu ở G3.** Lúc này `silver.baskets` (prior | holdout) đã qua đối soát số dòng, và DE chạy job `ds-prepare` để chụp thành bản cố định `ds_data.*` ([de/08](../de/08_du_lieu_cho_ds.md)). DS chạy thực nghiệm trên workspace #2 ở Sub C (bắt buộc; P4 tạo Sub C bằng email trường, region `eastasia`). Phần Hadoop MapReduce chạy ở máy local bằng Docker ([ds/03](../ds/03_hadoop_mapreduce_local.md)).
 
 ## 4. Phân vai 4 người
 
