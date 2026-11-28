@@ -97,9 +97,12 @@ if spark.conf.get("enable_gold_fact", "false").lower() == "true":
     @dp.materialized_view(name=table_name(GOLD, "dim_department"))
     @dp.expect_or_fail("one_row_per_department", "department_id IS NOT NULL AND n = 1")
     def dim_department():
+        # Gộp theo department_id thay cho cửa sổ trên DISTINCT: lượt prod Sub D 28/11 (run 917015887430313)
+        # đếm n bằng số sản phẩm (4.007) như thể bước DISTINCT bị bỏ qua. n = số tên khác nhau của một mã.
         return spark.sql(f"""
-            SELECT department_id, department, count(*) OVER (PARTITION BY department_id) AS n
-            FROM (SELECT DISTINCT department_id, department FROM {table_name(SILVER, "dim_product")})
+            SELECT department_id, min(department) AS department, count(DISTINCT department) AS n
+            FROM {table_name(SILVER, "dim_product")}
+            GROUP BY department_id
         """)
 
     @dp.materialized_view(name=table_name(GOLD, "bi_user_access"), comment="Ánh xạ người xem vào ngành hàng cho RLS.")
