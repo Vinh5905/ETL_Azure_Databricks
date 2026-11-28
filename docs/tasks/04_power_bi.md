@@ -33,7 +33,7 @@ Phép thử Power BI thuộc cổng G0. Kết quả quyết định lớp servin
 
 **Việc cần làm**
 
-1. Kiểm giấy phép Pro của P3 (M365 trường hoặc trial 60 ngày). Kiểm giấy phép của P1, P2, P4 chuyển sang [AD-BI-02](#ad-bi-02).
+1. Kiểm giấy phép Pro của P3 (M365 trường hoặc trial 60 ngày). Chỉ P3 cần Pro; P1, P2, P4 xem bằng Desktop hoặc PDF (devops/06 §5.1).
 2. Tạo workspace instacart-bi. Việc thêm 3 thành viên còn lại chuyển sang [AD-BI-02](#ad-bi-02).
 3. Trong Power BI Desktop, nối connector Azure Databricks tới warehouse đã spike (host + HTTP path).
 4. Tạo thử một streaming/push semantic model bằng API và đẩy vài dòng.
@@ -71,20 +71,21 @@ Power BI đọc gold qua serverless SQL warehouse bằng Entra ID; nguồn repor
 3. Chọn bảng gold ở de/07 §2, không chọn fact_order_lines
 4. Lưu powerbi/instacart.pbip, thêm .pbi/localSettings.json và cache.abf vào .gitignore
 5. Nếu không có serverless: chọn dự phòng theo devops/06 §4
-6. Kiểm giấy phép Pro hoặc trial của P1, P2, P4, ghi ngày hết hạn. Trial chỉ có 60 ngày nên bật sao cho còn hạn tới buổi demo
-7. Thêm P1, P2, P4 vào instacart-bi với quyền Member theo devops/06 §5.1. Người xem dashboard nhận qua App ở AD-BI-09, không thêm vào workspace
+6. Ghi ngày hết hạn giấy phép Pro hoặc trial của P3. Trial chỉ có 60 ngày nên phải còn hạn tới buổi demo
+7. P1, P2, P4 không cần Pro, không thêm vào workspace: xem report bằng Power BI Desktop (mở PBIP từ repo) hoặc file PDF do P3 xuất, theo devops/06 §5.1
 
 **Đầu ra**
 
 - powerbi/instacart.pbip (khung)
 - .gitignore cập nhật
-- Workspace Power BI instacart-bi có đủ 4 thành viên
+- Workspace Power BI instacart-bi, P3 là Admin
 
 **Xong khi**
 
 - [ ] Desktop tải được dữ liệu gold qua warehouse
 - [ ] Git không chứa cache.abf hay thông tin đăng nhập
-- [ ] P1, P2, P4 là Member của instacart-bi và mở được report thử, ngày hết hạn giấy phép đã ghi
+- [ ] P3 có Pro hoặc trial còn hạn tới buổi demo, ngày hết hạn đã ghi
+- [ ] P1, P2, P4 mở được report thử bằng Desktop hoặc nhận được bản PDF
 
 ### AD-BI-03
 
@@ -287,14 +288,14 @@ Tile real-time vài giây cần streaming semantic model kiểu API; push URL ch
 - **Hoàn tất còn cần:** [AD-BI-07](04_power_bi.md#ad-bi-07) [#80](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/80)
 - **Mở khóa:** [AD-DE-25](02_de_batch.md#ad-de-25) (hoàn tất), [AD-BI-10](04_power_bi.md#ad-bi-10) (hoàn tất), [AD-BI-12](04_power_bi.md#ad-bi-12) (bắt đầu), [AD-DS-25](05_data_science.md#ad-ds-25) (bắt đầu)
 
-Người xem nhận báo cáo qua App để RLS có hiệu lực; Import refresh hằng ngày sau pl_master.
+Chỉ P3 có Pro nên RLS kiểm bằng Test as role trên Service; người khác xem bằng Desktop hoặc PDF. Import refresh hằng ngày sau pl_master.
 
 **Việc cần làm**
 
 1. Publish vào instacart-bi, semantic model tên instacart
 2. Data source credentials OAuth2, scheduled refresh 04:00
-3. Gán người vào role ở Semantic model → Security, Test as role
-4. Tạo App Instacart Analytics, audience Quản lý ngành hàng (trang 1–4) và Ban điều hành (thêm trang 5)
+3. Gán email người A, B (từ bi_access_seed) vào role ở Semantic model → Security, kiểm bằng Test as role (không cần họ có Pro)
+4. Tạo App Instacart Analytics, audience Quản lý ngành hàng (trang 1–4) và Ban điều hành (thêm trang 5) để làm bằng chứng cấu hình; xuất PDF report cho P1, P2, P4 và giảng viên
 5. Không dùng Publish to web; gửi workspaceId/datasetId cho P2 (refresh_bi)
 
 **Đầu ra**
@@ -307,7 +308,7 @@ Người xem nhận báo cáo qua App để RLS có hiệu lực; Import refresh
 
 - [ ] Người A và người B thấy trang 4 khác nhau, Executive thấy hết (có ảnh)
 - [ ] Scheduled refresh chạy thành công một lần
-- [ ] Người xem không là thành viên workspace
+- [ ] Workspace chỉ có P3, không ai cần thêm giấy phép Pro
 
 ### AD-BI-10
 
@@ -327,7 +328,7 @@ Rubric yêu cầu responsive mobile: mỗi trang có bố cục dọc riêng, ki
 
 1. View → Mobile layout cho trang 1–4 (và 5): thẻ KPI lên trên, 1–2 biểu đồ chính
 2. Page navigator dạng dọc, bỏ visual phụ
-3. Mở App bằng tài khoản người xem trên điện thoại, chụp từng trang
+3. Mở App bằng tài khoản của P3 trên app Power BI Mobile, chụp từng trang
 
 **Đầu ra**
 

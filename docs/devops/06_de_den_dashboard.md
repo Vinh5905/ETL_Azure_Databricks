@@ -113,9 +113,13 @@ Bảng gold dành cho Power BI phải **nhỏ và đã tổng hợp sẵn**. Kh�
 
 ### 5.1 Workspace, chia sẻ, giấy phép
 
-- Workspace `instacart-bi`: P3 là Admin, P1, P2, P4 là Member.
-- Phân phối cho người xem bằng **Power BI App** "Instacart Analytics", chia thành audience theo nhóm người xem.
-- **Mọi người xem** (kể cả giảng viên) cần giấy phép Pro hoặc trial, vì workspace không nằm trên Premium/Fabric capacity. Gửi lời mời trước buổi demo.
+- **Chỉ P3 cần giấy phép Pro** (hoặc trial còn hạn tới buổi demo). Workspace `instacart-bi` chỉ có P3 là Admin.
+- Workspace không nằm trên Premium/Fabric capacity, nên ai xem report trên Service hay qua App đều phải có Pro. Để không tốn thêm giấy phép, P1, P2, P4 và giảng viên xem bằng:
+  - **Power BI Desktop** (miễn phí): mở PBIP trong `powerbi/`, đăng nhập Entra ID để tải gold.
+  - **File PDF** P3 xuất từ report (*File → Export → PDF*).
+  - Màn hình P3 chia sẻ trong buổi demo.
+- P3 vẫn tạo **Power BI App** "Instacart Analytics" với audience theo nhóm người xem, để có bằng chứng cấu hình; RLS kiểm bằng *Test as role* (§5.4), không cần người được thử có Pro.
+- Đánh đổi: ít bằng chứng nhiều người cùng dùng Service cho rubric mục 5.4; bù bằng ảnh Test as role và lịch sử PR của `powerbi/`.
 - **Không** dùng *Publish to web*: tính năng này công khai link và bỏ qua RLS, trái với yêu cầu bảo mật.
 - Nguồn report lưu dạng **PBIP** trong `powerbi/` (text, review được qua PR). File `.pbix` không commit.
 
