@@ -84,6 +84,7 @@ Quyền duyệt PR theo `.github/CODEOWNERS`.
 | Mọi PR | `pr-checks` |
 | PR đụng `infra/**` | `tf-plan` (comment plan lên PR) |
 | Merge vào `main` | `tf-apply` và `de-deploy` prod, chờ duyệt ở environment `prod` |
+| Merge vào `main` đụng code Function (`src/serving_func/**`) | `func-deploy`, chờ duyệt ở environment `prod` |
 | Mỗi đêm | `stream-toggle` tắt Event Hubs |
 | Hằng tuần | `drift-check` |
 | Sự kiện issue, PR, review; mỗi 30 phút | `sync-task-board` (đồng bộ Status và Waiting on của board phân việc) |
