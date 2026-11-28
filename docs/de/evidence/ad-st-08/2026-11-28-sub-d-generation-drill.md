@@ -44,7 +44,9 @@ Pipeline dev `eb1105a1-2bd5-422e-ac4d-a0007629af43` dùng các bảng
   Broker xác nhận **50/50** lúc **19:25:37 ngày 28/11** (12:25:37 UTC).
 - Update thường `715d3a99-a1ac-468a-b39a-f867a090c10f` dừng lúc cấp compute
   vì `AZURE_QUOTA_EXCEEDED_EXCEPTION`. Sub D đang dùng đủ quota DDSv4 East Asia
-  4/4 vCPU. Có thể chạy lại update trên lô đã gửi khi crawler giải phóng quota.
+  4/4 vCPU. Crawler đã kết thúc lúc 20:14 (13:14 UTC), nhưng đến cuối lượt
+  kiểm tra lúc 20:28 (13:28 UTC), Azure vẫn báo quota 4/4 vCPU. Có thể chạy
+  lại update trên lô đã gửi khi Azure có đủ 4 vCPU trống.
 
 Để namespace mới hoạt động qua lượt chạy theo lịch, theo yêu cầu của buổi
 nghiệm thu ngày 28/11. Kết quả workflow và việc xóa tài nguyên cần được kiểm
