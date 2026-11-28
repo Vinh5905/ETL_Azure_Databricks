@@ -333,6 +333,11 @@ sink `pbi_push`. Mặc định `enable_power_bi_push=false`. Chỉ bật khi
 [BI08](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/81) xác nhận
 model, dashboard và secret `kv/pbi-push-url` sẵn sàng.
 
+BI08 đã xác minh một hàng gửi bằng Microsoft Entra ID vào `instacart_rt`
+được Power BI nhận và hiển thị trên Card. Khi nghiệm thu sink của ST10,
+kiểm thêm luồng `kpi_to_pbi` đọc được `kv/pbi-push-url` và POST thành công
+qua Push URL trên cùng model. [Kết quả BI08](https://github.com/Vinh5905/ETL_Azure_Databricks/pull/269)
+
 Mỗi dòng gửi là một giá trị KPI của phút đã chốt. `minute` dùng ISO 8601 UTC.
 Sink chia mảng JSON để mỗi request dưới 15 KB cho streaming tile. Một
 checkpoint mới bắt đầu ở các commit mới của Gold. Các lần khởi động lại dùng
@@ -347,7 +352,9 @@ ghi kết quả trên cả hai tile trước khi nghiệm thu. [Power BI real-ti
 
 **Đo độ trễ đầu cuối.** Khi có Event Hubs và secret, chạy dev continuous
 với `enable_power_bi_push=true`. Ghi giờ UTC khi phát, khi dòng xuất hiện
-ở Gold và khi tile đổi. `stream_kpi_1m` chạy append sau khi watermark 2 phút
+ở Gold và khi tile đổi cho cùng một phút KPI. Tính thời gian từ lúc phát
+đến khi tile đổi để kiểm ngưỡng 60 giây. Khoảng từ Gold đến tile dùng để
+định vị phần trễ của sink. `stream_kpi_1m` chạy append sau khi watermark 2 phút
 qua cuối cửa sổ 1 phút. Push chỉ bắt đầu khi Gold đã ghi dòng. Đường dữ
 liệu này còn giới hạn so với mục tiêu 60 giây của
 [ST10](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/73), cần
