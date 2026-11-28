@@ -46,8 +46,8 @@ Lượt A dùng Event Hubs Sub B `koreacentral`. Lượt B cần hub tạm ở
 ## Đối chiếu và lưu bằng chứng
 
 Chạy [truy vấn so sánh](stream_latency_comparison.sql) với tên đầy đủ của
-bảng `latency_table`, hai run ID, hai region và `expected_events` bằng số
-broker xác nhận **ở mỗi lượt**. Mỗi kết quả phải có `comparable = true`.
+bảng `latency_table`, hai run ID, hai region. Gán `cross_expected_events` và
+`same_expected_events` bằng số broker xác nhận **ở từng lượt**. Mỗi kết quả phải có `comparable = true`.
 Cờ này yêu cầu đủ số hàng và số `event_id` khác nhau, đúng nhãn region và
 độ trễ từ Event Hubs đến Bronze hợp lệ. Nếu có lệch, ghi nguyên nhân và
 lặp lại với run ID mới.
