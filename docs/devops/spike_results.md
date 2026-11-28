@@ -82,7 +82,7 @@ DirectQuery kiểm tra Power BI có gửi truy vấn tới warehouse và trả d
 |---|---|---|
 | Region Sub A | `eastasia` | 3.1: được phép và có Databricks. 3.4, 3.5: mọi dịch vụ đã thử đều chạy ở đây. Có máy 4 vCPU bán được và còn quota (`Standard_D4ds_v4`) |
 | Region Sub B (khác Sub A) | `koreacentral` (#131). Điền ở `infra/envs/20-stream.tfvars` | 3.1, 3.5 |
-| Region sandbox Sub C | Chọn **cùng region** với Sub A (`eastasia`), để workspace sandbox dùng chung metastore `eastasia`. Chủ Sub C (P4) xác nhận region được phép ở #131. Không được thì đi nhánh dự phòng của dòng "Nơi chạy job DS" | 3.1, metastore |
+| Region sandbox Sub C | Ban đầu chọn **cùng region** với Sub A (`eastasia`) để dùng chung metastore. **Không dựng:** P4 không thấy Sub C trong Azure CLI (comment 27–28/11 ở #31, #131), nên đi nhánh dự phòng của dòng "Nơi chạy job DS" | 3.1, metastore |
 | Cách CI đăng nhập | UAMI + OIDC cho cả Sub A và Sub B (Contributor chéo, #131). `20-stream` apply qua `stream-toggle` | 3.3 |
 | Unity Catalog | External location (storage credential từ Access Connector) trên metastore tự gán; nhóm dùng **account group do workspace admin tạo**, quyền cấp rõ cho từng principal | 3.4 |
 | Nguồn `retail_db` | CDC theo LSN (`fn_cdc_get_all_changes`) trên DB free offer; không cần watermark `updated_at` | 3.5 |
@@ -91,7 +91,7 @@ DirectQuery kiểm tra Power BI có gửi truy vấn tới warehouse và trả d
 | Compute | Single-node **`Standard_D4ds_v4`** (4 vCPU, 16 GB), DBR 15.4 LTS, `SINGLE_USER`. Sub A không mua được DS3_v2 | 3.2, 3.4 |
 | SKU workspace | `premium`, không trial: DBU tính vào credit từ ngày đầu. `no_public_ip = false` để không phát sinh NAT gateway | 3.4 |
 | Pipeline DE | LDP Advanced classic single-node, `pipelines.clusterShutdown.delay = 60s`; serverless pipeline làm dự phòng khi quota vCPU đang bận | 3.4 |
-| Nơi chạy job DS | Sub C sandbox nếu #131 xác nhận Sub C đặt được ở `eastasia`; nếu không thì Sub A ngoài giờ batch | 3.1, 3.4 |
+| Nơi chạy job DS | **Chốt 28/11:** workspace chính ở **Sub D** (subscription chính từ 27/11), **ngoài giờ batch**. Lý do: Sub C không dùng được (#31). Không apply `90-sandbox` | 3.1, 3.4 |
 | API model | Phương án A: Model Serving (`scale_to_zero`) + Azure Function Flex Consumption (Python 3.11) làm proxy | 3.4, 3.5 |
 
 > **Ghi chú G0 (AD-OPS-07):**

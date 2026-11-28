@@ -1143,17 +1143,19 @@ Checklist G4 cần bảng chi phí theo owner/stack và ảnh quota vCPU cho rub
 
 Quota tính theo subscription nên thực nghiệm DS chạy ở Sub C để không giành 4 vCPU của Sub A. Chỉ đọc chung dữ liệu khi cùng region (cùng metastore).
 
+> **Chốt 28/11: đóng theo nhánh dự phòng.** P4 không thấy Sub C trong Azure CLI (comment 27–28/11 ở #31, #131), nên không apply `90-sandbox`. Job DS chạy trên workspace chính ở Sub D, ngoài giờ batch. Bước 1–4 và các mục "Xong khi" của sandbox không còn áp dụng; bước 5 đã ghi vào `spike_results.md`.
+
 **Việc cần làm**
 
 1. Hoàn thiện module dbx_workspace (workspace + access connector + storage nhỏ), validate
 2. Điền infra/envs/90-sandbox-p4.tfvars theo region đã chốt
 3. P4 apply từ máy với key sandbox-p4.tfstate
 4. Kiểm workspace gắn cùng metastore với Sub A và đọc được instacart.silver.baskets
-5. Nếu khác region: ghi vào spike_results là DS chạy ở Sub A ngoài giờ batch
+5. Nếu khác region hoặc không dùng được Sub C: ghi vào spike_results là DS chạy trên workspace chính ngoài giờ batch (Sub D từ 27/11)
 
 **Đầu ra**
 
-- Workspace dbw-instacart-sbx-p4 trên Sub C
+- ~~Workspace dbw-instacart-sbx-p4 trên Sub C~~ (không dựng)
 - Ghi chú lựa chọn nơi chạy DS trong spike_results.md
 
 **Xong khi**
@@ -1162,6 +1164,7 @@ Quota tính theo subscription nên thực nghiệm DS chạy ở Sub C để kh�
 - [ ] Mở được workspace sandbox
 - [ ] Cùng region: `SELECT count(*) FROM instacart.ds_data.transactions` chạy được từ sandbox
 - [ ] Plan lần hai No changes
+- [x] Nhánh dự phòng: `spike_results.md` §3 ghi DS chạy trên workspace chính ở Sub D, ngoài giờ batch
 
 ### AD-OPS-30
 

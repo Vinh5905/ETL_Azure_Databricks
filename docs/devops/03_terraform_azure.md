@@ -662,9 +662,11 @@ Workspace sandbox **gắn vào cùng metastore** Unity Catalog. Metastore tính 
 
 Stack này **chỉ cần dựng ở G3**, khi DS bắt đầu.
 
+> **Chốt 28/11: không dựng stack này.** P4 không thấy Sub C trong Azure CLI (#31, #131). Job DS chạy trên workspace chính ở Sub D, ngoài giờ batch. Code `infra/stacks/90-sandbox` giữ lại để tham khảo, không apply. Phần dưới mô tả thiết kế ban đầu.
+
 **DS chạy ở đâu** ([ds/04 §5.2](../ds/04_thuc_nghiem_danh_gia.md)):
 - **Sub C cùng region với Sub A:** job `ds-benchmark` deploy với target `sandbox` lên workspace này, đọc `ds_data` qua metastore chung, chạy song song với DE.
-- **Khác region:** không dựng Delta Sharing hay sao chép bảng (thêm việc mà không thêm điểm). Job DS chạy ở Sub A ngoài giờ batch, và `90-sandbox` chỉ dùng làm workspace thử nghiệm.
+- **Khác region hoặc không dùng được Sub C:** không dựng Delta Sharing hay sao chép bảng (thêm việc mà không thêm điểm). Job DS chạy trên workspace chính ngoài giờ batch (Sub D từ 27/11). Đây là nhánh đã chọn.
 - Cụm **Hadoop/MapReduce chạy bằng Docker ở máy local**, không cần tài nguyên Azure nào ([ds/03](../ds/03_hadoop_mapreduce_local.md)). Đây là quyết định có chủ đích: HDInsight vượt quota 4 vCPU, còn Sub D để dành cho trường hợp dựng lại hạ tầng.
 
 ### 5.1 Stack `50-serving` (Sub A, tùy chọn ở G5): Azure Function làm API gợi ý

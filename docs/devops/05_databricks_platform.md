@@ -473,7 +473,7 @@ variables:
 
 Workflow `de-deploy` tra `func_sp_application_id` bằng `az identity show -g rg-instacart-core -n id-func-recommend` rồi đặt `BUNDLE_VAR_func_sp_application_id`, giá trị được che trong log. Không cần thêm secret, và vẫn đúng khi dựng lại `10-core` ở subscription khác. Chạy local thì để trống, trừ khi deploy `serving_ds.yml`.
 
-Target `sandbox` (host của workspace Sub C) **chỉ thêm khi Sub C cùng region với Sub A**, vì khi đó hai workspace dùng chung metastore ([03 §5](03_terraform_azure.md)). Target này chỉ deploy job DS.
+Target `sandbox` (host của workspace Sub C) **chỉ thêm khi Sub C cùng region với Sub A**, vì khi đó hai workspace dùng chung metastore ([03 §5](03_terraform_azure.md)). Target này chỉ deploy job DS. **Chốt 28/11: không thêm**, vì Sub C không dùng được (#31); job DS deploy cùng bundle lên workspace chính ở Sub D.
 
 ```yaml
 # bundles/resources/jobs_batch.yml ở G0; nội dung job thật bổ sung ở AD-DE-18

@@ -194,7 +194,7 @@ Thông tin đăng nhập nguồn trên Service: OAuth bằng tài khoản P3, ho
 - [ ] `silver.quarantine` có số dòng được giải thích được (ghi trong `ops.dq_results`).
 - [ ] Chạy job `ds-prepare`: `ds_data.*` với `data_version = 'v1'` và file txt cho Hadoop đã sẵn sàng, task `check` xanh ([de/08 §7](../de/08_du_lieu_cho_ds.md)).
 
-Đạt hết thì DS bắt đầu ([ds/00 §5](../ds/00_tong_quan_ds.md)): chạy trên Sub A ngoài giờ batch, hoặc trên `90-sandbox` nếu Sub C cùng region.
+Đạt hết thì DS bắt đầu ([ds/00 §5](../ds/00_tong_quan_ds.md)): chạy trên workspace chính ở Sub D, ngoài giờ batch. Sub C không dùng được nên không có `90-sandbox` ([03 §5](03_terraform_azure.md)).
 
 ### 6.4 G4: dashboard đạt rubric
 - [ ] App Power BI có ≥ 4 trang, điều hướng bằng nút và page navigator.

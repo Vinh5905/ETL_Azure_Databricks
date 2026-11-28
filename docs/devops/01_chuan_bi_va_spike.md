@@ -133,7 +133,7 @@ Tạo tay **một** workspace Premium ở region đã chốt (Portal, mất kho�
 | Compute | Single-node DS3_v2 (mặc định) / máy khác cùng 4 vCPU (G0 chốt `Standard_D4ds_v4`, xem [spike_results §3](spike_results.md#3-quyết-định-g0)) | 3.2, 3.4 |
 | Pipeline DE | LDP Advanced classic single-node (mặc định) / LDP serverless / LDP Pro | 3.4 |
 | Nguồn SQL | CDC theo LSN (mặc định) / watermark `updated_at` + soft delete | 3.5 |
-| Nơi chạy job DS | Sub C sandbox nếu cùng region với Sub A (mặc định) / Sub A ngoài giờ batch | 3.1, 3.4 |
+| Nơi chạy job DS | Sub C sandbox nếu cùng region với Sub A (mặc định) / Sub A ngoài giờ batch. Đã chốt: workspace chính ở Sub D, ngoài giờ batch ([spike_results §3](spike_results.md#3-quyết-định-g0)) | 3.1, 3.4 |
 | API model (G5) | Model Serving + Function (mặc định) / Function tự tra luật | 3.4, 3.5 |
 
 Sau khi chốt: **xóa resource group spike** bằng lệnh `az group delete -n rg-spike` và xóa workspace thử, để Terraform dựng lại từ đầu.

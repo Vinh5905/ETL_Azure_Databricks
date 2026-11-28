@@ -151,7 +151,7 @@ gh secret set TFSTATE_ACCOUNT      --body "<tfstate_account mới>"
 2. Ghi workspace URL mới vào `vars.DATABRICKS_HOST`.
 3. Chạy tay `de-deploy` (workflow_dispatch) để deploy bundle prod. PR 5.2 không đụng `src/**`, `bundles/**` nên không tự kích hoạt workflow này.
 4. `20-stream`: chạy `stream-toggle` với `up` khi cần stream. Lệnh này cũng ghi secret Event Hubs vào Key Vault mới.
-5. P4 apply lại `90-sandbox` với state mới, theo comment hướng dẫn ở #31.
+5. `90-sandbox`: bỏ qua. Sub C không dùng được, DS chạy trên workspace chính ở Sub D (#31).
 
 Sau mỗi stack, chạy plan lại phải ra `No changes`.
 
