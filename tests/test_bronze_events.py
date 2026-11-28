@@ -17,14 +17,17 @@ TABLE = "`instacart`.`p3-dev_bronze`.`order_events`"
 
 @pytest.fixture
 def pipeline(monkeypatch):
-    def load(generation):
+    def load(generation, listen_secret=None):
         session = Mock()
-        session.conf.get.side_effect = {
+        conf = {
             "catalog": "instacart",
             "bronze": "p3-dev_bronze",
             "eh_generation": generation,
             "eh_topic": "orders-stream",
-        }.__getitem__
+        }
+        if listen_secret is not None:
+            conf["eh_listen_secret"] = listen_secret
+        session.conf.get.side_effect = conf.get
         reader = session.readStream.format.return_value
         reader.options.return_value = reader
         dbutils = Mock()
@@ -48,6 +51,14 @@ def test_flow_name_follows_hub_generation_and_table_disables_reset(pipeline, gen
     table = bronze.dp.create_streaming_table.call_args.kwargs
     assert table["name"] == TABLE
     assert table["table_properties"] == {"pipelines.reset.allowed": "false", "quality": "bronze"}
+
+
+def test_flow_can_use_an_isolated_listen_secret(pipeline, spark):
+    bronze = pipeline("g2", listen_secret="eh-st09-listen-connection-string")
+
+    bronze.flow()
+
+    bronze.dbutils.secrets.get.assert_called_once_with("kv", "eh-st09-listen-connection-string")
 
 
 @pytest.mark.parametrize("connection", ["invalid-sas", SAS + ";EntityPath=other-hub"])

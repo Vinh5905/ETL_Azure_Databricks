@@ -312,18 +312,12 @@ def streaming_latency():
 | Lần đo | Event Hubs | Databricks | Simulator | Chặng chính cần so |
 |---|---|---|---|---|
 | A (khác region) | Sub B, region B | Sub A, region A | Codespace / laptop | `ms_eh_to_bronze` |
-| B (cùng region) | Tạm tạo hub ở region A (`stream-toggle up region=A`) | Sub A, region A | Như lần A | `ms_eh_to_bronze` |
-
-```sql
-SELECT replay_run_id, eh_region, dbx_region, count(*) n,
-       percentile_approx(ms_eh_to_bronze, 0.5)  p50_eh_to_bronze,
-       percentile_approx(ms_eh_to_bronze, 0.95) p95_eh_to_bronze,
-       percentile_approx(ms_end_to_end, 0.5)    p50_e2e
-FROM instacart.ops.streaming_latency GROUP BY ALL ORDER BY replay_run_id;
-```
+| B (cùng region) | Hub tạm ở region A do P1 bàn giao | Sub A, region A | Như lần A | `ms_eh_to_bronze` |
 
 - `ms_eh_to_bronze` chỉ dùng **đồng hồ của Azure** (thời điểm enqueued của Event Hubs, và thời điểm ingest của Databricks), nên tin được hơn `produced_at` lấy từ đồng hồ laptop.
 - Giá trị này gồm cả độ trễ mạng và **thời gian chờ micro-batch**. Vì vậy phải đo ở chế độ **continuous**, rồi so trung vị giữa hai lần đo.
+- Dùng [runbook AD-ST-09](stream_latency_runbook.md) để chuẩn bị hai nguồn,
+  đối soát p50/p95 theo run và đưa pipeline về triggered sau buổi đo.
 
 ### 4.5 Đẩy số lên tile Power BI (push semantic model)
 

@@ -65,8 +65,11 @@ variables:
   eh_generation:
     description: Mã thế hệ của Event Hubs, giữ nguyên khi chạy lại và đổi khi hub được tạo lại
     default: g1
+  eh_listen_secret:
+    description: Tên secret SAS Listen trong scope kv
+    default: eh-listen-connection-string
   eh_region:
-    description: Region Azure của Event Hubs trên Sub B
+    description: Region Azure của Event Hubs đang dùng
     default: koreacentral
   dbx_region:
     description: Region Azure của workspace Databricks để gắn nhãn độ trễ

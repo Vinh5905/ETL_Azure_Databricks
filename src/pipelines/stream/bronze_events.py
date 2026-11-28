@@ -12,6 +12,7 @@ from common.event_hubs import sas_endpoint
 spark = SparkSession.active()
 GENERATION = spark.conf.get("eh_generation")
 TOPIC = spark.conf.get("eh_topic")
+LISTEN_SECRET = spark.conf.get("eh_listen_secret", "eh-listen-connection-string")
 TABLE_NAME = ".".join(
     "`" + part.replace("`", "``") + "`"
     for part in (spark.conf.get("catalog"), spark.conf.get("bronze"), "order_events")
@@ -50,7 +51,7 @@ dp.create_streaming_table(
 def kafka_to_bronze():
     """Đọc từ checkpoint của thế hệ hiện tại và giữ nguyên dữ liệu nguồn."""
     dbutils = DBUtils(spark)
-    connection = dbutils.secrets.get("kv", "eh-listen-connection-string")
+    connection = dbutils.secrets.get("kv", LISTEN_SECRET)
     return (
         spark.readStream.format("kafka")
         .options(**_kafka_options(connection))
