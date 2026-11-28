@@ -17,6 +17,9 @@ def test_serving_endpoint_has_an_isolated_bundle():
     assert bundle["bundle"]["name"] == "instacart-basket-serving"
     assert bundle["include"] == ["resources/*.yml"]
     assert set(bundle["targets"]) == {"prod"}
+    assert bundle["targets"]["prod"]["workspace"]["root_path"].startswith(
+        "/Workspace/Users/${workspace.current_user.userName}/"
+    )
     assert "serving" not in base["targets"]
     assert "champion_version" not in base["variables"]
     assert set(serving["resources"]) == {"model_serving_endpoints"}

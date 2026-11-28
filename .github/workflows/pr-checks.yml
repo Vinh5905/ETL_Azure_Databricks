@@ -177,7 +177,7 @@ jobs:
           DATABRICKS_AUTH_TYPE: azure-cli
       - name: Kiểm bundle Model Serving riêng
         if: vars.DATABRICKS_HOST != ''
-        run: databricks bundle validate -t prod --var="champion_version=1" --var="func_sp_application_id=00000000-0000-0000-0000-000000000000"
+        run: databricks bundle validate -t prod --strict --var="champion_version=1" --var="func_sp_application_id=00000000-0000-0000-0000-000000000000"
         working-directory: bundles/serving
         env:
           DATABRICKS_HOST: ${{ vars.DATABRICKS_HOST }}
