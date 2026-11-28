@@ -49,5 +49,17 @@ Người có quyền ghi secret trong Key Vault core lưu Push URL dưới tên
 `kv` của Databricks có thể đọc nó. Push URL là thông tin xác thực, giữ ngoài
 Git và chat. ST10 dùng model này sau khi xác minh quyền và kết nối.
 
-**Trạng thái.** Cấu hình model và hai tile đã kiểm trên Service. Payload mẫu
-đã kiểm local. Lượt POST thật, secret ở Key Vault và visual batch còn chờ.
+### Kết quả thử ngày 28/11/2026
+
+Gửi một hàng vào bảng `RealTimeData` của `instacart_rt` qua Power BI REST API,
+xác thực bằng Microsoft Entra ID. API trả **HTTP 200**. Card **Orders – latest
+minute** trên dashboard Instacart Live hiển thị **2** sau lượt gửi.
+[Tham chiếu PostRowsInGroup](https://learn.microsoft.com/en-us/rest/api/power-bi/push-datasets/datasets-post-rows-in-group)
+
+| Phút UTC | `orders` | `items` | Card |
+|---|---:|---:|---:|
+| 2026-11-28 11:49 | 2 | 5 | 2 |
+
+Lượt thử xác nhận model nhận dữ liệu và cập nhật Card. Đường Push URL của
+ST10 còn chờ quyền ghi `pbi-push-url` vào Key Vault và kiểm scope `kv` đọc
+được. Visual batch Trang 1 vẫn chờ AD-BI-04.
