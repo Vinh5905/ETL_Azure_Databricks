@@ -1,0 +1,38 @@
+# Bundle riêng cho workspace sandbox của DS ở Sub C (90-sandbox, AD-OPS-29/AD-OPS-30).
+# Chỉ nạp job DS (../resources/jobs_ds.yml), không nạp pipeline hay job DE: workspace sandbox dùng
+# chung metastore với workspace chính nhưng không có policy, warehouse hay SP CI của 30-databricks.
+# Host lấy từ profile trỏ vào workspace sandbox; không ghi URL workspace vào repo.
+#   databricks bundle validate -t sandbox --profile <profile sandbox> --var warehouse_id=<id>
+#   databricks bundle deploy   -t sandbox --profile <profile sandbox> --var warehouse_id=<id>
+bundle:
+  name: instacart-ds-sandbox
+
+include:
+  - ../resources/jobs_ds.yml
+
+# Code ở ../../src. Gốc đồng bộ là thư mục chung của hai đường dẫn (gốc repo), nên
+# ${workspace.file_path}/src trong jobs_ds.yml vẫn trỏ đúng thư mục src như bundle chính.
+sync:
+  paths:
+    - .
+    - ../../src
+
+variables:
+  ds_policy_id:
+    description: >-
+      Cluster policy cho job cluster DS. Workspace sandbox không có policy instacart-ds-benchmark
+      (policy do 30-databricks tạo ở workspace chính), nên mặc định để trống; máy, runtime và
+      single-node đã khai đủ trong jobs_ds.yml. Nếu P4 tự tạo policy trong sandbox thì truyền ID qua --var.
+    default: ""
+  warehouse_id:
+    description: >-
+      ID serverless SQL warehouse trong workspace sandbox cho các sql_task của job DS.
+      Không có mặc định: truyền qua --var warehouse_id=<id> hoặc BUNDLE_VAR_warehouse_id.
+  node_type_id:
+    description: Máy của job cluster, giữ giống bundle chính để số đo benchmark so được với nhau
+    default: Standard_D4ds_v4
+
+targets:
+  sandbox:
+    mode: development # tiền tố [dev <user>], code nằm trong thư mục cá nhân của người deploy
+    default: true
