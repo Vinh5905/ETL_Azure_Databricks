@@ -74,7 +74,7 @@ resource "databricks_service_principal" "ci" {
 }
 
 # G5: danh tính của Azure Function gợi ý (tạo ở 10-core). Chỉ cần quyền gọi endpoint (CAN_QUERY,
-# cấp trong DAB serving_ds.yml); không cấp cluster, không cấp quyền dữ liệu.
+# cấp trong bundle `bundles/serving`); không cấp cluster, không cấp quyền dữ liệu.
 resource "databricks_service_principal" "func" {
   application_id             = sensitive(local.core.func_identity_client_id)
   display_name               = "sp-func-recommend"
@@ -461,7 +461,7 @@ AD-DE-01 đã bỏ các task Python tạm. Đến AD-DE-08 khai báo pipeline, r
 |---|---|---|
 | `resources/jobs_ds.yml` | Job `ds_prepare` (DE), `ds_benchmark`, `ds_champion` (DS) | [de/08 §6](../de/08_du_lieu_cho_ds.md), [ds/04 §5](../ds/04_thuc_nghiem_danh_gia.md) |
 | `resources/mlflow_ds.yml` | `experiments.instacart_ds` (`/Shared/instacart-ds`) | [ds/05 §1](../ds/05_mlflow_serving_bao_cao.md) |
-| `resources/serving_ds.yml` | `model_serving_endpoints.basket_rules`, biến `champion_version` | [ds/05 §3.1](../ds/05_mlflow_serving_bao_cao.md) |
+| `serving/resources/serving_ds.yml` | `model_serving_endpoints.basket_rules`, biến `champion_version` | [ds/05 §3.1](../ds/05_mlflow_serving_bao_cao.md) |
 
 Thêm biến vào `databricks.yml`:
 
@@ -471,7 +471,7 @@ variables:
   func_sp_application_id: { description: "client id của id-func-recommend (output 10-core)", default: "" }
 ```
 
-Workflow `de-deploy` tra `func_sp_application_id` bằng `az identity show -g rg-instacart-core -n id-func-recommend` rồi đặt `BUNDLE_VAR_func_sp_application_id`, giá trị được che trong log. Không cần thêm secret, và vẫn đúng khi dựng lại `10-core` ở subscription khác. Chạy local thì để trống, trừ khi deploy `serving_ds.yml`.
+Workflow `de-deploy` tra `func_sp_application_id` bằng `az identity show -g rg-instacart-core -n id-func-recommend` rồi đặt `BUNDLE_VAR_func_sp_application_id`, giá trị được che trong log. Không cần thêm secret, và vẫn đúng khi dựng lại `10-core` ở subscription khác. Bundle endpoint riêng yêu cầu truyền biến này khi deploy.
 
 Target `sandbox` (host của workspace Sub C) **chỉ thêm khi Sub C cùng region với Sub A**, vì khi đó hai workspace dùng chung metastore ([03 §5](03_terraform_azure.md)). Target này chỉ deploy job DS.
 

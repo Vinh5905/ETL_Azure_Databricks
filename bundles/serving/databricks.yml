@@ -1,0 +1,17 @@
+bundle:
+  name: instacart-basket-serving
+
+include:
+  - resources/*.yml
+
+variables:
+  champion_version:
+    description: Phiên bản basket_rules đã đăng ký sau lần chạy ds-champion đầu tiên
+  func_sp_application_id:
+    description: Client ID của service principal gọi endpoint
+
+targets:
+  prod:
+    mode: production
+    workspace:
+      root_path: /Workspace/Shared/.bundle/${bundle.name}/${bundle.target}

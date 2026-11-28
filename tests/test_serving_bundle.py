@@ -7,15 +7,20 @@ import yaml
 ROOT = Path(__file__).resolve().parents[1]
 
 
-def test_serving_endpoint_is_isolated_from_dev_and_normal_prod_deploys():
+def test_serving_endpoint_has_an_isolated_bundle():
     base = yaml.safe_load((ROOT / "bundles/databricks.yml").read_text(encoding="utf-8"))
-    serving = yaml.safe_load((ROOT / "bundles/resources/serving_ds.yml").read_text(encoding="utf-8"))
-    endpoint = serving["targets"]["serving"]["resources"]["model_serving_endpoints"]["basket_rules"]
+    serving_root = ROOT / "bundles/serving"
+    bundle = yaml.safe_load((serving_root / "databricks.yml").read_text(encoding="utf-8"))
+    serving = yaml.safe_load((serving_root / "resources/serving_ds.yml").read_text(encoding="utf-8"))
+    endpoint = serving["resources"]["model_serving_endpoints"]["basket_rules"]
 
-    assert "serving" in base["targets"]
-    assert base["variables"]["champion_version"]["default"] == ""
-    assert "model_serving_endpoints" not in base["targets"]["dev"].get("resources", {})
-    assert "model_serving_endpoints" not in base["targets"]["prod"].get("resources", {})
+    assert bundle["bundle"]["name"] == "instacart-basket-serving"
+    assert bundle["include"] == ["resources/*.yml"]
+    assert set(bundle["targets"]) == {"prod"}
+    assert "serving" not in base["targets"]
+    assert "champion_version" not in base["variables"]
+    assert set(serving["resources"]) == {"model_serving_endpoints"}
+    assert not any("serving" in path.name for path in (ROOT / "bundles/resources").glob("*.yml"))
     assert endpoint["name"] == "instacart-basket-rules"
     entity = endpoint["config"]["served_entities"][0]
     assert entity == {

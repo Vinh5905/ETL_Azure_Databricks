@@ -750,18 +750,18 @@ Bước D7: Power BI chỉ đọc gold; view chạy bằng quyền chủ view n�
 - **Hoàn tất còn cần:** Không có.
 - **Mở khóa:** [AD-OPS-31](01_devops.md#ad-ops-31) (hoàn tất), [AD-DS-24](05_data_science.md#ad-ds-24) (hoàn tất), [AD-DS-27](05_data_science.md#ad-ds-27) (hoàn tất)
 
-Phương án A của API: endpoint serverless scale-to-zero phục vụ phiên bản champion; đổi champion chỉ cần deploy lại target `serving` với biến champion_version. Target này tách khỏi dev/prod deploy thường để chỉ tạo endpoint sau lượt ds-champion đầu tiên.
+Phương án A của API: endpoint serverless scale-to-zero phục vụ phiên bản champion; đổi champion chỉ cần deploy lại bundle riêng `bundles/serving` với biến champion_version. Bundle chỉ chứa endpoint, tách khỏi jobs và pipelines của deploy chính để chỉ tạo endpoint sau lượt ds-champion đầu tiên.
 
 **Việc cần làm**
 
-1. Viết bundles/resources/serving_ds.yml (target serving, biến champion_version, workload Small, scale_to_zero, user CAN_MANAGE, SP func CAN_QUERY)
-2. Sau khi #106 đăng ký model đầu tiên, deploy target serving với champion_version và func_sp_application_id
+1. Viết bundle riêng bundles/serving (endpoint workload Small, scale_to_zero, user CAN_MANAGE, SP func CAN_QUERY)
+2. Sau khi #106 đăng ký model đầu tiên, deploy bundle serving với champion_version và func_sp_application_id
 3. Gọi curl invocations với giỏ mẫu, xác nhận đủ 10 gợi ý, đo thời gian khi đã nóng; chụp ảnh
 4. Ghi lại thời gian cold start
 
 **Đầu ra**
 
-- bundles/resources/serving_ds.yml
+- bundles/serving/databricks.yml và bundles/serving/resources/serving_ds.yml
 - Endpoint instacart-basket-rules READY; ảnh chụp curl
 
 **Xong khi**

@@ -100,33 +100,32 @@ def register(rules_path: str, items_path: str, run_key: str, min_conf: float) ->
 
 ### 3.1 Phương án A (mặc định): Databricks Model Serving
 
-Endpoint được khai báo riêng trong target `serving`, không thuộc deploy `dev` hay deploy `prod` thường. Chỉ deploy target này sau khi job `ds-champion` đã đăng ký model lần đầu; truyền phiên bản model khi deploy để đổi champion:
+Endpoint nằm trong bundle riêng `bundles/serving/`, vì vậy deploy không kéo theo jobs và pipelines của bundle chính. Chỉ deploy bundle này sau khi job `ds-champion` đã đăng ký model lần đầu; truyền phiên bản model và client ID của Function khi deploy:
 
 ```yaml
-# bundles/resources/serving_ds.yml
-targets:
-  serving:
-    resources:
-      model_serving_endpoints:
-        basket_rules:
-          name: instacart-basket-rules
-          config:
-            served_entities:
-              - entity_name: instacart.ml.basket_rules
-                entity_version: ${var.champion_version}
-                workload_size: Small
-                scale_to_zero_enabled: true
-          permissions:
-            - user_name: ${workspace.current_user.userName}
-              level: CAN_MANAGE
-            - service_principal_name: ${var.func_sp_application_id}
-              level: CAN_QUERY
+# bundles/serving/resources/serving_ds.yml
+resources:
+  model_serving_endpoints:
+    basket_rules:
+      name: instacart-basket-rules
+      config:
+        served_entities:
+          - entity_name: instacart.ml.basket_rules
+            entity_version: ${var.champion_version}
+            workload_size: Small
+            scale_to_zero_enabled: true
+      permissions:
+        - user_name: ${workspace.current_user.userName}
+          level: CAN_MANAGE
+        - service_principal_name: ${var.func_sp_application_id}
+          level: CAN_QUERY
 ```
 
-Deploy thủ công sau lần chạy `ds-champion` đầu tiên. Workspace URL và hồ sơ CLI phải trỏ đến workspace prod; điền `BUNDLE_VAR_func_sp_application_id` bằng client ID của identity `id-func-recommend` và truyền version vừa đăng ký:
+Deploy thủ công sau lần chạy `ds-champion` đầu tiên. Workspace URL và hồ sơ CLI phải trỏ đến workspace prod; truyền client ID của identity `id-func-recommend` cùng version vừa đăng ký:
 
 ```bash
-databricks bundle deploy -t serving --var="champion_version=<version>"
+cd bundles/serving
+databricks bundle deploy -t prod --var="champion_version=<version>" --var="func_sp_application_id=<client-id>"
 ```
 
 ```bash

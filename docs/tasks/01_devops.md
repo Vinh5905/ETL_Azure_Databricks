@@ -1175,7 +1175,7 @@ Quota tính theo subscription nên thực nghiệm DS chạy ở Sub C để kh�
 - **Hoàn tất còn cần:** [AD-OPS-29](01_devops.md#ad-ops-29) [#31](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/31)
 - **Mở khóa:** [AD-DS-12](05_data_science.md#ad-ds-12) (hoàn tất)
 
-Job ds-benchmark dùng policy instacart-ds-benchmark và endpoint cần SP Function; khung bundle phải có biến trước khi P4 viết jobs_ds.yml, mlflow_ds.yml, serving_ds.yml.
+Job ds-benchmark dùng policy instacart-ds-benchmark; endpoint trong bundle riêng `bundles/serving` cần SP Function.
 
 **Việc cần làm**
 

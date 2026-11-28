@@ -83,13 +83,9 @@ variables:
   func_sp_application_id:
     description: >-
       application_id của SP sp-func-recommend (= client id của UAMI id-func-recommend, output 10-core),
-      để endpoint serving cấp CAN_QUERY cho Function. CI tra theo tên rồi đặt qua
-      BUNDLE_VAR_func_sp_application_id; local để trống nếu không deploy serving_ds.yml.
+      để bundle serving cấp CAN_QUERY cho Function. CI tra theo tên rồi đặt qua
+      BUNDLE_VAR_func_sp_application_id.
     default: ""
-  champion_version:
-    description: Phiên bản UC model basket_rules; phải truyền phiên bản thật khi deploy target serving
-    default: ""
-
 targets:
   dev:
     mode: development # tiền tố [dev <user>], tạm dừng schedule
@@ -130,8 +126,3 @@ targets:
       # Prod chưa từng đọc Event Hubs nên g1 là checkpoint mới. Mỗi lần hub được tạo lại
       # sau lượt đọc đầu, mở PR đổi mã này trước khi chạy lại stream prod.
       eh_generation: g1
-
-  serving:
-    mode: production
-    workspace:
-      root_path: /Workspace/Shared/.bundle/${bundle.name}/${bundle.target}
