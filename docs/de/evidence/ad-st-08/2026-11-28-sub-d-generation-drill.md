@@ -33,3 +33,19 @@ Pipeline dev `eb1105a1-2bd5-422e-ac4d-a0007629af43` dùng các bảng
 | `silver_rows` | 50 |
 | `silver_order_keys` | 50 |
 | `silver_replayed_orders` | 0 |
+
+## Tạo lại namespace và phát lại lô 50 đơn
+
+- [Tắt namespace ban đầu](https://github.com/Vinh5905/ETL_Azure_Databricks/actions/runs/46144107867)
+  rồi [tạo namespace mới](https://github.com/Vinh5905/ETL_Azure_Databricks/actions/runs/46144324260).
+  Xác nhận namespace cũ đã biến mất trước lượt bật và namespace mới có tên khác.
+- Deploy `eh_generation=g20261128_st08b` trên cùng pipeline dev và giữ nguyên
+  hai bảng đích. Phát lại đúng 50 đơn đầu với `st08-subd-20261128-replay`.
+  Broker xác nhận **50/50** lúc **19:25:37 ngày 28/11** (12:25:37 UTC).
+- Update thường `715d3a99-a1ac-468a-b39a-f867a090c10f` dừng lúc cấp compute
+  vì `AZURE_QUOTA_EXCEEDED_EXCEPTION`. Sub D đang dùng đủ quota DDSv4 East Asia
+  4/4 vCPU. Có thể chạy lại update trên lô đã gửi khi crawler giải phóng quota.
+
+Để namespace mới hoạt động qua lượt chạy theo lịch, theo yêu cầu của buổi
+nghiệm thu ngày 28/11. Kết quả workflow và việc xóa tài nguyên cần được kiểm
+sau khi cron chạy. [AD-OPS-24 #26](https://github.com/Vinh5905/ETL_Azure_Databricks/issues/26#issuecomment-7238077600)
