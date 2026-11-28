@@ -129,7 +129,14 @@
             }
           },
           "selector": {
-            "metadata": "Đơn hàng(kpi_by_dow_hour.orders)"
+            "metadata": "Đơn hàng(kpi_by_dow_hour.orders)",
+            "data": [
+              {
+                "dataViewWildcard": {
+                  "matchingOption": 0
+                }
+              }
+            ]
           }
         }
       ]
@@ -198,6 +205,19 @@
               "expr": {
                 "Literal": {
                   "Value": "0D"
+                }
+              }
+            }
+          }
+        }
+      ],
+      "stylePreset": [
+        {
+          "properties": {
+            "name": {
+              "expr": {
+                "Literal": {
+                  "Value": "'None'"
                 }
               }
             }
