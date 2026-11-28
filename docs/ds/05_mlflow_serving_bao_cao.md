@@ -56,6 +56,7 @@ Code ở [`src/ml/serving/basket_rules.py`](../../src/ml/serving/basket_rules.py
 ```python
 # src/ml/champion.py  (phần đăng ký; việc chọn cấu hình theo §2.1 nằm ở đầu file)
 import os
+from importlib.metadata import version
 
 import mlflow
 import pandas as pd
@@ -65,10 +66,12 @@ from mlflow.models import infer_signature
 from ml.serving.basket_rules import BasketRules
 
 MODEL = "instacart.ml.basket_rules"
-ML_PKG = os.path.dirname(os.path.abspath(__file__))                       # src/ml → đóng gói kèm model
+ML_PKG_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))  # src → giữ nguyên package ml
+PINNED_PACKAGES = ("mlflow", "pandas", "numpy", "pyarrow")
 
 
 def register(rules_path: str, items_path: str, run_key: str, min_conf: float) -> int:
+    package_pins = [f"{name}=={version(name)}" for name in PINNED_PACKAGES]
     mlflow.set_registry_uri("databricks-uc")
     mlflow.set_experiment("/Shared/instacart-ds")
     example = pd.DataFrame({"product_ids": [[24852, 13176]]})               # chuối + túi chuối hữu cơ
@@ -80,8 +83,8 @@ def register(rules_path: str, items_path: str, run_key: str, min_conf: float) ->
         signature = infer_signature(example, model.predict(None, example), params={"k": 10})
         info = mlflow.pyfunc.log_model(
             artifact_path="model", python_model=BasketRules(), signature=signature, input_example=example,
-            artifacts={"rules": rules_path, "items": items_path}, pip_requirements=["pandas", "pyarrow"],
-            code_paths=[ML_PKG],                                       # endpoint import được ml.serving.*
+            artifacts={"rules": rules_path, "items": items_path}, pip_requirements=package_pins,
+            code_paths=[ML_PKG_ROOT],                                  # endpoint import được ml.serving.*
             registered_model_name=MODEL)
     version = int(info.registered_model_version)
     MlflowClient().set_registered_model_alias(MODEL, "champion", version)

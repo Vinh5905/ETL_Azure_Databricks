@@ -168,14 +168,15 @@ def time_limit(sc, minutes: int, group: str):
 
 ### 5.1 Luồng
 
-`plan` → `grid_c1` → `grid_c2` → `grid_c4` → `ingest_local` → `publish_gold`
+`plan` → `grid_c1` → `grid_c2` → `grid_c4` → `publish_gold`
 
 | Task | Loại | Làm gì |
 |---|---|---|
 | `plan` | Python, cluster `c1` | Đọc `experiments.yml` (lọc theo tham số `experiments`), bung thành từng tổ hợp, **bỏ tổ hợp đã `ok`**, ghi phần còn lại vào `ml.experiment_queue`. Đặt task value `queue_c1/c2/c4` = danh sách `run_key` rút gọn (12 ký tự) theo số core |
 | `grid_c{n}` | `for_each_task`, `concurrency: 1` | Mỗi vòng gọi `run_experiment.py --run-key <id>` trên cluster `local[n]`. Chạy tuần tự để các phép đo không chen nhau |
-| `ingest_local` | `sql_task` (serverless) | `COPY INTO` từ `/Volumes/instacart/ml/inbox/local/` rồi `MERGE` vào `ml.experiment_runs` ([03 §7](03_hadoop_mapreduce_local.md)) |
 | `publish_gold` | `sql_task` (serverless) | Tạo lại view `gold.*` của DS ([05 §4](05_mlflow_serving_bao_cao.md)) |
+
+`ingest_local` là job chạy tay riêng `ds_ingest_local`, chỉ chạy sau khi đã upload kết quả E6 vào volume. Nhờ vậy benchmark E1–E5/E7 không phụ thuộc thư mục E6 tồn tại.
 
 **Vì sao task value chỉ chứa `run_key` rút gọn:** task value có giới hạn kích thước. Tham số đầy đủ của mỗi tổ hợp nằm trong `ml.experiment_queue`, mỗi vòng tự đọc phần của mình.
 
@@ -254,8 +255,7 @@ resources:
 
 - `ds_policy_id` là biến DAB, lookup theo tên policy `instacart-ds-benchmark` ([devops/05 bước 6](../devops/05_databricks_platform.md)).
 - `PYTHONPATH` trỏ vào thư mục `src` mà bundle đã đồng bộ lên workspace, để `run_experiment.py` import được `ml.fim.*`. `workspace.file_path` của Databricks CLI mới đã có tiền tố `/Workspace`; kiểm tra lại giá trị thật bằng `databricks bundle validate -o json`.
-- **Trước khi chạy job:** tạm dừng lịch `instacart-stream-15m` và đảm bảo không có buổi demo stream. Lý do: cả hai cùng dùng 4 vCPU của Sub A.
-- **Nếu Sub C cùng region với Sub A** (đọc chung metastore), deploy job này với target `sandbox` để chạy song song với DE ([devops/03 §5](../devops/03_terraform_azure.md)). Khác region thì chỉ chạy ở Sub A.
+- **Chạy ở đâu:** deploy job này với target `sandbox` lên workspace Sub C (bắt buộc, [devops/03 §5](../devops/03_terraform_azure.md)). Sub C có quota vCPU riêng và đọc `ds_data` qua metastore chung, nên chạy song song với DE. Không chạy job này trên workspace chính: nó chiếm hết 4 vCPU của pipeline batch và stream.
 
 ### 5.3 Một lần chạy: `run_experiment.py`
 

@@ -1,6 +1,7 @@
 """Đánh giá luật kết hợp trên holdout validation/test và baseline phổ biến."""
 
 import argparse
+import json
 import logging
 from pathlib import Path
 
@@ -10,6 +11,18 @@ from pyspark.sql import SparkSession
 LOGGER = logging.getLogger(__name__)
 HOLDOUT_METRICS = "instacart.ml.holdout_metrics"
 EVAL_SQL = Path(__file__).with_name("sql") / "eval_holdout.sql"
+
+
+def expand_e7_confidences(rows) -> list[tuple[str, float]]:
+    """Expand confidence thresholds persisted in an E7 run's sweep column."""
+    expanded: set[tuple[str, float]] = set()
+    for row in rows:
+        sweep = row["sweep"]
+        values = json.loads(sweep).get("min_confidence", []) if sweep else []
+        if not values:
+            values = [row["min_confidence"]]
+        expanded.update((row["run_key"], float(value)) for value in values)
+    return sorted(expanded, key=lambda item: (item[0], item[1]))
 
 
 def _execute_eval_sql(
@@ -95,12 +108,11 @@ def main() -> None:
         runs = (
             spark.table("instacart.ml.experiment_runs")
             .where("experiment = 'E7' AND status = 'ok'")
-            .select("run_key", "min_confidence")
-            .distinct()
+            .select("run_key", "min_confidence", "sweep")
             .collect()
         )
-        for run in runs:
-            evaluate_run(spark, run.run_key, float(run.min_confidence), "val")
+        for run_key, min_confidence in expand_e7_confidences(runs):
+            evaluate_run(spark, run_key, min_confidence, "val")
         evaluate_run(spark, "popularity", 0.0, "val")
         evaluate_run(spark, "popularity", 0.0, "test")
     else:

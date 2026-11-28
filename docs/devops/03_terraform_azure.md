@@ -644,9 +644,9 @@ resource "azurerm_key_vault_secret" "eh_listen" {        # Databricks đọc qua
 
 ## 5. Stack `90-sandbox` (Sub C): workspace #2 cho DS
 
-**Vì sao:** quota vCPU tính **theo subscription**. Train FP-Growth / DApriori với nhiều cấu hình (rubric "trực quan kết quả trên các tham số") cần chạy song song với pipeline DE mà không giành 4 vCPU của Sub A.
+**Vì sao:** quota vCPU tính **theo subscription**. Train FP-Growth / DApriori với nhiều cấu hình (rubric "trực quan kết quả trên các tham số") cần chạy song song với pipeline DE mà không giành 4 vCPU của subscription chính (Sub D từ 27/11).
 
-Stack này dùng lại module nội bộ `modules/dbx_workspace` (workspace + access connector + storage nhỏ), mỗi thành viên một state `sandbox-<member>.tfstate`:
+Stack này dùng lại module nội bộ `modules/dbx_workspace` (workspace + access connector, không có storage riêng vì dùng chung metastore), mỗi thành viên một state `sandbox-<member>.tfstate`:
 
 ```hcl
 module "ws2" {
@@ -658,13 +658,15 @@ module "ws2" {
 }
 ```
 
-Workspace sandbox **gắn vào cùng metastore** Unity Catalog. Metastore tính theo region, nên điều này chỉ đúng khi Sub C ở **cùng region** với Sub A. Khi đó DS đọc thẳng `instacart.silver.baskets` mà không phải sao chép dữ liệu. Nếu khác region thì phải dùng Delta Sharing hoặc sao chép bảng `baskets` sang storage của sandbox. Ghi lựa chọn này vào kết quả spike.
+Workspace sandbox **gắn vào cùng metastore** Unity Catalog. Metastore tính theo region, nên điều này chỉ đúng khi Sub C ở **cùng region** với workspace chính (`eastasia`) và **cùng tenant** (tạo Sub C bằng email trường). Khi đó DS đọc thẳng `instacart.silver.baskets` mà không phải sao chép dữ liệu. Nếu khác region thì phải dùng Delta Sharing hoặc sao chép bảng `baskets` sang storage của sandbox. Ghi lựa chọn này vào kết quả spike.
 
 Stack này **chỉ cần dựng ở G3**, khi DS bắt đầu.
 
+> **Chốt 28/11: bắt buộc.** Không chạy thực nghiệm DS trên subscription chính, vì sẽ giành 4 vCPU với DE. Chủ Sub C (P4) tạo và dựng stack này ([AD-OPS-29](../tasks/01_devops.md#ad-ops-29), #31).
+
 **DS chạy ở đâu** ([ds/04 §5.2](../ds/04_thuc_nghiem_danh_gia.md)):
-- **Sub C cùng region với Sub A:** job `ds-benchmark` deploy với target `sandbox` lên workspace này, đọc `ds_data` qua metastore chung, chạy song song với DE.
-- **Khác region:** không dựng Delta Sharing hay sao chép bảng (thêm việc mà không thêm điểm). Job DS chạy ở Sub A ngoài giờ batch, và `90-sandbox` chỉ dùng làm workspace thử nghiệm.
+- **Sub C cùng region với workspace chính (mặc định, bắt buộc):** job `ds-benchmark` deploy với target `sandbox` lên workspace này, đọc `ds_data` qua metastore chung, chạy song song với DE.
+- **Sub C không có `eastasia`:** không dựng Delta Sharing hay sao chép bảng (thêm việc mà không thêm điểm). P4 báo P1 trên #31 để chọn cách xử lý; không tự chuyển job DS sang subscription chính.
 - Cụm **Hadoop/MapReduce chạy bằng Docker ở máy local**, không cần tài nguyên Azure nào ([ds/03](../ds/03_hadoop_mapreduce_local.md)). Đây là quyết định có chủ đích: HDInsight vượt quota 4 vCPU, còn Sub D để dành cho trường hợp dựng lại hạ tầng.
 
 ### 5.1 Stack `50-serving` (Sub A, tùy chọn ở G5): Azure Function làm API gợi ý

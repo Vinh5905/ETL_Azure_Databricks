@@ -683,15 +683,17 @@ Mốc DS-4 phần đánh giá: FP-Growth product 100% ở 3 MinSupp, lưu luật
 - **Hoàn tất còn cần:** Không có.
 - **Mở khóa:** [AD-DS-22](05_data_science.md#ad-ds-22) (hoàn tất), [AD-DS-23](05_data_science.md#ad-ds-23) (bắt đầu), [AD-DS-24](05_data_science.md#ad-ds-24) (hoàn tất), [AD-DS-26](05_data_science.md#ad-ds-26) (hoàn tất)
 
-Bước D6: chọn cấu hình theo quy tắc ghi trước (coverage ≥ 0,5, HitRate@10 cao nhất trên val, phải hơn baseline), rồi đóng gói model có alias @champion.
+Bước D6: chọn cấu hình E7 có coverage ≥ 0,5 và HitRate@10 cao nhất trên val; hòa thì chọn cấu hình có ít luật đạt ngưỡng hơn. So với baseline popularity và ghi kết luận (kể cả khi champion không hơn baseline), sau đó vẫn đăng ký model có alias @champion.
 
 **Việc cần làm**
 
 1. Ghi quy tắc chọn §2.1 vào báo cáo trước khi xem kết quả
-2. Viết src/ml/champion.py: chọn cấu hình, xuất Parquet rules/items, register pyfunc vào instacart.ml.basket_rules, gán alias champion ở bước cuối, ghi ml.champion
-3. Xuất thêm 2 file Parquet vào container ds-data/serving/ cho phương án B của API
-4. Chạy evaluate_holdout cho champion × test
+2. Viết src/ml/champion.py: chọn cấu hình, xuất Parquet rules/items làm artifact model, register pyfunc vào instacart.ml.basket_rules, gán alias champion, MERGE idempotent vào ml.champion
+3. Ghim phiên bản đang chạy của mlflow, pandas, numpy và pyarrow trong môi trường model
+4. Chạy evaluate_holdout cho champion × test; so val với baseline và ghi rõ kết luận dương/âm
 5. Thêm job ds_champion vào bundles/resources/jobs_ds.yml: evaluate_holdout → champion → publish_gold, chạy tay
+6. Bung sweep.min_confidence trong evaluate_holdout --all-e7 để chấm đủ 9 ngưỡng E7
+7. Tách ingest_local khỏi ds-benchmark thành job tay riêng để benchmark không phụ thuộc volume E6
 
 **Đầu ra**
 
@@ -703,7 +705,8 @@ Bước D6: chọn cấu hình theo quy tắc ghi trước (coverage ≥ 0,5, Hi
 
 - [ ] mlflow.pyfunc.load_model('models:/instacart.ml.basket_rules@champion') predict được trên Databricks
 - [ ] ml.champion trỏ đúng run_key; ml.holdout_metrics có champion × test
-- [ ] Kết luận champion có hơn baseline hay không đã ghi rõ
+- [ ] Kết luận champion có hơn baseline hay không đã ghi rõ; dù kết luận âm vẫn có phiên bản model và alias
+- [ ] pytest phần chọn champion đạt; bundle validate -t dev đạt
 
 ### AD-DS-22
 

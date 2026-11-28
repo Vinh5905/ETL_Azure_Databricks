@@ -1,4 +1,4 @@
-# Lưới E1–E5 trên Databricks; E6 local được nạp ở ingest_local.
+# Lưới E1–E5 trên Databricks; ingest E6 được tách thành job chạy tay riêng.
 resources:
   jobs:
     ds_prepare:
@@ -160,19 +160,9 @@ resources:
                   - --run-key
                   - "{{input}}"
 
-        - task_key: ingest_local
-          depends_on:
-            - task_key: grid_c4
-          run_if: ALL_DONE
-          sql_task:
-            file:
-              path: ../../src/ml/sql/ingest_local.sql
-              source: WORKSPACE
-            warehouse_id: ${var.warehouse_id}
-
         - task_key: publish_gold
           depends_on:
-            - task_key: ingest_local
+            - task_key: grid_c4
           run_if: ALL_DONE
           sql_task:
             file:
@@ -219,6 +209,84 @@ resources:
               ResourceClass: SingleNode
               cost_owner: p4
 
+        - job_cluster_key: c4
+          new_cluster:
+            policy_id: ${var.ds_policy_id}
+            spark_version: 15.4.x-scala2.12
+            node_type_id: ${var.node_type_id}
+            num_workers: 0
+            data_security_mode: SINGLE_USER
+            spark_conf:
+              spark.databricks.cluster.profile: singleNode
+              spark.master: "local[4]"
+              spark.sql.shuffle.partitions: "16"
+              spark.default.parallelism: "16"
+              spark.sql.adaptive.enabled: "false"
+            spark_env_vars:
+              PYTHONPATH: ${workspace.file_path}/src
+            custom_tags:
+              ResourceClass: SingleNode
+              cost_owner: p4
+
+    ds_ingest_local:
+      name: instacart-ds-ingest-local-e6
+      max_concurrent_runs: 1
+      tags:
+        cost_owner: p4
+        task: AD-DS-15
+      tasks:
+        - task_key: ingest_local
+          sql_task:
+            file:
+              path: ../../src/ml/sql/ingest_local.sql
+              source: WORKSPACE
+            warehouse_id: ${var.warehouse_id}
+
+    ds_champion:
+      name: instacart-ds-champion
+      max_concurrent_runs: 1
+      tags:
+        cost_owner: p4
+        task: AD-DS-21
+      tasks:
+        - task_key: ddl_ml
+          sql_task:
+            file:
+              path: ../../src/ml/sql/ddl_ml.sql
+              source: WORKSPACE
+            warehouse_id: ${var.warehouse_id}
+
+        - task_key: evaluate_holdout
+          depends_on:
+            - task_key: ddl_ml
+          job_cluster_key: c4
+          spark_python_task:
+            python_file: ../../src/ml/evaluate_holdout.py
+            source: WORKSPACE
+            parameters:
+              - --all-e7
+
+        - task_key: champion
+          depends_on:
+            - task_key: evaluate_holdout
+          job_cluster_key: c4
+          libraries:
+            - pypi:
+                package: mlflow==2.22.5
+          spark_python_task:
+            python_file: ../../src/ml/champion.py
+            source: WORKSPACE
+
+        - task_key: publish_gold
+          depends_on:
+            - task_key: champion
+          sql_task:
+            file:
+              path: ../../src/ml/sql/publish_gold.sql
+              source: WORKSPACE
+            warehouse_id: ${var.warehouse_id}
+
+      job_clusters:
         - job_cluster_key: c4
           new_cluster:
             policy_id: ${var.ds_policy_id}
