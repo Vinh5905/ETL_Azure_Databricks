@@ -1,0 +1,185 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.5.0/schema.json",
+  "name": "b91310451f60ffd9af2c",
+  "position": {
+    "x": 26,
+    "y": 122,
+    "height": 210,
+    "width": 1228,
+    "z": 100,
+    "tabOrder": 100
+  },
+  "visual": {
+    "visualType": "tableEx",
+    "drillFilterOtherVisuals": true,
+    "query": {
+      "queryState": {
+        "Values": {
+          "projections": [
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "product_360"
+                    }
+                  },
+                  "Property": "image_url"
+                }
+              },
+              "queryRef": "product_360.image_url",
+              "nativeQueryRef": "image_url",
+              "displayName": "Ảnh"
+            },
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "product_360"
+                    }
+                  },
+                  "Property": "product_name"
+                }
+              },
+              "queryRef": "product_360.product_name",
+              "nativeQueryRef": "product_name",
+              "displayName": "Sản phẩm"
+            },
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "product_360"
+                    }
+                  },
+                  "Property": "current_price"
+                }
+              },
+              "queryRef": "product_360.current_price",
+              "nativeQueryRef": "current_price",
+              "displayName": "Giá hiện hành"
+            },
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "product_360"
+                    }
+                  },
+                  "Property": "on_promotion"
+                }
+              },
+              "queryRef": "product_360.on_promotion",
+              "nativeQueryRef": "on_promotion",
+              "displayName": "Khuyến mãi"
+            },
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "product_360"
+                    }
+                  },
+                  "Property": "nutriscore_grade"
+                }
+              },
+              "queryRef": "product_360.nutriscore_grade",
+              "nativeQueryRef": "nutriscore_grade",
+              "displayName": "Nutri-Score"
+            },
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "product_360"
+                    }
+                  },
+                  "Property": "nova_group"
+                }
+              },
+              "queryRef": "product_360.nova_group",
+              "nativeQueryRef": "nova_group",
+              "displayName": "NOVA"
+            }
+          ]
+        }
+      }
+    },
+    "visualContainerObjects": {
+      "title": [
+        {
+          "properties": {
+            "show": {
+              "expr": {
+                "Literal": {
+                  "Value": "true"
+                }
+              }
+            },
+            "text": {
+              "expr": {
+                "Literal": {
+                  "Value": "'Hồ sơ sản phẩm'"
+                }
+              }
+            },
+            "fontSize": {
+              "expr": {
+                "Literal": {
+                  "Value": "15D"
+                }
+              }
+            },
+            "fontColor": {
+              "solid": {
+                "color": {
+                  "expr": {
+                    "Literal": {
+                      "Value": "'#17342C'"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      ],
+      "background": [
+        {
+          "properties": {
+            "show": {
+              "expr": {
+                "Literal": {
+                  "Value": "true"
+                }
+              }
+            },
+            "color": {
+              "solid": {
+                "color": {
+                  "expr": {
+                    "Literal": {
+                      "Value": "'#FFFFFF'"
+                    }
+                  }
+                }
+              }
+            },
+            "transparency": {
+              "expr": {
+                "Literal": {
+                  "Value": "0D"
+                }
+              }
+            }
+          }
+        }
+      ]
+    }
+  }
+}
