@@ -1,0 +1,187 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.5.0/schema.json",
+  "name": "43f3212e2cd275237b3a",
+  "position": {
+    "x": 662,
+    "y": 231,
+    "height": 390,
+    "width": 591,
+    "z": 100,
+    "tabOrder": 100
+  },
+  "visual": {
+    "visualType": "tableEx",
+    "drillFilterOtherVisuals": true,
+    "query": {
+      "queryState": {
+        "Values": {
+          "projections": [
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "product_360"
+                    }
+                  },
+                  "Property": "product_name"
+                }
+              },
+              "queryRef": "product_360.product_name",
+              "nativeQueryRef": "product_name",
+              "displayName": "Sản phẩm"
+            },
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "product_360"
+                    }
+                  },
+                  "Property": "product_id"
+                }
+              },
+              "queryRef": "product_360.product_id",
+              "nativeQueryRef": "product_id",
+              "displayName": "Mã sản phẩm"
+            },
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "product_360"
+                    }
+                  },
+                  "Property": "times_ordered"
+                }
+              },
+              "queryRef": "product_360.times_ordered",
+              "nativeQueryRef": "times_ordered",
+              "displayName": "Số lần mua"
+            },
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "product_360"
+                    }
+                  },
+                  "Property": "revenue_sim"
+                }
+              },
+              "queryRef": "product_360.revenue_sim",
+              "nativeQueryRef": "revenue_sim",
+              "displayName": "Doanh thu giả lập"
+            },
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "product_360"
+                    }
+                  },
+                  "Property": "reorder_rate"
+                }
+              },
+              "queryRef": "product_360.reorder_rate",
+              "nativeQueryRef": "reorder_rate",
+              "displayName": "Tỷ lệ mua lại"
+            }
+          ]
+        }
+      },
+      "sortDefinition": {
+        "sort": [
+          {
+            "field": {
+              "Column": {
+                "Expression": {
+                  "SourceRef": {
+                    "Entity": "product_360"
+                  }
+                },
+                "Property": "times_ordered"
+              }
+            },
+            "direction": "Descending"
+          }
+        ]
+      }
+    },
+    "visualContainerObjects": {
+      "title": [
+        {
+          "properties": {
+            "show": {
+              "expr": {
+                "Literal": {
+                  "Value": "true"
+                }
+              }
+            },
+            "text": {
+              "expr": {
+                "Literal": {
+                  "Value": "'Sản phẩm'"
+                }
+              }
+            },
+            "fontSize": {
+              "expr": {
+                "Literal": {
+                  "Value": "15D"
+                }
+              }
+            },
+            "fontColor": {
+              "solid": {
+                "color": {
+                  "expr": {
+                    "Literal": {
+                      "Value": "'#17342C'"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      ],
+      "background": [
+        {
+          "properties": {
+            "show": {
+              "expr": {
+                "Literal": {
+                  "Value": "true"
+                }
+              }
+            },
+            "color": {
+              "solid": {
+                "color": {
+                  "expr": {
+                    "Literal": {
+                      "Value": "'#FFFFFF'"
+                    }
+                  }
+                }
+              }
+            },
+            "transparency": {
+              "expr": {
+                "Literal": {
+                  "Value": "0D"
+                }
+              }
+            }
+          }
+        }
+      ]
+    }
+  }
+}
