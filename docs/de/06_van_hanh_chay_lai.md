@@ -404,6 +404,9 @@ mốc trên cùng pipeline. [Kết quả G3 và các lượt bật/tắt](https:
 2. Giữ nguyên pipeline ID, catalog và các schema Bronze/Silver trong cả hai mốc.
    Giữ lịch stream ở `PAUSED` và chọn khung giờ không trùng lượt batch vì dùng
    chung quota vCPU.
+   Với prefix dev mới, tạo trước các schema Bronze, Silver, Gold và Ops bằng
+   đúng danh tính chạy pipeline. Schema Ops là nơi Databricks tạo event log
+   khi update bắt đầu. [Hướng dẫn tạo schema dev](../../bundles/README.md)
 3. Chọn `new_generation` chưa từng dùng trên pipeline này, chẳng hạn
    `g20261125_120000z` (ngày giờ UTC của namespace mới). Chọn một
    `replay_run_id` mới cho lượt phát ở namespace mới. Chạy [truy vấn đối
