@@ -17,14 +17,14 @@
 3. **`tf-plan`** chỉ chạy khi PR đụng `infra/**` hoặc `adf/**` (`adf/**` chỉ plan stack `40-orchestration`). Workflow đăng nhập Azure bằng OIDC (subject `pull_request`) với quyền **đọc** state, chạy `terraform plan` rồi comment kết quả lên PR.
 4. **`de-deploy` (dev)** chỉ chạy khi PR đụng `src/**` hoặc `bundles/**`. Workflow deploy bundle vào thư mục riêng của PR trong workspace (target `dev`) để chạy thử.
 5. Người review đọc diff và kết quả plan, rồi approve. Branch protection yêu cầu mọi check xanh cùng 1 approve; với `infra/**` thì phải là P1 (CODEOWNERS).
-6. Merge vào `main` sẽ kích hoạt **`tf-apply`** và **`de-deploy` (prod)**. Cả hai dùng environment `prod`, nên phải chờ reviewer bấm *Approve* trong tab Actions trước khi chạy.
+6. Merge vào `main` sẽ kích hoạt **`tf-apply`** và **`de-deploy` (prod)**. Cả hai dùng environment `prod`, nên phải chờ reviewer bấm *Approve* trong tab Actions trước khi chạy. Merge đụng code Function thì **`func-deploy`** cũng chạy, cùng environment `prod` (§3.8).
 7. Hai workflow chạy theo lịch hoặc chạy tay: **`stream-toggle`** (bật/tắt Event Hubs) và **`drift-check`** (plan hằng tuần để phát hiện ai đó sửa tay trên Portal).
 
 ## 2. Quy ước repository
 
 ```
 .github/
-  workflows/  pr-checks.yml tf-plan.yml tf-apply.yml de-deploy.yml stream-toggle.yml drift-check.yml
+  workflows/  pr-checks.yml tf-plan.yml tf-apply.yml de-deploy.yml func-deploy.yml stream-toggle.yml drift-check.yml
   CODEOWNERS
   pull_request_template.md
 infra/        # tài liệu 02, 03, 05
@@ -281,13 +281,27 @@ Chỉ làm nếu spike 3.6 cho thấy tenant cho phép service principal gọi P
 
 Nếu tenant không cho phép thì publish tay từ Power BI Desktop theo checklist ở tài liệu 06. Thư mục `powerbi/` (định dạng PBIP) vẫn được review qua PR.
 
-### 3.8 `func-deploy.yml` (tùy chọn, G5)
+### 3.8 `func-deploy.yml`: đưa code Function lên Azure (G5)
 
-Chỉ làm khi đã dựng stack `50-serving` ([03 §5.1](03_terraform_azure.md)).
-- **Kích hoạt:** push lên `main` có đụng `src/serving_func/**`.
-- **Các bước:** đăng nhập Azure bằng OIDC (cùng UAMI CI), rồi `Azure/functions-action@v1` deploy thư mục `src/serving_func/` lên `func-instacart-recommend`.
-- **Quyền:** UAMI CI cần role *Website Contributor* trên Function App. Role này được gán trong `50-serving`.
-- **Sau khi deploy:** gọi thử `POST /api/recommend` với giỏ `[24852]`, kỳ vọng mã 200. Function key lấy từ Key Vault lúc chạy, không lưu trong GitHub.
+Code Function không đi qua Terraform. Hạ tầng (Function App, storage gói code, quyền) ở stack `50-serving` ([03 §5.1](03_terraform_azure.md)).
+
+- **Kích hoạt:**
+  - Push lên `main` có đụng `src/serving_func/**`, 4 file lõi phương án B trong `src/ml/` (`__init__.py`, `recommendations.py`, `serving/__init__.py`, `serving/basket_core.py`) hoặc chính file workflow.
+  - `workflow_dispatch` để chạy lại tay, ví dụ khi endpoint Model Serving vừa sẵn sàng.
+- **Environment `prod`:** cần duyệt như `de-deploy` prod. Subject OIDC `environment:prod` đã có trên UAMI CI.
+- **Các bước:**
+  1. **Đóng gói** vào `build/func`: `function_app.py`, `host.json`, `requirements.txt` của `src/serving_func/`, cộng thư mục `ml/` với đúng 4 file trên. Thư mục `ml/` nằm cạnh `function_app.py`, nên trên Azure nó ở `wwwroot/ml/`. Không đóng gói `ml/serving/basket_rules.py` vì file đó cần MLflow.
+  2. **Kiểm gói** trước khi đụng Azure: import `ml.serving.basket_core` từ thư mục gói, có chặn MLflow.
+  3. **Đăng nhập Azure** bằng OIDC (cùng UAMI CI, subscription chính).
+  4. **Deploy** bằng `Azure/functions-action@v1` với `remote-build: true`. Gói Flex Consumption dùng One Deploy qua RBAC, Oryx cài `requirements.txt` trên nền Linux của Function. Không cần publish profile, vì basic auth của SCM đã tắt.
+- **Quyền:** UAMI CI có role *Website Contributor* trên Function App, gán trong `50-serving`. Role này đủ để deploy và đọc function key.
+- **Kiểm sau deploy:**
+  1. Chờ Function `recommend` xuất hiện.
+  2. Đọc function key mặc định bằng `az functionapp keys list`, dùng quyền của UAMI CI, rồi che bằng `::add-mask::`. Key không lưu trong GitHub.
+  3. Gọi `POST /api/recommend` với giỏ rỗng. Kỳ vọng **400**: chứng minh code mới đang chạy, không phụ thuộc Databricks.
+  4. Gọi với giỏ `[24852]`, `k = 5`. Kỳ vọng **200**. Thử lại tối đa 5 lần vì Function và endpoint đều có thể đang cold start.
+  - Với `SERVING_MODE=endpoint`, bước 4 chỉ xanh khi endpoint `instacart-basket-rules` đã READY ([ds/05 §3.1](../ds/05_mlflow_serving_bao_cao.md)). Với `fallback`, bước 4 cần file Parquet trong `ds-data/serving/`.
+  - Khác bản đầu của mục này: key đọc thẳng từ Function App lúc chạy thay vì từ Key Vault. Lý do: không phải giữ một bản sao của key, nên không lo key trong Key Vault lệch khi Function xoay key.
 
 ## 4. Secrets và Variables
 

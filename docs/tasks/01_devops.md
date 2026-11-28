@@ -1248,8 +1248,8 @@ Code Function không đi qua Terraform; workflow deploy khi push main đụng sr
 
 **Việc cần làm**
 
-1. Tạo .github/workflows/func-deploy.yml: OIDC bằng UAMI CI, Azure/functions-action@v1
-2. Bước kiểm sau deploy: POST /api/recommend với giỏ [24852], function key lấy từ Key Vault lúc chạy
+1. Tạo .github/workflows/func-deploy.yml: OIDC bằng UAMI CI, Azure/functions-action@v1 (remote build), gói kèm lõi phương án B trong ml/
+2. Bước kiểm sau deploy: POST /api/recommend với giỏ [24852]. Function key đọc từ Function App lúc chạy bằng quyền UAMI CI, che trong log (thay cho Key Vault, lý do ở docs/devops/04 §3.8)
 3. Ghi workflow vào docs/devops/04 nếu có thay đổi so với §3.8
 
 **Đầu ra**

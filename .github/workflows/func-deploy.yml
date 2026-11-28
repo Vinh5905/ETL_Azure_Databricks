@@ -1,0 +1,117 @@
+# Đưa code Azure Function gợi ý lên func-instacart-recommend (docs/devops/04, mục 3.8).
+#   push main đụng code Function → đóng gói, deploy (environment prod, cần duyệt), gọi thử API
+#   workflow_dispatch            → chạy lại tay, ví dụ sau khi endpoint Model Serving đã có
+# Code Function không đi qua Terraform; hạ tầng Function App ở stack 50-serving.
+name: func-deploy
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "src/serving_func/**"
+      # Lõi phương án B (Function tự tra luật) được đóng gói kèm.
+      - "src/ml/__init__.py"
+      - "src/ml/recommendations.py"
+      - "src/ml/serving/__init__.py"
+      - "src/ml/serving/basket_core.py"
+      - ".github/workflows/func-deploy.yml"
+  workflow_dispatch:
+
+permissions:
+  id-token: write
+  contents: read
+
+env:
+  FUNC_APP: func-instacart-recommend
+  FUNC_RG: rg-instacart-core
+  PKG_DIR: build/func
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: prod
+    concurrency:
+      group: func-deploy
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11" # khớp fc1_runtime_version của 50-serving
+
+      # Gói = src/serving_func + 4 file của ml/ (không kéo MLflow). Thư viện do Flex cài (remote build).
+      - name: Build package
+        run: |
+          mkdir -p "$PKG_DIR/ml/serving"
+          cp src/serving_func/function_app.py src/serving_func/host.json src/serving_func/requirements.txt "$PKG_DIR/"
+          cp src/ml/__init__.py src/ml/recommendations.py "$PKG_DIR/ml/"
+          cp src/ml/serving/__init__.py src/ml/serving/basket_core.py "$PKG_DIR/ml/serving/"
+          find "$PKG_DIR" -type f | sort
+
+      # Chặn gói thiếu file hoặc lõi phương án B lỡ import MLflow, trước khi đụng tới Azure.
+      - name: Check package imports
+        working-directory: ${{ env.PKG_DIR }}
+        run: |
+          python -m pip install --quiet pandas "pyarrow<20"
+          python -I -c "import sys; sys.path.insert(0, '.'); sys.modules['mlflow'] = None; from ml.serving.basket_core import BasketCore; BasketCore()"
+
+      - uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_A }}
+
+      # Flex Consumption: One Deploy qua RBAC (UAMI CI có Website Contributor, gán ở 50-serving).
+      # remote-build để Oryx cài requirements.txt đúng nền Linux của Function.
+      - uses: Azure/functions-action@v1
+        with:
+          app-name: ${{ env.FUNC_APP }}
+          package: ${{ env.PKG_DIR }}
+          remote-build: true
+
+      # Function key đọc từ Function App lúc chạy bằng quyền của UAMI CI, che trong log, không lưu trong GitHub.
+      - name: Look up endpoint and key
+        run: |
+          host=$(az resource show -g "$FUNC_RG" -n "$FUNC_APP" --resource-type Microsoft.Web/sites \
+            --query properties.defaultHostName -o tsv)
+          for i in $(seq 1 12); do
+            if az functionapp function show -g "$FUNC_RG" -n "$FUNC_APP" --function-name recommend -o none 2>/dev/null; then
+              break
+            fi
+            echo "Chờ Function recommend xuất hiện ($i/12)"
+            sleep 10
+          done
+          key=$(az functionapp keys list -g "$FUNC_RG" -n "$FUNC_APP" --query functionKeys.default -o tsv)
+          if [[ -z "$key" ]]; then
+            echo "::error::Không đọc được function key mặc định"
+            exit 1
+          fi
+          echo "::add-mask::$key"
+          echo "FUNC_URL=https://$host/api/recommend" >> "$GITHUB_ENV"
+          echo "FUNC_KEY=$key" >> "$GITHUB_ENV"
+
+      # Giỏ rỗng phải bị từ chối: chứng minh code mới đang chạy, không phụ thuộc endpoint Databricks.
+      - name: Smoke test input validation (expect 400)
+        run: |
+          code=$(curl -sS -o /tmp/resp.json -w '%{http_code}' --max-time 120 -X POST "$FUNC_URL" \
+            -H "x-functions-key: $FUNC_KEY" -H "Content-Type: application/json" -d '{"product_ids": []}')
+          cat /tmp/resp.json; echo
+          [[ "$code" == "400" ]] || { echo "::error::Kỳ vọng 400, nhận $code"; exit 1; }
+
+      # Giỏ [24852] phải có gợi ý. Thử lại vì Function và endpoint đều có thể đang về 0 (cold start).
+      - name: Smoke test recommend (expect 200)
+        run: |
+          for i in $(seq 1 5); do
+            code=$(curl -sS -o /tmp/resp.json -w '%{http_code}' --max-time 240 -X POST "$FUNC_URL" \
+              -H "x-functions-key: $FUNC_KEY" -H "Content-Type: application/json" \
+              -d '{"product_ids": [24852], "k": 5}' || true)
+            echo "Lần $i: HTTP $code"
+            if [[ "$code" == "200" ]]; then
+              cat /tmp/resp.json; echo
+              exit 0
+            fi
+            sleep 30
+          done
+          cat /tmp/resp.json 2>/dev/null; echo
+          echo "::error::Không nhận được 200 từ /api/recommend sau 5 lần (SERVING_MODE=endpoint cần endpoint instacart-basket-rules đã READY)"
+          exit 1

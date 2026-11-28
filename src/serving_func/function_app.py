@@ -39,9 +39,11 @@ def _load_fallback_model():
         items_path = Path(temp_dir) / "items.parquet"
         rules_path.write_bytes(client.download_blob(rules_blob).readall())
         items_path.write_bytes(client.download_blob(items_blob).readall())
-        # Hỗ trợ chạy local từ src/serving_func và gói deploy có kèm thư mục src/ml.
-        app_root = Path(__file__).resolve().parents[1]
-        source_roots = (app_root, app_root / "src", Path(__file__).resolve().parents[2] / "src")
+        # Gói deploy (func-deploy.yml) đặt ml/ cạnh function_app.py trong wwwroot;
+        # chạy local từ src/serving_func thì ml/ nằm ở thư mục cha (src/).
+        app_dir = Path(__file__).resolve().parent
+        app_root = app_dir.parent
+        source_roots = (app_dir, app_root, app_root / "src", Path(__file__).resolve().parents[2] / "src")
         for source_root in source_roots:
             if (source_root / "ml" / "serving" / "basket_core.py").is_file():
                 if str(source_root) not in sys.path:
