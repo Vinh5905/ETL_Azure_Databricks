@@ -1,0 +1,11 @@
+role DeptManager
+	modelPermission: read
+
+	tablePermission dim_department =
+			dim_department[department_id]
+				IN CALCULATETABLE (
+					VALUES ( bi_user_access[department_id] ),
+					bi_user_access[user_email] = USERPRINCIPALNAME ()
+				)
+
+	tablePermission bi_user_access = bi_user_access[user_email] = USERPRINCIPALNAME ()
