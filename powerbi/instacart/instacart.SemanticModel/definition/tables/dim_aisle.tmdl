@@ -1,0 +1,17 @@
+table dim_aisle
+
+	column aisle_id
+		dataType: int64
+		sourceColumn: aisle_id
+		summarizeBy: none
+		isKey
+		isHidden
+
+	column aisle
+		dataType: string
+		sourceColumn: aisle
+		summarizeBy: none
+
+	partition dim_aisle = m
+		mode: import
+		source = Table.Distinct(Table.SelectColumns(product_360, {"aisle_id", "aisle"}))

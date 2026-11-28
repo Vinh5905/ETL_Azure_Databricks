@@ -1,0 +1,45 @@
+relationship 187acb6b-032d-5e5d-8586-053df28a1302
+	fromColumn: kpi_daily.order_date
+	toColumn: dim_date.date
+
+relationship 696939b4-3321-58ec-97ec-ad328a376b13
+	fromColumn: department_sales.order_date
+	toColumn: dim_date.date
+
+relationship 7019d9e5-43b5-5d9f-86e8-a481e15ead54
+	fromColumn: department_sales.department_id
+	toColumn: dim_department.department_id
+
+relationship 4d6e3812-901e-5454-82f7-f0f624eb3e32
+	fromColumn: product_360.department_id
+	toColumn: dim_department.department_id
+
+relationship 34e68586-28ce-5629-a632-33a694dc0eaf
+	fromColumn: product_pair_counts.p1
+	toColumn: product_360.product_id
+
+relationship 7e3fa159-c736-58ca-a2fe-1be3be01cd74
+	fromColumn: product_pair_counts.p2
+	toColumn: product_360.product_id
+	isActive: false
+
+relationship 43b4066d-3496-5f59-9b36-b884c27acb5e
+	fromColumn: fact_order_lines.order_date
+	toColumn: dim_date.date
+
+relationship 3663cc9b-30f8-5203-98ca-47c59a2d56ea
+	fromColumn: fact_order_lines.department_id
+	toColumn: dim_department.department_id
+
+relationship 2167829b-8db8-5d75-a341-eae071a89797
+	fromColumn: fact_order_lines.product_id
+	toColumn: product_360.product_id
+	isActive: false
+
+relationship 1c9d0ae3-5ff6-5af0-b766-ac6070358a3b
+	fromColumn: department_sales.aisle_id
+	toColumn: dim_aisle.aisle_id
+
+relationship 60558568-4bf3-5591-be20-c70f34278c0a
+	fromColumn: product_360.aisle_id
+	toColumn: dim_aisle.aisle_id

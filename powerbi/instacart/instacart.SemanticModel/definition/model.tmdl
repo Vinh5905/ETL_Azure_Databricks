@@ -11,7 +11,7 @@ annotation __PBI_TimeIntelligenceEnabled = 0
 
 annotation PBI_ProTooling = ["DevMode"]
 
-annotation PBI_QueryOrder = ["DbxServer", "DbxHttpPath", "Catalog", "Schema", "dim_date", "dim_department", "product_360", "kpi_daily", "kpi_by_dow_hour", "department_sales", "product_pair_counts", "bi_user_access", "stream_kpi_1m"]
+annotation PBI_QueryOrder = ["DbxServer", "DbxHttpPath", "Catalog", "Schema", "dim_date", "dim_department", "product_360", "kpi_daily", "kpi_by_dow_hour", "department_sales", "product_pair_counts", "bi_user_access", "stream_kpi_1m", "fact_order_lines", "dim_aisle", "_Measures"]
 
 ref table dim_date
 ref table dim_department
@@ -22,5 +22,8 @@ ref table department_sales
 ref table product_pair_counts
 ref table bi_user_access
 ref table stream_kpi_1m
+ref table fact_order_lines
+ref table dim_aisle
+ref table _Measures
 
 ref cultureInfo en-US

@@ -1,0 +1,95 @@
+table fact_order_lines
+	isHidden
+
+	column order_id
+		dataType: int64
+		sourceColumn: order_id
+		summarizeBy: none
+		isHidden
+
+	column user_id
+		dataType: int64
+		sourceColumn: user_id
+		summarizeBy: none
+		isHidden
+
+	column product_id
+		dataType: int64
+		sourceColumn: product_id
+		summarizeBy: none
+		isHidden
+
+	column reordered
+		dataType: int64
+		sourceColumn: reordered
+		summarizeBy: none
+
+	column add_to_cart_order
+		dataType: int64
+		sourceColumn: add_to_cart_order
+		summarizeBy: none
+
+	column source
+		dataType: string
+		sourceColumn: source
+		summarizeBy: none
+
+	column order_dow
+		dataType: int64
+		sourceColumn: order_dow
+		summarizeBy: none
+
+	column order_hour_of_day
+		dataType: int64
+		sourceColumn: order_hour_of_day
+		summarizeBy: none
+
+	column order_ts_sim
+		dataType: dateTime
+		sourceColumn: order_ts_sim
+		summarizeBy: none
+		formatString: yyyy-MM-dd HH:mm:ss
+
+	column order_date
+		dataType: dateTime
+		sourceColumn: order_date
+		summarizeBy: none
+		isHidden
+		formatString: yyyy-MM-dd
+
+	column department_id
+		dataType: int64
+		sourceColumn: department_id
+		summarizeBy: none
+		isHidden
+
+	column aisle_id
+		dataType: int64
+		sourceColumn: aisle_id
+		summarizeBy: none
+		isHidden
+
+	column unit_price
+		dataType: decimal
+		sourceColumn: unit_price
+		summarizeBy: none
+
+	column discount_pct
+		dataType: double
+		sourceColumn: discount_pct
+		summarizeBy: none
+
+	column revenue_sim
+		dataType: decimal
+		sourceColumn: revenue_sim
+		summarizeBy: none
+
+	partition fact_order_lines = m
+		mode: import
+		source =
+			let
+			    Sample = Table.PromoteHeaders(Csv.Document(Text.ToBinary(SampleCsv[fact_order_lines]), [Delimiter=",", Encoding=65001, QuoteStyle=QuoteStyle.Csv]), [PromoteAllScalars=true]),
+			    Source = if DbxServer = "(sample)" then Sample else #table(Table.ColumnNames(Sample), {}),
+			    Typed = Table.TransformColumnTypes(Source, {{"order_id", Int64.Type}, {"user_id", Int64.Type}, {"product_id", Int64.Type}, {"reordered", Int64.Type}, {"add_to_cart_order", Int64.Type}, {"source", type text}, {"order_dow", Int64.Type}, {"order_hour_of_day", Int64.Type}, {"order_ts_sim", type datetime}, {"order_date", type date}, {"department_id", Int64.Type}, {"aisle_id", Int64.Type}, {"unit_price", Currency.Type}, {"discount_pct", type number}, {"revenue_sim", Currency.Type}}, "en-US")
+			 in
+			    Typed

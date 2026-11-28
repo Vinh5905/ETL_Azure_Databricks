@@ -1,0 +1,63 @@
+table _Measures
+
+	measure 'Orders' = SUM ( kpi_daily[orders] )
+		displayFolder: Tổng quan
+		formatString: #,0
+
+	measure 'Items' = SUM ( kpi_daily[items] )
+		displayFolder: Tổng quan
+		formatString: #,0
+
+	measure 'Revenue (sim)' = SUM ( kpi_daily[revenue_sim] )
+		displayFolder: Tổng quan
+		formatString: #,0.00
+
+	measure 'Avg Basket Size' = DIVIDE ( [Items], [Orders] )
+		displayFolder: Tổng quan
+		formatString: 0.00
+
+	measure 'Reorder Rate' = DIVIDE ( SUMX ( kpi_daily, kpi_daily[reorder_rate] * kpi_daily[items] ), [Items] )
+		displayFolder: Tổng quan
+		formatString: 0.0%
+
+	measure 'Revenue MoM %' = VAR cur = [Revenue (sim)] VAR prev = CALCULATE ( [Revenue (sim)], DATEADD ( dim_date[date], -1, MONTH ) ) RETURN DIVIDE ( cur - prev, prev )
+		displayFolder: Tổng quan
+		formatString: 0.0%
+
+	measure 'Dept Revenue' = SUM ( department_sales[revenue_sim] )
+		displayFolder: Danh mục
+		formatString: #,0.00
+
+	measure 'Dept Items' = SUM ( department_sales[items] )
+		displayFolder: Danh mục
+		formatString: #,0
+
+	measure 'Dept Reorder Rate' = DIVIDE ( SUM ( department_sales[reordered_items] ), [Dept Items] )
+		displayFolder: Danh mục
+		formatString: 0.0%
+
+	measure 'Promo Item Share' = DIVIDE ( SUM ( department_sales[promo_items] ), [Dept Items] )
+		displayFolder: Danh mục
+		formatString: 0.0%
+
+	measure 'Dept Orders (có mặt ngành)' = IF ( HASONEVALUE ( department_sales[aisle_id] ), SUM ( department_sales[orders] ) )
+		displayFolder: Danh mục
+		formatString: #,0
+
+	measure 'Pair Count as P2' = CALCULATE ( SUM ( product_pair_counts[pair_count] ), USERELATIONSHIP ( product_360[product_id], product_pair_counts[p2] ) )
+		displayFolder: Chi tiết sản phẩm
+		formatString: #,0
+
+	measure 'Orders last 5 min' = CALCULATE ( SUM ( stream_kpi_1m[orders] ), stream_kpi_1m[minute] >= UTCNOW () - TIME ( 0, 5, 0 ) )
+		displayFolder: Vận hành
+		formatString: #,0
+
+	column Value
+		isHidden
+		dataType: int64
+		sourceColumn: Value
+		summarizeBy: none
+
+	partition _Measures = m
+		mode: import
+		source = #table(type table [Value = Int64.Type], {})
