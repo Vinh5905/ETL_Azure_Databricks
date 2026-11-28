@@ -59,7 +59,10 @@ minute** trên dashboard Instacart Live hiển thị **2** sau lượt gửi.
 | Phút UTC | `orders` | `items` | Card |
 |---|---:|---:|---:|
 | 2026-11-28 11:49 | 2 | 5 | 2 |
+| 2026-11-28 16:44 | 3 | 8 | Chưa kiểm |
+| 2026-11-28 16:45 | 4 | 11 | Chưa kiểm |
 
-Lượt thử xác nhận model nhận dữ liệu và cập nhật Card. Đường Push URL của
+Lượt đầu xác nhận model nhận dữ liệu và cập nhật Card. Hai dòng bổ sung được
+gửi chung trong một POST qua Entra ID và API trả **HTTP 200**. Đường Push URL của
 ST10 còn chờ quyền ghi `pbi-push-url` vào Key Vault và kiểm scope `kv` đọc
 được. Visual batch Trang 1 vẫn chờ AD-BI-04.
